@@ -124,13 +124,17 @@ public class LibraryUtils {
         LibraryPaths.Builder builder = new LibraryPaths.Builder();
         String osName = System.getProperty("os.name").toLowerCase();
         String osArch = System.getProperty("os.arch").toLowerCase();
+        boolean preferVulkan = Boolean.parseBoolean(System.getProperty("whisper-jni.vulkan", "false"));
         if (osName.contains("win")) {
             logger.log("OS detected: Windows.");
             builder.setWhisperJNIFilename("whisper-jni.dll");
             if(osArch.contains("amd64") || osArch.contains("x86_64")) {
                 logger.log("Compatible amd64 architecture detected.");
                 logger.log("Looking for whisper.dll in $env:PATH.");
-                if(customLibraryPath || isWhisperDLLInstalled()) {
+                if(preferVulkan) {
+                	logger.log("Vulkan preference detected, loading Vulkan build");
+                	builder.setWhisperJNIPath("/win-amd64/whisper-jni_full_vulkan.dll");
+                } else if(customLibraryPath || isWhisperDLLInstalled()) {
                     logger.log("File whisper.dll found, it will be used.");
                     builder.setWhisperJNIPath("/win-amd64/whisper-jni.dll");
                 } else {

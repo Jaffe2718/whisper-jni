@@ -29,6 +29,8 @@ public class WhisperJNITest {
 
     @BeforeAll
     public static void beforeAll() throws IOException {
+    	System.setProperty("whisper-jni.vulkan", "true");
+    	System.setProperty("whisper-jni.cuda", "true");
         var modelFile = testModelPath.toFile();
         var sampleFile = samplePath.toFile();
         if(!modelFile.exists() || !modelFile.isFile()) {
