@@ -15,6 +15,13 @@ option(GGML_STATIC              "ggml: static link libraries"     OFF)
 option(GGML_NATIVE              "ggml: enable -march=native flag" OFF)
 option(BUILD_SHARED_LIBS        "whisper: build shared libs"      ON )
 
+# NEW!
+option(GGML_CUDA                "ggml: enable CUDA backend"   OFF)
+option(GGML_VULKAN              "ggml: enable Vulkan backend" OFF)
+
+message(STATUS "GGML_VULKAN = ${GGML_VULKAN}")
+message(STATUS "ExternalProject CMAKE_ARGS: ${CMAKE_ARGS}")
+
 set(JAVA_AWT_LIBRARY NotNeeded)
 set(JAVA_JVM_LIBRARY NotNeeded)
 find_package(JNI REQUIRED)
@@ -38,6 +45,23 @@ endif()
 
 add_library(whisper-jni SHARED src/main/native/io_github_givimad_whisperjni_WhisperJNI.cpp src/main/native/whisper/examples/grammar-parser.cpp)
 
+# New
+#find_package(Vulkan REQUIRED)
+#target_link_libraries(whisper-jni
+#  whisper
+#  ggml
+#  ${Vulkan_LIBRARIES}
+#)
+
+# Include Vulkan headers
+#target_include_directories(whisper-jni PUBLIC
+#  ${Vulkan_INCLUDE_DIRS}
+#  ${JNI_INCLUDE_DIRS}
+#  src/main/native
+#  ${WHISPER_DIR}/include
+#  ${WHISPER_INSTALL_DIR}/src/whisper-cpp/examples
+#)
+
 if(NOT DEFINED WHISPER_DIR)
 set(WHISPER_DIR "${CMAKE_CURRENT_BINARY_DIR}/w.cpp")
 set(WHISPER_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/w")
@@ -46,7 +70,8 @@ include(ExternalProject)
     whisper-cpp
     PREFIX "${WHISPER_INSTALL_DIR}"
     URL "${CMAKE_CURRENT_LIST_DIR}/src/main/native/whisper"
-    CMAKE_ARGS -DCMAKE_INSTALL_RPATH:STRING=${CMAKE_INSTALL_RPATH} -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS} -DCMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS} -DGGML_STATIC=${GGML_STATIC} -DGGML_NATIVE=${GGML_NATIVE} -DGGML_AVX=${GGML_AVX} -DGGML_AVX2=${GGML_AVX2} -DGGML_FMA=${GGML_FMA} -DGGML_F16C=${GGML_F16C} -DWHISPER_STANDALONE=1 -DCMAKE_INSTALL_PREFIX:PATH=${WHISPER_DIR} -DCMAKE_OSX_ARCHITECTURES:STRING=${CMAKE_OSX_ARCHITECTURES} -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}
+    # NEW! Build with CUDA support if we want
+    CMAKE_ARGS -DGGML_VULKAN=${GGML_VULKAN} -DGGML_CUDA=${GGML_CUDA} -DCMAKE_INSTALL_RPATH:STRING=${CMAKE_INSTALL_RPATH} -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS} -DCMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS} -DGGML_STATIC=${GGML_STATIC} -DGGML_NATIVE=${GGML_NATIVE} -DGGML_AVX=${GGML_AVX} -DGGML_AVX2=${GGML_AVX2} -DGGML_FMA=${GGML_FMA} -DGGML_F16C=${GGML_F16C} -DWHISPER_STANDALONE=1 -DCMAKE_INSTALL_PREFIX:PATH=${WHISPER_DIR} -DCMAKE_OSX_ARCHITECTURES:STRING=${CMAKE_OSX_ARCHITECTURES} -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}
   )
   add_dependencies(whisper-jni whisper-cpp)
 endif()

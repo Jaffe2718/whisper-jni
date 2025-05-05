@@ -30,7 +30,8 @@ public class WhisperJNITest {
     @BeforeAll
     public static void beforeAll() throws IOException {
     	System.setProperty("whisper-jni.vulkan", "true");
-    	System.setProperty("whisper-jni.cuda", "true");
+//    	System.setProperty("whisper-jni.cuda", "true");
+    	
         var modelFile = testModelPath.toFile();
         var sampleFile = samplePath.toFile();
         if(!modelFile.exists() || !modelFile.isFile()) {
@@ -96,21 +97,35 @@ public class WhisperJNITest {
     @Test
     public void testFull() throws Exception {
         float[] samples = readJFKFileSamples();
+        long totalTime = 0;
+        int totalRuns = 20;
         try (var ctx = whisper.init(testModelPath)) {
             assertNotNull(ctx);
             var params = new WhisperFullParams(WhisperSamplingStrategy.GREEDY);
-            int result = whisper.full(ctx, params, samples, samples.length);
-            if(result != 0) {
-                throw new RuntimeException("Transcription failed with code " + result);
+            
+            for(int i = 0; i < totalRuns; i++)
+            {
+            	long timer = System.currentTimeMillis();
+                int result = whisper.full(ctx, params, samples, samples.length);
+                if(result != 0) {
+                    throw new RuntimeException("Transcription failed with code " + result);
+                }
+                int numSegments = whisper.fullNSegments(ctx);
+                assertEquals(1, numSegments);
+                
+                long startTime = whisper.fullGetSegmentTimestamp0(ctx,0);
+                long endTime = whisper.fullGetSegmentTimestamp1(ctx,0);
+                String text = whisper.fullGetSegmentText(ctx,0);
+                assertEquals(0, startTime);
+                assertEquals(1050, endTime);
+                assertEquals(" And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.", text);
+                
+                long timeTook = (System.currentTimeMillis() - timer);
+                System.out.println("Took " + timeTook + "ms (run " + i + ")");
+                totalTime += timeTook;
             }
-            int numSegments = whisper.fullNSegments(ctx);
-            assertEquals(1, numSegments);
-            long startTime = whisper.fullGetSegmentTimestamp0(ctx,0);
-            long endTime = whisper.fullGetSegmentTimestamp1(ctx,0);
-            String text = whisper.fullGetSegmentText(ctx,0);
-            assertEquals(0, startTime);
-            assertEquals(1050, endTime);
-            assertEquals(" And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.", text);
+            
+            System.out.println("AVERAGE TIME:: " + (totalTime / totalRuns));
         }
     }
 
