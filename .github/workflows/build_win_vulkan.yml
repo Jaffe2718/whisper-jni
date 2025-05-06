@@ -1,4 +1,5 @@
 # THIS DOESNT WORK BECAUSE IT CANT RUN THE VULKAN INSTALLER!!!!!
+# So just use this: https://github.com/sandrohanea/whisper.net/blob/main/.github/workflows/windows-vulkan-native-build.yml
 name: Build whisper-jni with Vulkan
 
 on:
