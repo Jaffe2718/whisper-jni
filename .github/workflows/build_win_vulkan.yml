@@ -1,9 +1,6 @@
 name: Build whisper-jni with Vulkan
 
 on:
-  push:
-    branches:
-      - "**" # Triggers on any branch push
   workflow_dispatch:
 
 jobs:
@@ -16,6 +13,7 @@ jobs:
 
       - name: Install Vulkan SDK
         run: |
+          choco search vulkan-sdk
           choco install vulkan-sdk --version=1.3.250.0 --yes
         shell: powershell
 
