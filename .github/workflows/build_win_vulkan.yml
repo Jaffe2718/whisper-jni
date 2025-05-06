@@ -3,8 +3,8 @@ name: Build whisper-jni with Vulkan
 on:
   push:
     branches:
-      - "**" # Triggers on any branch push. BAD!! but it wont appear for manual triggers idk why
-  workflow_dispatch:
+      - "**" # Triggers on any branch push
+  workflow_dispatch:  # Also allows manual triggering
 
 jobs:
   build-windows-vulkan:
@@ -14,15 +14,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install Vulkan SDK
+      - name: Install Vulkan SDK using winget
         run: |
-          # choco search vulkan-sdk
-          choco install vulkan-sdk --version=1.2.182 --yes
+          winget install --id LunarG.VulkanSDK --exact --source winget
         shell: powershell
 
       - name: Set VULKAN_SDK environment variable
         run: |
-          echo "VULKAN_SDK=C:\VulkanSDK\1.2.182" >> $env:GITHUB_ENV
+          echo "VULKAN_SDK=C:\Program Files\Vulkan\SDK\1.3.x.x" >> $env:GITHUB_ENV
         shell: powershell
 
       - name: Configure CMake with Vulkan
