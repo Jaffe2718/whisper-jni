@@ -3,8 +3,8 @@ name: Build whisper-jni with Vulkan
 on:
   push:
     branches:
-      - "**"  # Triggers on any branch push
-  workflow_dispatch:  # Also allows manual triggering
+      - "**" # Triggers on any branch push
+  workflow_dispatch: # Also allows manual triggering
 
 jobs:
   build-windows-vulkan:
@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       - name: Download Vulkan SDK installer (v1.4.313.0)
         run: |
