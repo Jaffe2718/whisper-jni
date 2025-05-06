@@ -1,0 +1,52 @@
+name: Build whisper-jni with Vulkan
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-windows-vulkan:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Vulkan SDK
+        run: |
+          choco install vulkan-sdk --version=1.3.250.0 --yes
+        shell: powershell
+
+      - name: Set VULKAN_SDK environment variable
+        run: |
+          echo "VULKAN_SDK=C:\VulkanSDK\1.3.250.0" >> $env:GITHUB_ENV
+        shell: powershell
+
+      - name: Configure CMake with Vulkan
+        run: |
+          cmake -B build `
+            -DCMAKE_INSTALL_PREFIX=src/main/resources/win-amd64 `
+            -DBUILD_SHARED_LIBS=OFF `
+            -DGGML_STATIC=ON `
+            -DGGML_USE_VULKAN=ON
+        shell: powershell
+
+      - name: Build whisper-jni (Release)
+        run: |
+          cmake --build build --config Release
+        shell: powershell
+
+      - name: Install build output
+        run: |
+          cmake --install build
+        shell: powershell
+
+      - name: Rename DLL
+        run: |
+          Rename-Item "src/main/resources/win-amd64/whisper-jni.dll" "whisper-jni_vulkan.dll"
+        shell: powershell
+
+      - name: Upload Vulkan DLL artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: whisper-jni-vulkan
+          path: src/main/resources/win-amd64/whisper-jni_vulkan.dll
