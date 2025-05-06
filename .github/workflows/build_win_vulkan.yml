@@ -1,6 +1,9 @@
 name: Build whisper-jni with Vulkan
 
 on:
+  push:
+    branches:
+      - "**" # Triggers on any branch push
   workflow_dispatch:
 
 jobs:
