@@ -1,9 +1,10 @@
+# THIS DOESNT WORK BECAUSE IT CANT RUN THE VULKAN INSTALLER!!!!!
 name: Build whisper-jni with Vulkan
 
 on:
-  push:
-    branches:
-      - "**" # Triggers on any branch push
+  # push:
+  #   branches:
+  #     - "**" # Triggers on any branch push
   workflow_dispatch: # Also allows manual triggering!
 
 jobs:
