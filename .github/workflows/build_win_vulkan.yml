@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - "**" # Triggers on any branch push
-  workflow_dispatch: # Also allows manual triggering
+  workflow_dispatch: # Also allows manual triggering!
 
 jobs:
   build-windows-vulkan:
