@@ -19,12 +19,13 @@ cmake --build build --config Release
 wget.exe https://github.com/thewh1teagle/sherpa-rs/releases/download/v0.1.0/motivation.wav
 ./build/bin/Release/whisper-cli.exe -m C:\Users\Sullbeans\eclipse-workspace\jscribe\src\test\resources\base.en.bin -f .\motivation.wav
 
+return;
 echo "Done building whisper"
 
 # go back to root of repo
 cd ../../../..
 
-# move DLLs from whisper vulkan build to win-vulkan-x64
+# move DLLs from whisper vulkan build to win-vulkan-x64-build
 Copy-Item -Path src\main\native\whisper\build\bin\Release\ggml.dll -Destination $buildDir -Force
 Copy-Item -Path src\main\native\whisper\build\bin\Release\ggml-base.dll -Destination $buildDir -Force
 Copy-Item -Path src\main\native\whisper\build\bin\Release\ggml-cpu.dll -Destination $buildDir -Force

@@ -50,20 +50,22 @@ public class WhisperJNITest {
 		}
 //		 WhisperJNI.loadLibrary(System.out::println);
 		
-		// Use vulkan instead
+		// Use vulkan instead 
+		boolean vulkan = true;
+		
+		if(vulkan)
+		{
+			System.load(getVulkanDLL().toAbsolutePath().toString());
+		}
 		String path = Path.of("src/main/resources/win-amd64").toAbsolutePath().toString();
 		System.load(path + "/ggml-base.dll");
 		System.load(path + "/ggml-cpu.dll");
-//		System.load(path + "/ggml-vulkan.dll");
+		if(vulkan) System.load(path + "/ggml-vulkan.dll");
 		System.load(path + "/ggml.dll");
 		System.load(path + "/whisper.dll");
 		System.load(path + "/whisper-jni.dll");
-//		System.load(path + "/whisper-jni_full.dll");
-//		System.load(path + "/whisper.dll");
-//		System.load(path + "/whisper-jni.dll");
-//		
+		
 //		String path = Path.of("src/main/resources/win-amd64-vulkan-build").toAbsolutePath().toString();
-//		System.load(getVulkanDLL().toAbsolutePath().toString());
 //		System.load(path + "/ggml-base.dll");
 //		System.load(path + "/ggml-cpu.dll");
 //		System.load(path + "/ggml-vulkan.dll");

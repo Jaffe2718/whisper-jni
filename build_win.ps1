@@ -4,11 +4,14 @@
 #cmake --install build
 #rm -r -fo build
 #mv .\src\main\resources\win-amd64\whisper-jni.dll .\src\main\resources\win-amd64\whisper-jni_full.dll
-# build wrapper for external dll version
-cmake -B build -DCMAKE_INSTALL_PREFIX=src/main/resources/win-amd64
-cmake --build build --config Release
-cmake --install build
+
 rm -r -fo build
-rm -r -fo src/main/resources/win-amd64/*.lib
+# build wrapper for external dll version
+$ver = "Debug"
+cmake -B build -DCMAKE_INSTALL_PREFIX=src/main/resources/win-amd64 -DGGML_VULKAN=ON -DGGML_STATIC=1 -DCMAKE_BUILD_TYPE=$ver
+cmake --build build --config $ver
+cmake --install build --config $ver
+
+#rm -r -fo src/main/resources/win-amd64/*.lib
 #rm -r -fo src/main/resources/win-amd64/whisper.dll
 #rm -r -fo src/main/resources/win-amd64/ggml.dll

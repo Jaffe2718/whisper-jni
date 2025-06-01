@@ -191,7 +191,6 @@ JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_init(JNIEnv 
 
 JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_initNoState(JNIEnv *env, jobject thisObject, jstring modelPath, jobject jParams)
 {
-jniPrint(env, "BALLS");
   const char *path = env->GetStringUTFChars(modelPath, NULL);
   jniPrint(env, path);
   struct whisper_context *context = whisper_init_from_file_with_params_no_state(path, newWhisperContextParams(env, jParams));

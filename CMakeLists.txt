@@ -14,6 +14,7 @@ option(GGML_F16C                "ggml: enable F16c"               ON )
 option(GGML_STATIC              "ggml: static link libraries"     OFF)
 option(GGML_NATIVE              "ggml: enable -march=native flag" OFF)
 option(BUILD_SHARED_LIBS        "whisper: build shared libs"      ON )
+option(GGML_VULKAN             "ggml: enable Vulkan backend"     OFF)
 
 set(JAVA_AWT_LIBRARY NotNeeded)
 set(JAVA_JVM_LIBRARY NotNeeded)
@@ -36,53 +37,77 @@ endif()
 
 # ---- Declare libraries ----
 
-add_library(whisper-jni SHARED src/main/native/io_github_givimad_whisperjni_WhisperJNI.cpp src/main/native/whisper/examples/grammar-parser.cpp)
+add_library(whisper-jni SHARED
+  src/main/native/io_github_givimad_whisperjni_WhisperJNI.cpp
+  src/main/native/whisper/examples/grammar-parser.cpp
+)
 
 if(NOT DEFINED WHISPER_DIR)
-set(WHISPER_DIR "${CMAKE_CURRENT_BINARY_DIR}/w.cpp")
-set(WHISPER_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/w")
-include(ExternalProject)
+  set(WHISPER_DIR "${CMAKE_CURRENT_BINARY_DIR}/w.cpp")
+  set(WHISPER_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/w")
+  include(ExternalProject)
   ExternalProject_Add(
     whisper-cpp
     PREFIX "${WHISPER_INSTALL_DIR}"
     URL "${CMAKE_CURRENT_LIST_DIR}/src/main/native/whisper"
-    CMAKE_ARGS -DCMAKE_INSTALL_RPATH:STRING=${CMAKE_INSTALL_RPATH} -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS} -DCMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS} -DGGML_STATIC=${GGML_STATIC} -DGGML_NATIVE=${GGML_NATIVE} -DGGML_AVX=${GGML_AVX} -DGGML_AVX2=${GGML_AVX2} -DGGML_FMA=${GGML_FMA} -DGGML_F16C=${GGML_F16C} -DWHISPER_STANDALONE=1 -DCMAKE_INSTALL_PREFIX:PATH=${WHISPER_DIR} -DCMAKE_OSX_ARCHITECTURES:STRING=${CMAKE_OSX_ARCHITECTURES} -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}
+    CMAKE_ARGS
+      -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+      -DCMAKE_INSTALL_RPATH:STRING=${CMAKE_INSTALL_RPATH}
+      -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS}
+      -DCMAKE_C_FLAGS="/MD"
+      -DCMAKE_CXX_FLAGS="/MD"
+      -DGGML_VULKAN=${GGML_VULKAN}
+      -DGGML_STATIC=${GGML_STATIC}
+      -DGGML_NATIVE=${GGML_NATIVE}
+      -DGGML_AVX=${GGML_AVX}
+      -DGGML_AVX2=${GGML_AVX2}
+      -DGGML_FMA=${GGML_FMA}
+      -DGGML_F16C=${GGML_F16C}
+      -DWHISPER_STANDALONE=1
+      -DCMAKE_INSTALL_PREFIX:PATH=${WHISPER_DIR}
+      -DCMAKE_OSX_ARCHITECTURES:STRING=${CMAKE_OSX_ARCHITECTURES}
+      -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}
   )
   add_dependencies(whisper-jni whisper-cpp)
 endif()
-
-# ---- Declare executable ----
 
 if((NOT MSVC) AND (NOT APPLE))
   # Linux flags
   string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -Wl,-rpath,'$ORIGIN'")
   string(APPEND CMAKE_C_FLAGS " -Wall -Wextra")
-  # target_link_libraries(whisper-jni -static-libgcc -static-libstdc++)
 endif()
 
-set(GGML_LIB_DIR "${CMAKE_BINARY_DIR}/ggml/src/Release")
+if(GGML_VULKAN)
+  find_path(VULKAN_INCLUDE_DIR vulkan/vulkan.h PATHS "$ENV{VULKAN_SDK}/Include")
+  find_library(VULKAN_LIBRARY vulkan-1 PATHS "$ENV{VULKAN_SDK}/Lib")
 
-find_library(GGML_LIB       ggml       PATHS ${GGML_LIB_DIR} NO_DEFAULT_PATH)
-find_library(GGML_BASE_LIB  ggml_base  PATHS ${GGML_LIB_DIR} NO_DEFAULT_PATH)
-find_library(GGML_CPU_LIB   ggml_cpu   PATHS ${GGML_LIB_DIR} NO_DEFAULT_PATH)
-find_library(WHISPER_LIB    whisper    PATHS ${WHISPER_DIR}/lib NO_DEFAULT_PATH)
+  if(NOT VULKAN_LIBRARY OR NOT VULKAN_INCLUDE_DIR)
+    message(FATAL_ERROR "Vulkan SDK not found but GGML_VULKAN is ON. Please install Vulkan SDK.")
+  endif()
 
-message(STATUS "Found GGML_LIB: ${GGML_LIB}")
-message(STATUS "Found GGML_BASE_LIB: ${GGML_BASE_LIB}")
-message(STATUS "Found GGML_CPU_LIB: ${GGML_CPU_LIB}")
-message(STATUS "Found WHISPER_LIB: ${WHISPER_LIB}")
+  message(STATUS "Found Vulkan include: ${VULKAN_INCLUDE_DIR}")
+  message(STATUS "Found Vulkan library: ${VULKAN_LIBRARY}")
 
-target_link_libraries(whisper-jni
-  "C:/Users/Sullbeans/eclipse-workspace/whisper-jni/src/main/native/whisper/build/ggml/src/Release/ggml.lib"
-  "C:/Users/Sullbeans/eclipse-workspace/whisper-jni/src/main/native/whisper/build/ggml/src/Release/ggml-base.lib"
-  "C:/Users/Sullbeans/eclipse-workspace/whisper-jni/src/main/native/whisper/build/ggml/src/Release/ggml-cpu.lib"
-  "C:/Users/Sullbeans/eclipse-workspace/whisper-jni/build/w.cpp/lib/whisper.lib"
+  target_include_directories(whisper-jni PRIVATE ${VULKAN_INCLUDE_DIR})
+  target_link_libraries(whisper-jni PRIVATE
+    ${VULKAN_LIBRARY}
+    "${WHISPER_DIR}/lib/ggml-vulkan.lib"
+  )
+endif()
+
+# Always link these libs
+target_link_libraries(whisper-jni PRIVATE
+  "${WHISPER_DIR}/lib/ggml.lib"
+  "${WHISPER_DIR}/lib/ggml-base.lib"
+  "${WHISPER_DIR}/lib/ggml-cpu.lib"
+  "${WHISPER_DIR}/lib/whisper.lib"
 )
 
 target_link_directories(whisper-jni PUBLIC
   ${WHISPER_DIR}/lib
   ${WHISPER_DIR}/lib/static
-  ${WHISPER_DIR}/build/ggml/src/Release
+  ${WHISPER_DIR}/build/ggml/src/${CMAKE_BUILD_TYPE}
 )
 
 target_include_directories(whisper-jni PUBLIC
@@ -98,8 +123,6 @@ install(
   TARGETS whisper-jni
   DESTINATION ${CMAKE_INSTALL_PREFIX}
 )
-
-# Dependencies
 
 install(
   DIRECTORY ${WHISPER_DIR}/lib/
