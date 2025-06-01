@@ -9,6 +9,39 @@ std::map<int, whisper_context *> contextMap;
 std::map<int, whisper_state *> stateMap;
 std::map<int, grammar_parser::parse_state *> grammarMap;
 
+
+void jniPrint(JNIEnv* env, const char* message) {
+    // Get java.lang.System class
+    jclass systemClass = env->FindClass("java/lang/System");
+    if (systemClass == nullptr) return;
+
+    // Get the out field (System.out)
+    jfieldID outFieldID = env->GetStaticFieldID(systemClass, "err", "Ljava/io/PrintStream;");
+    if (outFieldID == nullptr) return;
+
+    jobject outObject = env->GetStaticObjectField(systemClass, outFieldID);
+    if (outObject == nullptr) return;
+
+    // Get the println(String) method ID
+    jclass printStreamClass = env->FindClass("java/io/PrintStream");
+    if (printStreamClass == nullptr) return;
+
+    jmethodID printlnMethodID = env->GetMethodID(printStreamClass, "println", "(Ljava/lang/String;)V");
+    if (printlnMethodID == nullptr) return;
+
+    // Create a Java String from C string
+    jstring jMessage = env->NewStringUTF(message);
+
+    // Call System.out.println(message)
+    env->CallVoidMethod(outObject, printlnMethodID, jMessage);
+
+    // Clean up local references
+    env->DeleteLocalRef(jMessage);
+    env->DeleteLocalRef(systemClass);
+    env->DeleteLocalRef(printStreamClass);
+}
+
+
 static JavaVM *jvmRef = nullptr;
 static void whisper_log_proxy(enum ggml_log_level level, const char * text, void * user_data) {
     if(jvmRef) {
@@ -65,6 +98,7 @@ struct whisper_context_params newWhisperContextParams(JNIEnv *env, jobject jPara
   jclass paramsJClass = env->GetObjectClass(jParams);
   struct whisper_context_params params = whisper_context_default_params();
   params.use_gpu = (jboolean)env->GetBooleanField(jParams, env->GetFieldID(paramsJClass, "useGPU", "Z"));
+  jniPrint(env, "done!");
   return params;
 }
 
@@ -113,7 +147,8 @@ struct whisper_full_params newWhisperFullParams(JNIEnv *env, jobject jParams)
   params.print_timestamps = (jboolean)env->GetBooleanField(jParams, env->GetFieldID(paramsJClass, "printTimestamps", "Z"));
   params.detect_language = (jboolean)env->GetBooleanField(jParams, env->GetFieldID(paramsJClass, "detectLanguage", "Z"));
   params.suppress_blank = (jboolean)env->GetBooleanField(jParams, env->GetFieldID(paramsJClass, "suppressBlank", "Z"));
-  params.suppress_non_speech_tokens = (jboolean)env->GetBooleanField(jParams, env->GetFieldID(paramsJClass, "suppressNonSpeechTokens", "Z"));
+  // new name
+  params.suppress_nst = (jboolean)env->GetBooleanField(jParams, env->GetFieldID(paramsJClass, "suppressNonSpeechTokens", "Z"));
 
   params.temperature = (jfloat)env->GetFloatField(jParams, env->GetFieldID(paramsJClass, "temperature", "F"));
   params.max_initial_ts = (jfloat)env->GetFloatField(jParams, env->GetFieldID(paramsJClass, "maxInitialTs", "F"));
@@ -140,11 +175,14 @@ struct whisper_full_params newWhisperFullParams(JNIEnv *env, jobject jParams)
   return params;
 }
 
+
 JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_init(JNIEnv *env, jobject thisObject, jstring modelPath, jobject jParams)
 {
   const char *path = env->GetStringUTFChars(modelPath, NULL);
+ jniPrint(env, "Entered native method");
   struct whisper_context *context = whisper_init_from_file_with_params(path, newWhisperContextParams(env, jParams));
   env->ReleaseStringUTFChars(modelPath, path);
+  jniPrint(env, "Exited native method");
   if(!context) {
     return -1;
   }
@@ -153,17 +191,22 @@ JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_init(JNIEnv 
 
 JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_initNoState(JNIEnv *env, jobject thisObject, jstring modelPath, jobject jParams)
 {
+jniPrint(env, "BALLS");
   const char *path = env->GetStringUTFChars(modelPath, NULL);
+  jniPrint(env, path);
   struct whisper_context *context = whisper_init_from_file_with_params_no_state(path, newWhisperContextParams(env, jParams));
+  jniPrint(env, "done with that");
   env->ReleaseStringUTFChars(modelPath, path);
   if(!context) {
     return -1;
   }
+  jniPrint(env, "insertn model");
   return insertModel(context);
 }
 
 JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_initState(JNIEnv *env, jobject thisObject, jint ctxRef)
 {
+jniPrint(env, "BALLS2");
   int stateRef = getStateId();
   whisper_state *state = whisper_init_state(contextMap.at(ctxRef));
   if(!state) {
@@ -186,6 +229,7 @@ JNIEXPORT jboolean JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_isMultil
 
 JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_full(JNIEnv *env, jobject thisObject, jint ctxRef, jobject jParams, jfloatArray samples, jint numSamples)
 {
+jniPrint(env, "BALLS3");
     whisper_full_params params = newWhisperFullParams(env, jParams);
     // I was unable to handle the grammar inside the newWhisperFullParams fn
     jclass paramsJClass = env->GetObjectClass(jParams);
@@ -214,6 +258,7 @@ JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_full(JNIEnv 
 
 JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullWithState(JNIEnv *env, jobject thisObject, jint ctxRef, jint stateRef, jobject jParams, jfloatArray samples, jint numSamples)
 {
+jniPrint(env, "BALLS4");
     whisper_full_params params = newWhisperFullParams(env, jParams);
     // I was unable to handle the grammar inside the newWhisperFullParams fn
     jclass paramsJClass = env->GetObjectClass(jParams);
@@ -330,6 +375,7 @@ JNIEXPORT jstring JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullGetSe
 }
 
 JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_loadGrammar(JNIEnv *env, jobject thisObject, jstring grammarText) {
+jniPrint(env, "BALLS6");
     const char* grammarChars = env->GetStringUTFChars(grammarText, NULL);
     grammar_parser::parse_state* grammarPointer = new grammar_parser::parse_state{};
     try {
@@ -369,6 +415,7 @@ JNIEXPORT void JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_freeGrammar(
 }
 JNIEXPORT void JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_setLogger(JNIEnv *env, jclass thisClass, jboolean enabled)
 {
+jniPrint(env, "schetting logger");
     if (enabled) {
         if (!jvmRef && env->GetJavaVM(&jvmRef) != JNI_OK) {
             jclass exClass = env->FindClass("java/lang/RuntimeException");

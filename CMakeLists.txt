@@ -1,50 +1,120 @@
 cmake_minimum_required(VERSION 3.5)
+
 project(whisper-jni C CXX)
+
+# ---- Set options ----
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+option(GGML_AVX                 "ggml: enable AVX"                ON )
+option(GGML_AVX2                "ggml: enable AVX2"               ON )
+option(GGML_FMA                 "ggml: enable FMA"                ON )
+option(GGML_F16C                "ggml: enable F16c"               ON )
+option(GGML_STATIC              "ggml: static link libraries"     OFF)
+option(GGML_NATIVE              "ggml: enable -march=native flag" OFF)
+option(BUILD_SHARED_LIBS        "whisper: build shared libs"      ON )
+
+set(JAVA_AWT_LIBRARY NotNeeded)
+set(JAVA_JVM_LIBRARY NotNeeded)
 find_package(JNI REQUIRED)
 if (JNI_FOUND)
-    message(STATUS "JNI_INCLUDE_DIRS=${JNI_INCLUDE_DIRS}")
+    message (STATUS "JNI_INCLUDE_DIRS=${JNI_INCLUDE_DIRS}")
 endif()
 
-# Paths to your custom built whisper.cpp
-set(WHISPER_CPP_DIR "src/main/native/whisper")
-set(WHISPER_INCLUDE_DIR "${WHISPER_CPP_DIR}/include")
-set(GGML_INCLUDE_DIR "${WHISPER_CPP_DIR}/ggml/include")
+if(MSVC)
+  # Force compiler to use UTF-8 for IPA constants
+  add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
+  add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+elseif(NOT APPLE)
+  string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -Wl,-rpath,'$ORIGIN'")
+  string(APPEND CMAKE_C_FLAGS " -Wall -Wextra")
+  set(CMAKE_INSTALL_RPATH '$ORIGIN')
+elseif(APPLE)
+  set(CMAKE_INSTALL_RPATH "@loader_path")
+endif()
 
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MD")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MDd")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")
+# ---- Declare libraries ----
 
-# JNI shared library
-add_library(whisper-jni SHARED
-    src/main/native/io_github_givimad_whisperjni_WhisperJNI.cpp
-    src/main/native/whisper/examples/grammar-parser.cpp
+add_library(whisper-jni SHARED src/main/native/io_github_givimad_whisperjni_WhisperJNI.cpp src/main/native/whisper/examples/grammar-parser.cpp)
+
+if(NOT DEFINED WHISPER_DIR)
+set(WHISPER_DIR "${CMAKE_CURRENT_BINARY_DIR}/w.cpp")
+set(WHISPER_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/w")
+include(ExternalProject)
+  ExternalProject_Add(
+    whisper-cpp
+    PREFIX "${WHISPER_INSTALL_DIR}"
+    URL "${CMAKE_CURRENT_LIST_DIR}/src/main/native/whisper"
+    CMAKE_ARGS -DCMAKE_INSTALL_RPATH:STRING=${CMAKE_INSTALL_RPATH} -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS} -DCMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS} -DGGML_STATIC=${GGML_STATIC} -DGGML_NATIVE=${GGML_NATIVE} -DGGML_AVX=${GGML_AVX} -DGGML_AVX2=${GGML_AVX2} -DGGML_FMA=${GGML_FMA} -DGGML_F16C=${GGML_F16C} -DWHISPER_STANDALONE=1 -DCMAKE_INSTALL_PREFIX:PATH=${WHISPER_DIR} -DCMAKE_OSX_ARCHITECTURES:STRING=${CMAKE_OSX_ARCHITECTURES} -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}
+  )
+  add_dependencies(whisper-jni whisper-cpp)
+endif()
+
+# ---- Declare executable ----
+
+if((NOT MSVC) AND (NOT APPLE))
+  # Linux flags
+  string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -Wl,-rpath,'$ORIGIN'")
+  string(APPEND CMAKE_C_FLAGS " -Wall -Wextra")
+  # target_link_libraries(whisper-jni -static-libgcc -static-libstdc++)
+endif()
+
+set(GGML_LIB_DIR "${CMAKE_BINARY_DIR}/ggml/src/Release")
+
+find_library(GGML_LIB       ggml       PATHS ${GGML_LIB_DIR} NO_DEFAULT_PATH)
+find_library(GGML_BASE_LIB  ggml_base  PATHS ${GGML_LIB_DIR} NO_DEFAULT_PATH)
+find_library(GGML_CPU_LIB   ggml_cpu   PATHS ${GGML_LIB_DIR} NO_DEFAULT_PATH)
+find_library(WHISPER_LIB    whisper    PATHS ${WHISPER_DIR}/lib NO_DEFAULT_PATH)
+
+message(STATUS "Found GGML_LIB: ${GGML_LIB}")
+message(STATUS "Found GGML_BASE_LIB: ${GGML_BASE_LIB}")
+message(STATUS "Found GGML_CPU_LIB: ${GGML_CPU_LIB}")
+message(STATUS "Found WHISPER_LIB: ${WHISPER_LIB}")
+
+target_link_libraries(whisper-jni
+  "C:/Users/Sullbeans/eclipse-workspace/whisper-jni/src/main/native/whisper/build/ggml/src/Release/ggml.lib"
+  "C:/Users/Sullbeans/eclipse-workspace/whisper-jni/src/main/native/whisper/build/ggml/src/Release/ggml-base.lib"
+  "C:/Users/Sullbeans/eclipse-workspace/whisper-jni/src/main/native/whisper/build/ggml/src/Release/ggml-cpu.lib"
+  "C:/Users/Sullbeans/eclipse-workspace/whisper-jni/build/w.cpp/lib/whisper.lib"
 )
 
-# Include headers
+target_link_directories(whisper-jni PUBLIC
+  ${WHISPER_DIR}/lib
+  ${WHISPER_DIR}/lib/static
+  ${WHISPER_DIR}/build/ggml/src/Release
+)
+
 target_include_directories(whisper-jni PUBLIC
-    ${JNI_INCLUDE_DIRS}
-    src/main/native
-    ${WHISPER_INCLUDE_DIR}
-    ${GGML_INCLUDE_DIR}
-    "${WHISPER_CPP_DIR}/examples"
+  ${JNI_INCLUDE_DIRS}
+  src/main/native
+  ${WHISPER_DIR}/include
+  ${WHISPER_INSTALL_DIR}/src/whisper-cpp/examples
 )
 
-# Define full path to built .lib files
-set(WHISPER_LIB "C:\\Users\\Sullbeans\\eclipse-workspace\\whisper-jni\\src\\main\\native\\whisper\\build\\src\\Debug\\whisper.lib")
-set(GGML_LIB "C:\\Users\\Sullbeans\\eclipse-workspace\\whisper-jni\\src\\main\\native\\whisper\\build\\ggml\\src\\Debug\\ggml.lib")
+# ---- Declare install targets ----
 
-add_library(whisper STATIC IMPORTED)
-set_target_properties(whisper PROPERTIES IMPORTED_LOCATION "${WHISPER_LIB}")
+install(
+  TARGETS whisper-jni
+  DESTINATION ${CMAKE_INSTALL_PREFIX}
+)
 
-add_library(ggml STATIC IMPORTED)
-set_target_properties(ggml PROPERTIES IMPORTED_LOCATION "${GGML_LIB}")
+# Dependencies
 
-target_link_libraries(whisper-jni whisper ggml)
+install(
+  DIRECTORY ${WHISPER_DIR}/lib/
+  DESTINATION ${CMAKE_INSTALL_PREFIX}
+  USE_SOURCE_PERMISSIONS
+  FILES_MATCHING
+  PATTERN "*.so.*"
+  PATTERN "*.so"
+  PATTERN "*.dylib"
+)
 
-# Optional: installation rule
-install(TARGETS whisper-jni DESTINATION ${CMAKE_INSTALL_PREFIX})
+install(
+  DIRECTORY ${WHISPER_DIR}/bin/
+  DESTINATION ${CMAKE_INSTALL_PREFIX}
+  USE_SOURCE_PERMISSIONS
+  FILES_MATCHING
+  PATTERN "*.dll"
+)
