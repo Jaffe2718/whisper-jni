@@ -18,6 +18,7 @@ option(GGML_VULKAN             "ggml: enable Vulkan backend"     OFF)
 
 set(JAVA_AWT_LIBRARY NotNeeded)
 set(JAVA_JVM_LIBRARY NotNeeded)
+
 find_package(JNI REQUIRED)
 if (JNI_FOUND)
     message (STATUS "JNI_INCLUDE_DIRS=${JNI_INCLUDE_DIRS}")
@@ -41,6 +42,9 @@ add_library(whisper-jni SHARED
   src/main/native/io_github_givimad_whisperjni_WhisperJNI.cpp
   src/main/native/whisper/examples/grammar-parser.cpp
 )
+
+# Probably required, but definitely required in whisper (I made changes in its CMakeLists [can I avoid it with a flag? probably not?])
+target_compile_definitions(whisper-jni PRIVATE _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 
 if(NOT DEFINED WHISPER_DIR)
   set(WHISPER_DIR "${CMAKE_CURRENT_BINARY_DIR}/w.cpp")
