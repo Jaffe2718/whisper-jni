@@ -10,7 +10,7 @@ mv .\src\main\resources\win-amd64\whisper-jni.dll .\src\main\resources\win-amd64
 #cmake --install build
 #rm -r -fo build
 rm -r -fo src/main/resources/win-amd64/*.lib
-rm -r -fo src/main/resources/win-amd64/whisper.dll
-rm -r -fo src/main/resources/win-amd64/ggml.dll
-rm -r -fo src/main/resources/win-amd64/cmake
-rm -r -fo src/main/resources/win-amd64/pkgconfig
+rm src/main/resources/win-amd64/whisper.dll -Force -ErrorAction SilentlyContinue
+rm src/main/resources/win-amd64/ggml.dll -Force -ErrorAction SilentlyContinue
+rm src/main/resources/win-amd64/cmake -Force -ErrorAction SilentlyContinue
+rm src/main/resources/win-amd64/pkgconfig -Force -ErrorAction SilentlyContinue

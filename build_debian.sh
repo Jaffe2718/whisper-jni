@@ -2,7 +2,7 @@
 set -xe
 build_lib() {
   TMP_DIR=src/main/resources/linux
-  TARGET_DIR=src/main/resources/linux-$AARCH
+  TARGET_DIR=src/main/resources/linux-"$OUT_ARCH"
   cmake -B build $CMAKE_ARGS -DCMAKE_C_FLAGS="$CMAKE_CFLAGS" -DCMAKE_INSTALL_PREFIX=$TMP_DIR
   cmake --build build --config Release
   cmake --install build
@@ -14,6 +14,18 @@ build_lib() {
   rm -rf $TMP_DIR
   rm -rf build
 }
+
+# ------------------------- architecture map ------------------------
+RAW_ARCH=$(dpkg --print-architecture)
+
+case "$RAW_ARCH" in
+  amd64) OUT_ARCH="x86-64" ;;
+  arm64) OUT_ARCH="aarch64" ;;
+  armhf|armv7l) OUT_ARCH="armv7l" ;;
+  *)      OUT_ARCH="$RAW_ARCH" ;;        # fallback: use raw value
+esac
+
+
 AARCH=$(dpkg --print-architecture)
 case $AARCH in
   amd64)
