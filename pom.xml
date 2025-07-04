@@ -8,7 +8,7 @@
 	<artifactId>whisper-jni</artifactId>
 	<name>whisper-jni</name>
 	<url>https://github.com/GiviMAD/whisper-jni</url>
-	<version>1.7.2</version>
+	<version>1.8.0</version>
 	<description>A JNI wrapper for
 		[whisper.cpp](https://github.com/ggerganov/whisper.cpp), allows to
 		transcribe speech to text in Java</description>
@@ -51,6 +51,19 @@
 			<artifactId>junit-jupiter</artifactId>
 			<version>5.10.1</version>
 			<scope>test</scope>
+		</dependency>
+		<!-- This library should have a proper logging lib -->
+		<dependency>
+		    <groupId>org.slf4j</groupId>
+		    <artifactId>slf4j-api</artifactId>
+		    <version>2.0.16</version>
+		</dependency>
+		<!-- Log to console during testing -->
+		<dependency>
+		    <groupId>org.slf4j</groupId>
+		    <artifactId>slf4j-simple</artifactId>
+		    <version>2.0.17</version>
+		    <scope>test</scope>
 		</dependency>
 	</dependencies>
 	<distributionManagement>
@@ -117,7 +130,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>2.22.1</version>
 				<configuration>
 					<!-- Redirect stdout and stderr to the console -->
 					<redirectTestOutputToFile>false</redirectTestOutputToFile> <!--
@@ -149,6 +161,12 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<version>3.3.2</version>
+				<!-- Not fixing javadoc bs -->
+				<configuration>
+	                <additionalOptions>
+	                    <additionalOption>-Xdoclint:none</additionalOption>
+	                </additionalOptions>
+            	</configuration>
 				<executions>
 					<execution>
 						<id>attach-javadocs</id>

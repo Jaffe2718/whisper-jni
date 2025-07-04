@@ -7,7 +7,7 @@ package io.github.givimad.whisperjni;
  * You need to dispose the native memory for its instances by calling {@link #close}
  * or {@link WhisperJNI#free(WhisperState)}
  *
- * @author Miguel Álvarez Díez - Initial contribution
+ * @author Miguel Alvarez Díez - Initial contribution
  */
 public class WhisperState extends WhisperJNI.WhisperJNIPointer {
     private final WhisperContext context;

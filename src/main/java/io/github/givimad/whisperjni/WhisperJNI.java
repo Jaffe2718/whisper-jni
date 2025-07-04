@@ -1,20 +1,23 @@
 package io.github.givimad.whisperjni;
 
-import io.github.givimad.whisperjni.internal.LibraryUtils;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.stream.Stream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.github.givimad.whisperjni.internal.LibraryUtils;
 
 /**
  * The {@link WhisperJNI} class allows to use whisper.cpp thought the JNI.
  *
- * @author Miguel Álvarez Díez - Initial contribution
+ * @author Miguel Alvarez Díez - Initial contribution
  */
 public class WhisperJNI {
     private static boolean libraryLoaded;
-    private static LibraryLogger libraryLogger;
 
     //region native api
     private native int init(String model, WhisperContextParams params);
@@ -32,6 +35,12 @@ public class WhisperJNI {
     private native int full(int context, WhisperFullParams params, float[] samples, int numSamples);
 
     private native int fullWithState(int context, int state, WhisperFullParams params, float[] samples, int numSamples);
+
+    private native int fullNTokens(int context, int segment);
+    private native int fullNTokensFromState(int state, int segment);
+
+    private native TokenData getTokenData(int context, int segment, int token);
+    private native TokenData getTokenDataFromState(int context, int state, int segment, int token);
 
     private native int fullNSegments(int context);
 
@@ -213,6 +222,54 @@ public class WhisperJNI {
         }
         return fullWithState(context.ref, state.ref, params, samples, numSamples);
     }
+	
+	/**
+	 * Gets the tokens in the specified segment.
+	 * 
+	 * <p>
+	 * Whisper includes extra tokens like timestamps or start / end of segments. These are removed.
+	 * </p>
+	 * 
+	 * @param context the {@link WhisperContext} used to transcribe.
+	 * @param segment segment index
+	 * @return tokens in this segment
+	 */
+    public TokenData[] getTokens(WhisperContext context, int segment) {
+    	TokenData[] tokens = new TokenData[fullNTokens(context.ref, segment)];
+    	for(int i = 0; i < tokens.length; i++) {
+    		tokens[i] = getTokenData(context.ref, segment, i);
+    	}
+    	return filterTokens(tokens);
+    }
+	
+	/**
+	 * Gets the tokens in the specified segment.
+	 * 
+	 * <p>
+	 * Whisper includes extra tokens like timestamps or start / end of segments. These are removed.
+	 * </p>
+	 * 
+	 * @param context the {@link WhisperContext} used to transcribe
+	 * @param state   the {@link WhisperState} used to transcribe
+	 * @param segment segment index
+	 * @return tokens in this segment
+	 */
+    public TokenData[] getTokensFromState(WhisperContext context, WhisperState state, int segment) {
+    	// whisper_full_n_tokens
+    	TokenData[] tokens = new TokenData[fullNTokensFromState(state.ref, segment)];
+    	for(int i = 0; i < tokens.length; i++) {
+    		tokens[i] = getTokenDataFromState(context.ref, state.ref, segment, i);
+    	}
+    	return filterTokens(tokens);
+    }
+
+    private TokenData[] filterTokens(TokenData[] tokens) {
+    	// Check if it's a special token
+		// ... whisper does something similar so I feel less bad about it, but this is still ugly:
+		// if (text.rfind("[_", 0) == 0) {
+    	// An alternative would be grabbing the special token IDs, either programatically or hard coding them
+    	return Stream.of(tokens).filter(token -> !token.token.startsWith("[_")).toArray(TokenData[]::new);
+    }
 
     /**
      * Gets the available number of text segments.
@@ -313,7 +370,7 @@ public class WhisperJNI {
      *
      * @param context the {@link WhisperContext} to release
      */
-    public void free(WhisperContext context) {
+    public void free(WhisperJNIPointer context) {
         if (context.isReleased()) {
             return;
         }
@@ -357,67 +414,37 @@ public class WhisperJNI {
     }
 
     /**
-     * Register the native library, should be called at first.
-     *
-     * @throws IOException when unable to load the native library
-     */
+	 * Register the native library, should be called at first.
+	 * 
+	 * <p>
+	 * If you want to use Vulkan natives instead, manually call {@link LibraryUtils#loadVulkan(Logger)}.
+	 * </p>
+	 * 
+	 * @throws IOException when unable to load the native library
+	 */
     public static void loadLibrary() throws IOException {
-        loadLibrary(null);
+        loadLibrary(LoggerFactory.getLogger(WhisperJNI.class));
     }
 
     /**
      * Register the native library, should be called at first.
      *
-     * @param logger instance of {@link LibraryLogger}.
+     * @param logger SLF4J {@link Logger}.
      * @throws IOException when unable to load the native library.
      */
-    public static void loadLibrary(LibraryLogger logger) throws IOException {
+    public static void loadLibrary(Logger logger) throws IOException {
         if (libraryLoaded) {
             return;
-        }
-        if(logger == null) {
-            logger = (String ignored) -> {};
         }
         LibraryUtils.loadLibrary(logger);
         libraryLoaded = true;
     }
 
     /**
-     * Proxy whisper.cpp logger.
-     * Should be called after {@link #loadLibrary()}.
-     *
-     * @param logger whisper.cpp log consumer, or null to disable the library default log to stderr.
-     */
-    public static void setLibraryLogger(LibraryLogger logger) {
-        libraryLogger = logger;
-        setLogger(libraryLogger != null);
-    }
-
-    /**
-     * The class {@link WhisperJNI.LibraryLogger} allows to proxy the whisper.cpp logger.
-     *
-     * @author Miguel Álvarez Díez - Initial contribution
-     */
-    public interface LibraryLogger {
-        void log(String text);
-    }
-
-    /**
-     * Called from the cpp side of the library to proxy the whisper.cpp logs.
-     *
-     * @param text whisper.cpp log line.
-     */
-    protected static void log(String text) {
-        if (libraryLogger != null) {
-            libraryLogger.log(text);
-        }
-    }
-
-    /**
      * In order to avoid sharing pointers between the c++ and java, we use this
      * util base class which holds a random integer id generated in the whisper.cpp wrapper.
      *
-     * @author Miguel Álvarez Díez - Initial contribution
+     * @author Miguel Alvarez Díez - Initial contribution
      */
     protected static abstract class WhisperJNIPointer implements AutoCloseable {
         /**

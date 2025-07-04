@@ -1,6 +1,6 @@
-[submodule "src/main/native/whisper"]
-	path = src/main/native/whisper
-	url = https://github.com/ggerganov/whisper.cpp.git
 [submodule "src/main/native/whisper.cpp"]
 	path = src/main/native/whisper.cpp
 	url = https://github.com/ggml-org/whisper.cpp.git
+[submodule "src/main/native/whisper"]
+	path = src/main/native/whisper
+	url = https://github.com/ggerganov/whisper.cpp

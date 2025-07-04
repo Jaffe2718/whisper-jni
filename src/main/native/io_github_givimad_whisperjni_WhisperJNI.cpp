@@ -241,6 +241,64 @@ JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullWithStat
     return result;
 }
 
+// START SUPASULLEY EPIC METHODS
+JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullNTokens(JNIEnv *env, jobject thisObject, jint ctxRef, jint segment)
+{
+  whisper_context *whisper_ctx = contextMap.at(ctxRef);
+  return whisper_full_n_tokens(whisper_ctx, segment);
+}
+
+JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullNTokensFromState(JNIEnv *env, jobject thisObject, jint stateRef, jint segment)
+{
+  whisper_state *state = stateMap.at(stateRef);
+  return whisper_full_n_tokens_from_state(state, segment);
+}
+
+static jobject createTokenData(JNIEnv *env, const char *tokenText, whisper_token_data td)
+{
+  jstring jTok = env->NewStringUTF(tokenText);
+  // Build the java wrapper
+  jclass cls = env->FindClass("io/github/givimad/whisperjni/TokenData");
+  jmethodID ctor = env->GetMethodID(cls, "<init>", "(Ljava/lang/String;IIFFFFJJJF)V");
+  jobject obj = env->NewObject(cls, ctor,
+                          jTok,
+                          (jint)  td.id,
+                          (jint)  td.tid,
+                          (jfloat)td.p,
+                          (jfloat)td.plog,
+                          (jfloat)td.pt,
+                          (jfloat)td.ptsum,
+                          (jlong) td.t0,
+                          (jlong) td.t1,
+                          (jlong) td.t_dtw,
+                          (jfloat)td.vlen);
+  // Prevent ref buildup
+  env->DeleteLocalRef(jTok);
+  return obj;
+}
+
+JNIEXPORT jobject JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_getTokenData(JNIEnv *env, jobject thisObject, jint ctxRef, jint segment, jint token)
+{
+  whisper_context *whisper_ctx = contextMap.at(ctxRef);
+  whisper_token_data td = whisper_full_get_token_data(whisper_ctx, segment, token);
+  // Get the text of this token
+  const char* tokenText = whisper_full_get_token_text(whisper_ctx, segment, token);
+  return createTokenData(env, tokenText, td);
+}
+
+JNIEXPORT jobject JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_getTokenDataFromState(JNIEnv *env, jobject thisObject, jint ctxRef, jint stateRef, jint segment, jint token)
+{
+  whisper_context *whisper_ctx = contextMap.at(ctxRef);
+  whisper_state *state = stateMap.at(stateRef);
+  // God knows why this doesn't require the context but the text does...
+  whisper_token_data td = whisper_full_get_token_data_from_state(state, segment, token);
+  // Get the text of this token
+  const char* tokenText = whisper_full_get_token_text_from_state(whisper_ctx, state, segment, token);
+  return createTokenData(env, tokenText, td);
+}
+
+// END TOKEN SCHENANIGANS
+
 JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullNSegments(JNIEnv *env, jobject thisObject, jint ctxRef)
 {
   return whisper_full_n_segments(contextMap.at(ctxRef));

@@ -3,7 +3,7 @@ package io.github.givimad.whisperjni;
 /**
  * The {@link WhisperFullParams} instances needed to configure full whisper execution
  *
- * @author Miguel Álvarez Díez - Initial contribution
+ * @author Miguel Alvarez Díez - Initial contribution
  */
 public class WhisperFullParams {
     /**

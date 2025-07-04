@@ -17,7 +17,7 @@ import java.util.regex.PatternSyntaxException;
  * <p>
  * You need to dispose the native memory for its instances by calling {@link #close}
  *
- * @author Miguel Álvarez Díez - Initial contribution
+ * @author Miguel Alvarez Díez - Initial contribution
  */
 public class WhisperGrammar extends WhisperJNI.WhisperJNIPointer {
     private final WhisperJNI whisper;

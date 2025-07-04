@@ -3,7 +3,7 @@ package io.github.givimad.whisperjni;
 /**
  * The {@link WhisperContextParams} class contains the {@link WhisperContext} params.
  *
- * @author Miguel Álvarez Díez - Initial contribution
+ * @author Miguel Alvarez Díez - Initial contribution
  */
 public class WhisperContextParams {
     /**

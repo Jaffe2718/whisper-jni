@@ -2,7 +2,7 @@ package io.github.givimad.whisperjni;
 /**
  * The {@link WhisperContext} enum to configure whisper's sampling strategy
  *
- * @author Miguel Álvarez Díez - Initial contribution
+ * @author Miguel Alvarez Díez - Initial contribution
  */
 public enum WhisperSamplingStrategy {
     /**
