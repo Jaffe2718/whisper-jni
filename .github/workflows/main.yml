@@ -166,7 +166,7 @@ jobs:
 
   deploy:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [build-lib-linux-x86-64,build-lib-linux-arm,build-lib-linux-aarch64,build-lib-windows,build-lib-macos-x86-64, build-lib-macos-aarch64]
+    needs: [build-lib-linux-x86-64,build-lib-linux-aarch64,build-lib-windows,build-lib-macos-x86-64, build-lib-macos-aarch64]
     runs-on: ubuntu-latest
     permissions:
       contents: write
