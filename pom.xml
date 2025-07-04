@@ -132,14 +132,17 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
 					<!-- Redirect stdout and stderr to the console -->
-					<redirectTestOutputToFile>false</redirectTestOutputToFile> <!--
+					<redirectTestOutputToFile>true</redirectTestOutputToFile> <!--
 					Ensure it's printed to console -->
-					<useFile>false</useFile> <!-- Ensure it's not redirected to
+					<useFile>true</useFile> <!-- Ensure it's not redirected to
 					files -->
 					<forkCount>0</forkCount> <!-- Disable forking to avoid JVM
 					process creation issues -->
 					<reuseForks>false</reuseForks> <!-- Ensure fresh JVM for each
 					test (to avoid residual state) -->
+					<systemPropertyVariables>
+						<java.util.logging.ConsoleHandler.level>ALL</java.util.logging.ConsoleHandler.level>
+					</systemPropertyVariables>
 				</configuration>
 			</plugin>
 			<!-- Attach source jars-->

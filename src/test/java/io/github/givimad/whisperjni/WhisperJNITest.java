@@ -47,7 +47,7 @@ public class WhisperJNITest {
 		
 		// We have to run 2 different tests in order to test Vulkan, IF on windows
 		// .. im not gonna deal with this rn
-		boolean useVulkan = System.getProperty("whisper.backend", "cpu").equals("vulkan");
+		boolean useVulkan = true;//System.getProperty("whisper.backend", "cpu").equals("vulkan");
 		if(useVulkan && LibraryUtils.canUseVulkan())
 		{
 			LibraryUtils.loadVulkan();

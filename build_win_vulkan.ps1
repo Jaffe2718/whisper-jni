@@ -1,6 +1,6 @@
 # THIS IS MEANT TO BE RUN IN THE ROOT OF THE REPO, WHERE YOU INIT SUBMODULE FIRST
 # ... since whisper JNI builds whisper anyways this top part of this script might not be necessary anymore
-$buildDir = "src/main/resources/win-amd64-vulkan"
+$buildDir = "src/main/resources/windows-x86-64-vulkan"
 mkdir $buildDir -Force
 #rm -r -fo .\src\main\resources\win-vulkan-x64\whisper-jni.dll
 
