@@ -10,14 +10,14 @@ jobs:
       run: |
         git submodule update --init
         ./download-test-model.sh
-    - name: Artifact debian x86_64
+    - name: Artifact linux x86-64
       uses: actions/upload-artifact@v4
       with:
         name: tiny-ggml-model
         path: ggml-tiny.bin
         retention-days: 2
 
-  build-lib-debian-x86_64:
+  build-lib-linux-x86-64:
     needs: [download-model]
     runs-on: ubuntu-latest
     steps:
@@ -33,15 +33,15 @@ jobs:
           mkdir -p dist
       - name: Build native library
         run: |
-          docker build --build-arg="RUN_TESTS=true" -f dockerfile . -t whisperjni_binary:x86_64 --load
-          docker run --platform=amd64 -v $(pwd)/dist:/out whisperjni_binary:x86_64 bash -c "cp src/main/resources/debian-amd64/* /out/"
-      - name: Artifact debian x86_64
+          docker build --build-arg="RUN_TESTS=true" -f dockerfile . -t whisperjni_binary:x86-64 --load
+          docker run --platform=amd64 -v $(pwd)/dist:/out whisperjni_binary:x86-64 bash -c "cp src/main/resources/linux-x86-64/* /out/"
+      - name: Artifact linux x86-64
         uses: actions/upload-artifact@v4
         with:
-          name: debian-binary-amd64
+          name: linux-binary-x86-64
           path: dist/*
 
-  build-lib-debian-arm64:
+  build-lib-linux-aarch64:
     needs: [download-model]
     runs-on: ubuntu-latest
     steps:
@@ -59,38 +59,12 @@ jobs:
           mkdir -p dist
       - name: Build native library
         run: |
-          docker build -f dockerfile . -t whisperjni_binary:arm64 --platform arm64 --load
-          DOCKER_BUILDKIT=1 docker run --platform=arm64 -v $(pwd)/dist:/out whisperjni_binary:arm64 bash -c "cp src/main/resources/debian-arm64/* /out/"
-      - name: Artifact debian arm64
+          docker build -f dockerfile . -t whisperjni_binary:aarch64 --platform arm64 --load
+          DOCKER_BUILDKIT=1 docker run --platform=arm64 -v $(pwd)/dist:/out whisperjni_binary:aarch64 bash -c "cp src/main/resources/linux-aarch64/* /out/"
+      - name: Artifact linux aarch64
         uses: actions/upload-artifact@v4
         with:
-          name: debian-binary-arm64
-          path: dist/*
-
-  build-lib-debian-arm:
-    needs: [download-model]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      - name: Docker Setup Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          install: true
-      - name: Setup project dir
-        run: |
-          mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
-          mkdir -p dist
-      - name: Build native library
-        run: |
-          docker build -f dockerfile . -t whisperjni_binary:armv7l --platform arm --load
-          DOCKER_BUILDKIT=1 docker run --platform=arm -v $(pwd)/dist:/out whisperjni_binary:armv7l bash -c "cp src/main/resources/debian-armv7l/* /out/"
-      - name: Artifact debian armv7l
-        uses: actions/upload-artifact@v4
-        with:
-          name: debian-binary-armv7l
+          name: linux-binary-aarch64
           path: dist/*
 
   build-lib-windows:
@@ -117,14 +91,14 @@ jobs:
         run: |
           .\build_win.ps1
           # mvn test
-          mv src\main\resources\win-amd64\*.dll .\dist\
-      - name: Artifact windows x86_64
+          mv src\main\resources\win-x86-64\*.dll .\dist\
+      - name: Artifact windows x86-64
         uses: actions/upload-artifact@v4
         with:
-          name: windows-binary-x86_64
+          name: windows-binary-x86-64
           path: dist/*.dll
 
-  build-lib-macos-amd64:
+  build-lib-macos-x86-64:
     needs: [download-model]
     runs-on: macos-13
     steps:
@@ -142,22 +116,22 @@ jobs:
         run: |
           export DYLD_LIBRARY_PATH=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/
           mkdir -p dist
-          mkdir -p dist_arm64
+          mkdir -p dist_aarch64
           git submodule update --init
           mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
       - name: Build binary
         run: |
           export DYLD_LIBRARY_PATH=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/
-          ./build_macos.sh amd64
+          ./build_macos.sh x86-64
           # mvn test
-          mv src/main/resources/macos-amd64/*.dylib dist/
-      - name: Artifact macos amd64
+          mv src/main/resources/macos-x86-64/*.dylib dist/
+      - name: Artifact macos x86-64
         uses: actions/upload-artifact@v4
         with:
-          name: macos-binary-amd64
+          name: macos-binary-x86-64
           path: dist/*.dylib
   
-  build-lib-macos-arm64:
+  build-lib-macos-aarch64:
     needs: [download-model]
     runs-on: macos-14
     steps:
@@ -175,24 +149,24 @@ jobs:
         run: |
           export DYLD_LIBRARY_PATH=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/
           mkdir -p dist
-          mkdir -p dist_arm64
+          mkdir -p dist_aarch64
           git submodule update --init
           mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
       - name: Build binary
         run: |
           export DYLD_LIBRARY_PATH=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/
-          ./build_macos.sh arm64
+          ./build_macos.sh aarch64
           # mvn test
-          mv src/main/resources/macos-arm64/*.dylib dist_arm64/
-      - name: Artifact macos arm64
+          mv src/main/resources/macos-aarch64/*.dylib dist_aarch64/
+      - name: Artifact macos aarch64
         uses: actions/upload-artifact@v4
         with:
-          name: macos-binary-arm64
-          path: dist_arm64/*.dylib
+          name: macos-binary-aarch64
+          path: dist_aarch64/*.dylib
 
   deploy:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [build-lib-debian-x86_64,build-lib-debian-arm,build-lib-debian-arm64,build-lib-windows,build-lib-macos-amd64, build-lib-macos-arm64]
+    needs: [build-lib-linux-x86-64,build-lib-linux-arm,build-lib-linux-aarch64,build-lib-windows,build-lib-macos-x86-64, build-lib-macos-aarch64]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -203,15 +177,15 @@ jobs:
       run: ls -R
     - name: setup resources
       run: |
-        mv ./debian-binary-amd64/*.so ./src/main/resources/debian-amd64/
-        mv ./debian-binary-arm64/*.so ./src/main/resources/debian-arm64/
-        mv ./debian-binary-armv7l/*.so ./src/main/resources/debian-armv7l/
-        mv ./debian-binary-amd64/*.so.* ./src/main/resources/debian-amd64/
-        mv ./debian-binary-arm64/*.so.* ./src/main/resources/debian-arm64/
-        mv ./debian-binary-armv7l/*.so.* ./src/main/resources/debian-armv7l/
-        mv ./windows-binary-x86_64/*.dll ./src/main/resources/win-amd64/
-        mv ./macos-binary-amd64/*.dylib ./src/main/resources/macos-amd64/
-        mv ./macos-binary-arm64/*.dylib ./src/main/resources/macos-arm64/
+        mv ./linux-binary-x86-64/*.so ./src/main/resources/linux-x86-64/
+        mv ./linux-binary-aarch64/*.so ./src/main/resources/linux-aarch64/
+        mv ./linux-binary-aarch64/*.so ./src/main/resources/linux-aarch64/
+        mv ./linux-binary-x86-64/*.so.* ./src/main/resources/linux-x86-64/
+        mv ./linux-binary-aarch64/*.so.* ./src/main/resources/linux-aarch64/
+        mv ./linux-binary-aarch64/*.so.* ./src/main/resources/linux-aarch64/
+        mv ./windows-binary-x86-64/*.dll ./src/main/resources/win-x86-64/
+        mv ./macos-binary-x86-64/*.dylib ./src/main/resources/macos-x86-64/
+        mv ./macos-binary-aarch64/*.dylib ./src/main/resources/macos-aarch64/
     - name: Set up Maven Central Repository
       uses: actions/setup-java@v4
       with:
