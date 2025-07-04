@@ -6,13 +6,14 @@ build_lib() {
   cmake -B build $CMAKE_ARGS -DCMAKE_C_FLAGS="$CMAKE_CFLAGS" -DCMAKE_INSTALL_PREFIX=$TMP_DIR
   cmake --build build --config Release
   cmake --install build
-  cp $TMP_DIR/libggml.so $TARGET_DIR/libggml$LIB_VARIANT.so
-  if [ "$ADD_WRAPPER" = true ]; then
-    cp $TMP_DIR/libwhisper.so.1 $TARGET_DIR/libwhisper.so.1
-    cp $TMP_DIR/libwhisper-jni.so $TARGET_DIR/libwhisper-jni.so
-  fi  
-  rm -rf $TMP_DIR
-  rm -rf build
+  mkdir -p "$TARGET_DIR"
+  # copy *all* .so, .so.1, .so.2 … that were installed
+  cp "$TMP_DIR"/*.so*  "$TARGET_DIR"/
+  # if you still need the libggml‑variant rename, do it after the mass‑copy:
+  if [[ -n "$LIB_VARIANT" && -f "$TARGET_DIR/libggml.so" ]]; then
+      mv "$TARGET_DIR/libggml.so" "$TARGET_DIR/libggml$LIB_VARIANT.so"
+  fi
+  rm -rf "$TMP_DIR" build
 }
 
 # ------------------------- architecture map ------------------------

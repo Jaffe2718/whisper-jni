@@ -132,9 +132,9 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
 					<!-- Redirect stdout and stderr to the console -->
-					<redirectTestOutputToFile>true</redirectTestOutputToFile> <!--
+					<redirectTestOutputToFile>false</redirectTestOutputToFile> <!--
 					Ensure it's printed to console -->
-					<useFile>true</useFile> <!-- Ensure it's not redirected to
+					<useFile>false</useFile> <!-- Ensure it's not redirected to
 					files -->
 					<forkCount>0</forkCount> <!-- Disable forking to avoid JVM
 					process creation issues -->
