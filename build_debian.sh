@@ -1,8 +1,8 @@
 #!/bin/bash
 set -xe
 build_lib() {
-  TMP_DIR=src/main/resources/debian
-  TARGET_DIR=src/main/resources/debian-$AARCH
+  TMP_DIR=src/main/resources/linux
+  TARGET_DIR=src/main/resources/linux-$AARCH
   cmake -B build $CMAKE_ARGS -DCMAKE_C_FLAGS="$CMAKE_CFLAGS" -DCMAKE_INSTALL_PREFIX=$TMP_DIR
   cmake --build build --config Release
   cmake --install build

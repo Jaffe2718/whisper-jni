@@ -98,7 +98,7 @@ jobs:
           name: windows-binary-x86-64
           path: dist/*.dll
 
-  build-lib-macos-x86-64:
+  build-lib-mac-x86-64:
     needs: [download-model]
     runs-on: macos-13
     steps:
@@ -124,14 +124,14 @@ jobs:
           export DYLD_LIBRARY_PATH=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/
           ./build_macos.sh x86-64
           # mvn test
-          mv src/main/resources/macos-x86-64/*.dylib dist/
+          mv src/main/resources/mac-x86-64/*.dylib dist/
       - name: Artifact macos x86-64
         uses: actions/upload-artifact@v4
         with:
-          name: macos-binary-x86-64
+          name: mac-binary-x86-64
           path: dist/*.dylib
   
-  build-lib-macos-aarch64:
+  build-lib-mac-aarch64:
     needs: [download-model]
     runs-on: macos-14
     steps:
@@ -157,16 +157,16 @@ jobs:
           export DYLD_LIBRARY_PATH=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/
           ./build_macos.sh aarch64
           # mvn test
-          mv src/main/resources/macos-aarch64/*.dylib dist_aarch64/
+          mv src/main/resources/mac-aarch64/*.dylib dist_aarch64/
       - name: Artifact macos aarch64
         uses: actions/upload-artifact@v4
         with:
-          name: macos-binary-aarch64
+          name: mac-binary-aarch64
           path: dist_aarch64/*.dylib
 
   deploy:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [build-lib-linux-x86-64,build-lib-linux-aarch64,build-lib-windows,build-lib-macos-x86-64, build-lib-macos-aarch64]
+    needs: [build-lib-linux-x86-64,build-lib-linux-aarch64,build-lib-windows,build-lib-mac-x86-64, build-lib-mac-aarch64]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -184,8 +184,8 @@ jobs:
         mv ./linux-binary-aarch64/*.so.* ./src/main/resources/linux-aarch64/
         mv ./linux-binary-aarch64/*.so.* ./src/main/resources/linux-aarch64/
         mv ./windows-binary-x86-64/*.dll ./src/main/resources/win-x86-64/
-        mv ./macos-binary-x86-64/*.dylib ./src/main/resources/macos-x86-64/
-        mv ./macos-binary-aarch64/*.dylib ./src/main/resources/macos-aarch64/
+        mv ./mac-binary-x86-64/*.dylib ./src/main/resources/mac-x86-64/
+        mv ./mac-binary-aarch64/*.dylib ./src/main/resources/mac-aarch64/
     - name: Set up Maven Central Repository
       uses: actions/setup-java@v4
       with:
