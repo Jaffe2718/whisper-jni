@@ -115,12 +115,14 @@ if(GGML_VULKAN)
 endif()
 
 # Always link these libs
-target_link_libraries(whisper-jni PRIVATE
-  "${WHISPER_DIR}/lib/ggml.lib"
-  "${WHISPER_DIR}/lib/ggml-base.lib"
-  "${WHISPER_DIR}/lib/ggml-cpu.lib"
-  "${WHISPER_DIR}/lib/whisper.lib"
-)
+# target_link_directories(whisper-jni PUBLIC ${WHISPER_DIR}/lib)
+target_link_libraries(whisper-jni whisper ggml ggml-base ggml-cpu)
+# target_link_libraries(whisper-jni PRIVATE
+#   "${WHISPER_DIR}/lib/ggml.lib"
+#   "${WHISPER_DIR}/lib/ggml-base.lib"
+#   "${WHISPER_DIR}/lib/ggml-cpu.lib"
+#   "${WHISPER_DIR}/lib/whisper.lib"
+# )
 
 target_link_directories(whisper-jni PUBLIC
   ${WHISPER_DIR}/lib
