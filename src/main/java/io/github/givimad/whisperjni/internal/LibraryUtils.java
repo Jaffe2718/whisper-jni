@@ -169,7 +169,7 @@ public class LibraryUtils {
 			System.load(vulkanPath);
 			
 			// Now load our dependencies in this specific order
-			Path tempDir = extractFolderToTemp(logger, "win-amd64-vulkan");
+			Path tempDir = extractFolderToTemp(logger, "windows-x86-64-vulkan");
 			System.load(tempDir.resolve("ggml-base.dll").toAbsolutePath().toString());
 			System.load(tempDir.resolve("ggml-cpu.dll").toAbsolutePath().toString());
 			System.load(tempDir.resolve("ggml-vulkan.dll").toAbsolutePath().toString());
