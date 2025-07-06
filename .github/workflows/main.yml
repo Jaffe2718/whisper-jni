@@ -122,7 +122,7 @@ jobs:
       - name: Build binary
         run: |
           export DYLD_LIBRARY_PATH=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/
-          ./build_macos.sh x64
+          ./build_macos.sh x86-64
           # mvn test
           mv src/main/resources/mac-x64/*.dylib dist/
       - name: Artifact macos x64

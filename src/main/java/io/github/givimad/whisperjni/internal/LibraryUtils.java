@@ -30,7 +30,13 @@ public class LibraryUtils {
 	/** OS architecture */
 	public static final String OS_ARCH = System.getProperty("os.arch").toLowerCase();
 	
-	/** We need to load multiple files but all in order */
+	/**
+	 * We need to load multiple files but all in order.
+	 * 
+	 * <p>
+	 * ... apparently Linux works just fine when its ggml lib is named that insane string and thus doesn't get picked up in the correct order.
+	 * </p>
+	 */
 	private static final List<String> loadOrder = Arrays.asList("ggml-base", "ggml-cpu", "ggml-vulkan", "ggml", "whisper", "whisper-jni");
 	
 	private static final String[] LIB_NAMES = {".so", ".dylib", ".dll"};
@@ -55,14 +61,15 @@ public class LibraryUtils {
 		// Now load everything in the correct order
 		Stream.of(tempDir.toFile().listFiles()).sorted(Comparator.comparing(file ->
 		{
-			String name = file.getName();
 			for(int i = 0; i < loadOrder.size(); i++)
 			{
-				if(name.contains(loadOrder.get(i) + "."))
+				// adding the . differentiates between files like 'ggml' and 'ggml-base', ensuring its at the suffix
+				if(file.getName().contains(loadOrder.get(i) + "."))
 				{
 					return i; // return index of match as priority
 				}
 			}
+			
 			return Integer.MAX_VALUE; // unknown files go last
 		})).map(file -> file.getAbsolutePath()).filter(file -> Stream.of(LIB_NAMES).anyMatch(suffix -> file.endsWith(suffix))).forEach(path ->
 		{
