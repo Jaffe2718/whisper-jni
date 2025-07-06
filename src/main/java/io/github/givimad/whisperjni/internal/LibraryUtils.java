@@ -1,20 +1,19 @@
 package io.github.givimad.whisperjni.internal;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.JarURLConnection;
+import java.io.UncheckedIOException;
+import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Enumeration;
 import java.util.List;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -85,75 +84,139 @@ public class LibraryUtils {
 	 * @return temp directory path
 	 * @throws IOException if something went wrong
 	 */
-	public static Path extractFolderToTemp(Logger logger, String folderName) throws IOException
+	// public static Path extractFolderToTemp(Logger logger, String folderName) throws IOException
+	// {
+	// logger.info("Extracting libs from {} (OS: {}, arch: {})", folderName, OS_NAME, OS_ARCH);
+	//
+	// // Find the path to this library's JAR
+	// URL resourceURL = LibraryUtils.class.getProtectionDomain().getCodeSource().getLocation();
+	//
+	// System.out.println(resourceURL);
+	// // By default, assume its a file: protocol
+	// String jarFile = resourceURL.getFile();
+	//
+	// if(resourceURL.getProtocol().equals("jar"))
+	// {
+	// JarURLConnection connection = (JarURLConnection) resourceURL.openConnection();
+	//
+	// try
+	// {
+	// jarFile = new File(connection.getJarFileURL().toURI()).getAbsolutePath();
+	// } catch(URISyntaxException e)
+	// {
+	// throw new IOException("Failed to open connection to jar", e);
+	// }
+	//
+	// logger.info("Reading JAR from {} (file: {})", resourceURL, jarFile);
+	//
+	// Path tmpDir = Files.createTempDirectory("jscribe_natives_");
+	// tmpDir.toFile().deleteOnExit();
+	//
+	// logger.info("Creating temp directory at {}", tmpDir);
+	//
+	// try(JarFile jar = new JarFile(jarFile))
+	// {
+	// Enumeration<JarEntry> entries = jar.entries();
+	//
+	// while(entries.hasMoreElements())
+	// {
+	// JarEntry entry = entries.nextElement();
+	//
+	// // Only load the files, not the directory
+	// if(entry.getName().startsWith(folderName) && !entry.isDirectory())
+	// {
+	// // Get the input stream for the file in the JAR
+	// try(InputStream inputStream = jar.getInputStream(entry))
+	// {
+	// // Copy the file to a temporary location
+	// Path targetPath = tmpDir.resolve(entry.getName());
+	// Files.createDirectories(targetPath.getParent());
+	// logger.info("Extracting native {} to {}", entry.getName(), targetPath);
+	// Files.copy(inputStream, targetPath, StandardCopyOption.REPLACE_EXISTING);
+	// }
+	// }
+	// }
+	// }
+	//
+	// logger.info("Finished loading natives");
+	// return tmpDir.resolve(folderName);
+	// }
+	// else if(resourceURL.toString().endsWith(".jar"))
+	// {
+	//
+	// }
+	// else
+	// {
+	// logger.info("We are likely in an IDE, resource is on disk");
+	// return Path.of("src", "main", "resources", folderName);
+	// }
+	// }
+	
+	public static Path extractFolderToTemp(Logger log, String folderName) throws IOException
 	{
-		logger.info("Extracting libs from {} (OS: {}, arch: {})", folderName, OS_NAME, OS_ARCH);
+		log.info("Extracting libs from {} (OS: {}, arch: {})", folderName, OS_NAME, OS_ARCH);
 		
-		// Find the path to this library's JAR
-		URL resourceURL = LibraryUtils.class.getProtectionDomain().getCodeSource().getLocation();
-		
-		// By default, assume its a file: protocol
-		String jarFile = resourceURL.getFile();
-		
-		// If it's a jar: protocol
-		switch(resourceURL.getProtocol())
+		/* 1️⃣ Resolve the resource to a URI */
+		URI folderUri;
+		try
 		{
-			case "jar":
-			{
-				JarURLConnection connection = (JarURLConnection) resourceURL.openConnection();
-				
-				try
-				{
-					jarFile = new File(connection.getJarFileURL().toURI()).getAbsolutePath();
-				} catch(URISyntaxException e)
-				{
-					throw new IOException("Failed to open connection to jar", e);
-				}
-				
-				logger.info("Reading JAR from {} (file: {})", resourceURL, jarFile);
-				
-				Path tmpDir = Files.createTempDirectory("jscribe_natives_");
-				tmpDir.toFile().deleteOnExit();
-				
-				logger.info("Creating temp directory at {}", tmpDir);
-				
-				try(JarFile jar = new JarFile(jarFile))
-				{
-					Enumeration<JarEntry> entries = jar.entries();
-					
-					while(entries.hasMoreElements())
-					{
-						JarEntry entry = entries.nextElement();
-						
-						// Only load the files, not the directory
-						if(entry.getName().startsWith(folderName) && !entry.isDirectory())
-						{
-							// Get the input stream for the file in the JAR
-							try(InputStream inputStream = jar.getInputStream(entry))
-							{
-								// Copy the file to a temporary location
-								Path targetPath = tmpDir.resolve(entry.getName());
-								Files.createDirectories(targetPath.getParent());
-								logger.info("Extracting native {} to {}", entry.getName(), targetPath);
-								Files.copy(inputStream, targetPath, StandardCopyOption.REPLACE_EXISTING);
-							}
-						}
-					}
-				}
-				
-				logger.info("Finished loading natives");
-				return tmpDir.resolve(folderName);
-			}
-			case "file":
-			{
-				logger.info("We are likely in an IDE, resource is on disk");
-				return Path.of("src", "main", "resources", folderName);
-			}
-			default:
-			{
-				throw new IOException("Unknown protocol: " + resourceURL);
-			}
+			folderUri = LibraryUtils.class.getResource("/" + folderName).toURI();
+		} catch(URISyntaxException | NullPointerException e)
+		{
+			throw new IOException("Resource '" + folderName + "' not found on classpath", e);
 		}
+		
+		FileSystem fs = null;
+		Path originDir;
+		if("jar".equals(folderUri.getScheme()))
+		{
+			fs = FileSystems.newFileSystem(folderUri, Map.of());
+			originDir = fs.getPath("/" + folderName);
+			log.debug("Resource is inside JAR: {}", folderUri);
+		}
+		else
+		{
+			originDir = Paths.get(folderUri);
+			log.debug("Resource is a directory on disk: {}", originDir);
+		}
+		
+		/* 3️⃣ Copy (recursively) to a temp directory */
+		Path tmpDir = Files.createTempDirectory("whisperjni_");
+		log.info("Copying natives to temporary dir {}", tmpDir);
+		
+		Files.walk(originDir).forEach(p ->
+		{
+			try
+			{
+				Path dest = tmpDir.resolve(originDir.relativize(p).toString());
+				if(Files.isDirectory(p))
+				{
+					Files.createDirectories(dest);
+				}
+				else
+				{
+					Files.createDirectories(dest.getParent());
+					Files.copy(p, dest, StandardCopyOption.REPLACE_EXISTING);
+				}
+			} catch(IOException ex)
+			{
+				throw new UncheckedIOException(ex);
+			}
+		});
+		
+		/* 4️⃣ Clean up FileSystem if we opened one */
+		if(fs != null)
+		{
+			fs.close();
+		}
+		
+		log.info("Finished extracting natives");
+		return tmpDir;
+	}
+	
+	private void extractJar(Logger logger, String folderName)
+	{
+		
 	}
 	
 	/**
@@ -178,11 +241,11 @@ public class LibraryUtils {
 			// Now load our dependencies in this specific order
 			/// ^ nvm, whisper-jni has private dependencies
 			Path tempDir = extractFolderToTemp(logger, "windows-x64-vulkan");
-//			System.load(tempDir.resolve("ggml-base.dll").toAbsolutePath().toString());
-//			System.load(tempDir.resolve("ggml-cpu.dll").toAbsolutePath().toString());
-//			System.load(tempDir.resolve("ggml-vulkan.dll").toAbsolutePath().toString());
-//			System.load(tempDir.resolve("ggml.dll").toAbsolutePath().toString());
-//			System.load(tempDir.resolve("whisper.dll").toAbsolutePath().toString());
+			// System.load(tempDir.resolve("ggml-base.dll").toAbsolutePath().toString());
+			// System.load(tempDir.resolve("ggml-cpu.dll").toAbsolutePath().toString());
+			// System.load(tempDir.resolve("ggml-vulkan.dll").toAbsolutePath().toString());
+			// System.load(tempDir.resolve("ggml.dll").toAbsolutePath().toString());
+			// System.load(tempDir.resolve("whisper.dll").toAbsolutePath().toString());
 			System.load(tempDir.resolve("whisper-jni.dll").toAbsolutePath().toString());
 			loadInOrder(logger, tempDir);
 		} catch(Exception e)
