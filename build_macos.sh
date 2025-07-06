@@ -4,7 +4,7 @@ AARCH=${1:-$(uname -m)}
 case "$AARCH" in
   x86-64|amd64)
     AARCH=x86_64
-    AARCH_NAME=x86-64
+    AARCH_NAME=x64
     TARGET_VERSION=11.0
     ;;
   arm64|aarch64)

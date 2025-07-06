@@ -10,14 +10,14 @@ jobs:
       run: |
         git submodule update --init
         ./download-test-model.sh
-    - name: Artifact linux x86-64
+    - name: Artifact linux x64
       uses: actions/upload-artifact@v4
       with:
         name: tiny-ggml-model
         path: ggml-tiny.bin
         retention-days: 2
 
-  build-lib-linux-x86-64:
+  build-lib-linux-x64:
     needs: [download-model]
     runs-on: ubuntu-latest
     steps:
@@ -33,12 +33,12 @@ jobs:
           mkdir -p dist
       - name: Build native library
         run: |
-          docker build --build-arg="RUN_TESTS=true" -f dockerfile . -t whisperjni_binary:x86-64 --load
-          docker run --platform=amd64 -v $(pwd)/dist:/out whisperjni_binary:x86-64 bash -c "cp src/main/resources/linux-x86-64/* /out/"
-      - name: Artifact linux x86-64
+          docker build --build-arg="RUN_TESTS=true" -f dockerfile . -t whisperjni_binary:x64 --load
+          docker run --platform=amd64 -v $(pwd)/dist:/out whisperjni_binary:x64 bash -c "cp src/main/resources/linux-x64/* /out/"
+      - name: Artifact linux x64
         uses: actions/upload-artifact@v4
         with:
-          name: linux-binary-x86-64
+          name: linux-binary-x64
           path: dist/*
 
   build-lib-linux-aarch64:
@@ -67,7 +67,7 @@ jobs:
           name: linux-binary-aarch64
           path: dist/*
 
-  build-lib-windows:
+  build-lib-windows-x64:
     needs: [download-model]
     runs-on: windows-latest
     steps:
@@ -91,14 +91,14 @@ jobs:
         run: |
           .\build_win.ps1
           # mvn test
-          mv src\main\resources\windows-x86-64\*.dll .\dist\
-      - name: Artifact windows x86-64
+          mv src\main\resources\windows-x64\*.dll .\dist\
+      - name: Artifact windows x64
         uses: actions/upload-artifact@v4
         with:
-          name: windows-binary-x86-64
+          name: windows-binary-x64
           path: dist/*.dll
 
-  build-lib-mac-x86-64:
+  build-lib-mac-x64:
     needs: [download-model]
     runs-on: macos-13
     steps:
@@ -122,13 +122,13 @@ jobs:
       - name: Build binary
         run: |
           export DYLD_LIBRARY_PATH=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/
-          ./build_macos.sh x86-64
+          ./build_macos.sh x64
           # mvn test
-          mv src/main/resources/mac-x86-64/*.dylib dist/
-      - name: Artifact macos x86-64
+          mv src/main/resources/mac-x64/*.dylib dist/
+      - name: Artifact macos x64
         uses: actions/upload-artifact@v4
         with:
-          name: mac-binary-x86-64
+          name: mac-binary-x64
           path: dist/*.dylib
   
   build-lib-mac-aarch64:
@@ -166,7 +166,7 @@ jobs:
 
   deploy:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [build-lib-linux-x86-64,build-lib-linux-aarch64,build-lib-windows,build-lib-mac-x86-64, build-lib-mac-aarch64]
+    needs: [build-lib-linux-x64,build-lib-linux-aarch64,build-lib-windows-x64,build-lib-mac-x64, build-lib-mac-aarch64]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -177,14 +177,14 @@ jobs:
       run: ls -R
     - name: setup resources
       run: |
-        mv ./linux-binary-x86-64/*.so ./src/main/resources/linux-x86-64/
+        mv ./linux-binary-x64/*.so ./src/main/resources/linux-x64/
         mv ./linux-binary-aarch64/*.so ./src/main/resources/linux-aarch64/
         mv ./linux-binary-aarch64/*.so ./src/main/resources/linux-aarch64/
-        mv ./linux-binary-x86-64/*.so.* ./src/main/resources/linux-x86-64/
+        mv ./linux-binary-x64/*.so.* ./src/main/resources/linux-x64/
         mv ./linux-binary-aarch64/*.so.* ./src/main/resources/linux-aarch64/
         mv ./linux-binary-aarch64/*.so.* ./src/main/resources/linux-aarch64/
-        mv ./windows-binary-x86-64/*.dll ./src/main/resources/windows-x86-64/
-        mv ./mac-binary-x86-64/*.dylib ./src/main/resources/mac-x86-64/
+        mv ./windows-binary-x64/*.dll ./src/main/resources/windows-x64/
+        mv ./mac-binary-x64/*.dylib ./src/main/resources/mac-x64/
         mv ./mac-binary-aarch64/*.dylib ./src/main/resources/mac-aarch64/
     - name: Set up Maven Central Repository
       uses: actions/setup-java@v4
