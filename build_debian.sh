@@ -20,7 +20,7 @@ build_lib() {
 RAW_ARCH=$(dpkg --print-architecture)
 
 case "$RAW_ARCH" in
-  amd64) OUT_ARCH="x86-64" ;;
+  amd64) OUT_ARCH="x64" ;;
   arm64) OUT_ARCH="aarch64" ;;
   armhf|armv7l) OUT_ARCH="armv7l" ;;
   *)      OUT_ARCH="$RAW_ARCH" ;;        # fallback: use raw value

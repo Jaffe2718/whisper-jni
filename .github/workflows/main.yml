@@ -91,7 +91,7 @@ jobs:
         run: |
           .\build_win.ps1
           # mvn test
-          mv src\main\resources\win-x86-64\*.dll .\dist\
+          mv src\main\resources\windows-x86-64\*.dll .\dist\
       - name: Artifact windows x86-64
         uses: actions/upload-artifact@v4
         with:
@@ -183,7 +183,7 @@ jobs:
         mv ./linux-binary-x86-64/*.so.* ./src/main/resources/linux-x86-64/
         mv ./linux-binary-aarch64/*.so.* ./src/main/resources/linux-aarch64/
         mv ./linux-binary-aarch64/*.so.* ./src/main/resources/linux-aarch64/
-        mv ./windows-binary-x86-64/*.dll ./src/main/resources/win-x86-64/
+        mv ./windows-binary-x86-64/*.dll ./src/main/resources/windows-x86-64/
         mv ./mac-binary-x86-64/*.dylib ./src/main/resources/mac-x86-64/
         mv ./mac-binary-aarch64/*.dylib ./src/main/resources/mac-aarch64/
     - name: Set up Maven Central Repository
