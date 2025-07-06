@@ -13,6 +13,9 @@ ggml-*.bin
 *.iml
 *.ipr
 
+### JVM crashes ###
+*.log
+
 ### Eclipse ###
 .apt_generated
 .classpath

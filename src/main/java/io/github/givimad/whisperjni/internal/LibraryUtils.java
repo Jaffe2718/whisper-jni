@@ -176,12 +176,13 @@ public class LibraryUtils {
 			System.load(vulkanPath);
 			
 			// Now load our dependencies in this specific order
-			Path tempDir = extractFolderToTemp(logger, "windows-x86-64-vulkan");
-			System.load(tempDir.resolve("ggml-base.dll").toAbsolutePath().toString());
-			System.load(tempDir.resolve("ggml-cpu.dll").toAbsolutePath().toString());
-			System.load(tempDir.resolve("ggml-vulkan.dll").toAbsolutePath().toString());
-			System.load(tempDir.resolve("ggml.dll").toAbsolutePath().toString());
-			System.load(tempDir.resolve("whisper.dll").toAbsolutePath().toString());
+			/// ^ nvm, whisper-jni has private dependencies
+			Path tempDir = extractFolderToTemp(logger, "windows-x64-vulkan");
+//			System.load(tempDir.resolve("ggml-base.dll").toAbsolutePath().toString());
+//			System.load(tempDir.resolve("ggml-cpu.dll").toAbsolutePath().toString());
+//			System.load(tempDir.resolve("ggml-vulkan.dll").toAbsolutePath().toString());
+//			System.load(tempDir.resolve("ggml.dll").toAbsolutePath().toString());
+//			System.load(tempDir.resolve("whisper.dll").toAbsolutePath().toString());
 			System.load(tempDir.resolve("whisper-jni.dll").toAbsolutePath().toString());
 			loadInOrder(logger, tempDir);
 		} catch(Exception e)

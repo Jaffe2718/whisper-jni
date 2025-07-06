@@ -97,26 +97,24 @@ if((NOT MSVC) AND (NOT APPLE))
 endif()
 
 if(GGML_VULKAN)
-  find_path(VULKAN_INCLUDE_DIR vulkan/vulkan.h PATHS "$ENV{VULKAN_SDK}/Include")
-  find_library(VULKAN_LIBRARY vulkan-1 PATHS "$ENV{VULKAN_SDK}/Lib")
-
-  if(NOT VULKAN_LIBRARY OR NOT VULKAN_INCLUDE_DIR)
-    message(FATAL_ERROR "Vulkan SDK not found but GGML_VULKAN is ON. Please install Vulkan SDK.")
-  endif()
-
+  find_path(VULKAN_INCLUDE_DIR vulkan/vulkan.h PATHS "$ENV{VULKAN_SDK}/Include" REQUIRED)
+  find_library(VULKAN_LIBRARY vulkan-1 PATHS "$ENV{VULKAN_SDK}/Lib" REQUIRED)
+  
   message(STATUS "Found Vulkan include: ${VULKAN_INCLUDE_DIR}")
   message(STATUS "Found Vulkan library: ${VULKAN_LIBRARY}")
-
+  
   target_include_directories(whisper-jni PRIVATE ${VULKAN_INCLUDE_DIR})
-  target_link_libraries(whisper-jni PRIVATE
+  target_link_libraries(whisper-jni PRIVATE whisper ggml ggml-base ggml-cpu
     ${VULKAN_LIBRARY}
     "${WHISPER_DIR}/lib/ggml-vulkan.lib"
   )
+else()
+	target_link_libraries(whisper-jni whisper ggml ggml-base ggml-cpu)
 endif()
 
 # Always link these libs
 # target_link_directories(whisper-jni PUBLIC ${WHISPER_DIR}/lib)
-target_link_libraries(whisper-jni whisper ggml ggml-base ggml-cpu)
+# target_link_libraries(whisper-jni whisper ggml ggml-base ggml-cpu)
 # target_link_libraries(whisper-jni PRIVATE
 #   "${WHISPER_DIR}/lib/ggml.lib"
 #   "${WHISPER_DIR}/lib/ggml-base.lib"
