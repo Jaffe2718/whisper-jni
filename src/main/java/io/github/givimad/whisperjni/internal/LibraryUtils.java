@@ -5,6 +5,7 @@ import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,7 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Adapted from <a href="https://github.com/henkelmax/rnnoise4j/blob/master/src/main/java/de/maxhenkel/rnnoise4j/LibraryLoader.java">RNNoise4J</a> <3
+ * Adapted from <a href="https://github.com/henkelmax/rnnoise4j/blob/master/src/main/java/de/maxhenkel/rnnoise4j/LibraryLoader.java">RNNoise4J</a>
  */
 public class LibraryUtils {
 	
@@ -156,7 +157,6 @@ public class LibraryUtils {
 	{
 		log.info("Extracting libs from {} (OS: {}, arch: {})", folderName, OS_NAME, OS_ARCH);
 		
-		/* 1️⃣ Resolve the resource to a URI */
 		URI folderUri;
 		try
 		{
@@ -166,11 +166,20 @@ public class LibraryUtils {
 			throw new IOException("Resource '" + folderName + "' not found on classpath", e);
 		}
 		
-		FileSystem fs = null;
+		log.info("Folder URI: {}", folderUri);
 		Path originDir;
+		FileSystem fs = null;
+		
 		if("jar".equals(folderUri.getScheme()))
 		{
-			fs = FileSystems.newFileSystem(folderUri, Map.of());
+			try
+			{
+				fs = FileSystems.newFileSystem(folderUri, Map.of());
+			} catch(FileSystemAlreadyExistsException e)
+			{
+				fs = FileSystems.getFileSystem(folderUri); // reuse the one that’s open
+			}
+			
 			originDir = fs.getPath("/" + folderName);
 			log.debug("Resource is inside JAR: {}", folderUri);
 		}
@@ -180,7 +189,6 @@ public class LibraryUtils {
 			log.debug("Resource is a directory on disk: {}", originDir);
 		}
 		
-		/* 3️⃣ Copy (recursively) to a temp directory */
 		Path tmpDir = Files.createTempDirectory("whisperjni_");
 		log.info("Copying natives to temporary dir {}", tmpDir);
 		
@@ -204,19 +212,8 @@ public class LibraryUtils {
 			}
 		});
 		
-		/* 4️⃣ Clean up FileSystem if we opened one */
-		if(fs != null)
-		{
-			fs.close();
-		}
-		
 		log.info("Finished extracting natives");
 		return tmpDir;
-	}
-	
-	private void extractJar(Logger logger, String folderName)
-	{
-		
 	}
 	
 	/**

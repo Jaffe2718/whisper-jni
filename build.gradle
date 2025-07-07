@@ -1,0 +1,59 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+group = 'io.github.givimad'
+version = '1.8.0'
+description = 'Java port of whisper.cpp, forked from whisper-jni by GiviMAD'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    api 'org.slf4j:slf4j-api:2.0.16'
+    testImplementation 'org.slf4j:slf4j-simple:2.0.16'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.3'
+}
+
+sourceCompatibility = JavaVersion.VERSION_21
+targetCompatibility = JavaVersion.VERSION_21
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+tasks.withType(Javadoc) {
+    options.encoding = 'UTF-8'
+}
+
+test {
+    testLogging.showStandardStreams = true
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        mavenLocal()
+    }
+}
+
+// Always republish to ~/.m2 even if nothing changed
+tasks.named('publishToMavenLocal') {
+    outputs.upToDateWhen { false }   // disable incremental check
+}

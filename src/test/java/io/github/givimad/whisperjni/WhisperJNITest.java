@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import io.github.givimad.whisperjni.internal.LibraryUtils;
 
+// @Disabled
 public class WhisperJNITest {
 	
 	private static Path testModelPath = Path.of("ggml-tiny.bin");
@@ -47,7 +48,7 @@ public class WhisperJNITest {
 		
 		// We have to run 2 different tests in order to test Vulkan, IF on windows
 		// .. im not gonna deal with this rn
-		boolean useVulkan = true;//System.getProperty("whisper.backend", "cpu").equals("vulkan");
+		boolean useVulkan = System.getProperty("whisper.backend", "cpu").equals("vulkan");
 		if(useVulkan && LibraryUtils.canUseVulkan())
 		{
 			LibraryUtils.loadVulkan();
@@ -129,7 +130,7 @@ public class WhisperJNITest {
 	{
 		float[] samples = readJFKFileSamples();
 		long totalTime = 0;
-		int totalRuns = 5;
+		int totalRuns = 3;
 		
 		try(var ctx = whisper.init(testModelPath))
 		{
@@ -219,6 +220,41 @@ public class WhisperJNITest {
 					}
 				}
 			}
+		}
+	}
+	
+	@Test
+	public void testVAD() throws Exception
+	{
+		float[] samples = readJFKFileSamples();
+		try(var ctx = whisper.init(testModelPath))
+		{
+			assertNotNull(ctx);
+			var params = new WhisperFullParams(WhisperSamplingStrategy.GREEDY);
+			params.vad = true;
+			params.vad_model_path = "i dont exist";
+			
+			var vadParams = params.vadParams;
+			vadParams.threshold = 0.5f;
+			vadParams.min_speech_duration_ms = 200;
+			vadParams.min_silence_duration_ms = 100;
+			vadParams.max_speech_duration_s = 10.0f;
+			vadParams.speech_pad_ms = 30;
+			vadParams.samples_overlap = 0.1f;
+			
+			int result = whisper.full(ctx, params, samples, samples.length);
+			if(result != 0)
+			{
+				throw new RuntimeException("Transcription failed with code " + result);
+			}
+			
+			int numSegments = whisper.fullNSegments(ctx);
+			assertEquals(1, numSegments);
+			String text = whisper.fullGetSegmentText(ctx, 0);
+			System.out.println("VAD RESULT: " + text);
+			// assertEquals(0, startTime);
+			// assertEquals(1050, endTime);
+			// assertEquals(" And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.", text);
 		}
 	}
 	

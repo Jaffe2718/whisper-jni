@@ -297,7 +297,7 @@ public class WhisperJNI {
 		// ... whisper does something similar so I feel less bad about it, but this is still ugly:
 		// if (text.rfind("[_", 0) == 0) {
 		// An alternative would be grabbing the special token IDs, either programatically or hard coding them
-		return Stream.of(tokens).filter(token -> !token.token.startsWith("[_")).toArray(TokenData[]::new);
+		return Stream.of(tokens).filter(token -> !token.token.startsWith("[_") && !token.token.startsWith("<|")).toArray(TokenData[]::new);
 	}
 	
 	/**

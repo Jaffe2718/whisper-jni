@@ -79,6 +79,10 @@ void freeWhisperFullParams(JNIEnv *env, jobject jParams, whisper_full_params par
   if(initialPrompt) {
       env->ReleaseStringUTFChars(initialPrompt, params.initial_prompt);
   }
+  jstring vadPath = (jstring)env->GetObjectField(jParams, env->GetFieldID(paramsJClass, "vad_model_path", "Ljava/lang/String;"));
+  if (vadPath) {
+      env->ReleaseStringUTFChars(vadPath, params.vad_model_path);
+  }
 }
 
 struct whisper_full_params newWhisperFullParams(JNIEnv *env, jobject jParams)
@@ -138,6 +142,31 @@ struct whisper_full_params newWhisperFullParams(JNIEnv *env, jobject jParams)
   }
   break;
   }
+  
+  // VAD
+  params.vad = (jboolean)env->GetBooleanField(jParams, env->GetFieldID(paramsJClass, "vad", "Z"));
+  jstring jPath = (jstring) env->GetObjectField(jParams, env->GetFieldID(paramsJClass, "vad_model_path", "Ljava/lang/String;"));
+  params.vad_model_path = env->GetStringUTFChars(jPath, nullptr);
+  
+  // VAD arams
+  whisper_vad_params vadParams = whisper_vad_default_params();
+  jfieldID fidVADParams = env->GetFieldID(paramsJClass, "vadParams", "Lio/github/givimad/whisperjni/WhisperFullParams$VADParams;");
+  jobject jVadParamsObj = env->GetObjectField(jParams, fidVADParams);
+  jclass vadCls = env->GetObjectClass(jVadParamsObj);
+  // Fill
+  vadParams.threshold = env->GetFloatField(jVadParamsObj, env->GetFieldID(vadCls, "threshold", "F"));
+  vadParams.min_speech_duration_ms = env->GetIntField(jVadParamsObj, env->GetFieldID(vadCls, "min_speech_duration_ms", "I"));
+  vadParams.min_silence_duration_ms = env->GetIntField(jVadParamsObj, env->GetFieldID(vadCls, "min_silence_duration_ms", "I"));
+  vadParams.max_speech_duration_s = env->GetFloatField(jVadParamsObj, env->GetFieldID(vadCls, "max_speech_duration_s", "F"));
+  vadParams.speech_pad_ms = env->GetIntField(jVadParamsObj, env->GetFieldID(vadCls, "speech_pad_ms", "I"));
+  vadParams.samples_overlap = env->GetFloatField(jVadParamsObj, env->GetFieldID(vadCls, "samples_overlap", "F"));
+  // Set and return
+  params.vad_params = vadParams;
+  
+  // Release jPath (out VAD model string)
+  // ^ nah we release that with the context
+  //env->ReleaseStringUTFChars(jPath, params.vad_model_path);
+  
   return params;
 }
 

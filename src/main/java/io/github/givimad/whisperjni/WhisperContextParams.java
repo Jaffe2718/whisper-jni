@@ -6,15 +6,17 @@ package io.github.givimad.whisperjni;
  * @author Miguel Alvarez Díez - Initial contribution
  */
 public class WhisperContextParams {
-    /**
-     * Enables GPU usage.
-     */
-    public boolean useGPU = true;
-
-    /**
-     * Public constructor.
-     */
-    public WhisperContextParams() {
-
-    }
+	
+	/**
+	 * Enables GPU usage.
+	 */
+	public boolean useGPU = true;
+	
+	/**
+	 * Public constructor.
+	 */
+	public WhisperContextParams()
+	{
+		
+	}
 }
