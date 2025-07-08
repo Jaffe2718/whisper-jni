@@ -146,7 +146,7 @@ struct whisper_full_params newWhisperFullParams(JNIEnv *env, jobject jParams)
   // VAD
   params.vad = (jboolean)env->GetBooleanField(jParams, env->GetFieldID(paramsJClass, "vad", "Z"));
   jstring jPath = (jstring) env->GetObjectField(jParams, env->GetFieldID(paramsJClass, "vad_model_path", "Ljava/lang/String;"));
-  params.vad_model_path = env->GetStringUTFChars(jPath, nullptr);
+  params.vad_model_path = jPath == NULL ? nullptr : env->GetStringUTFChars(jPath, NULL);
   
   // VAD arams
   whisper_vad_params vadParams = whisper_vad_default_params();

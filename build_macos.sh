@@ -22,11 +22,17 @@ INCLUDE_JAVA="-I $JAVA_HOME/include -I $JAVA_HOME/include/darwin"
 TARGET=$AARCH-apple-macosx$TARGET_VERSION
 TARGET_DIR=src/main/resources/mac-$AARCH_NAME
 TMP_DIR=src/main/resources/tmp-mac-$AARCH_NAME
+
 mkdir -p $TMP_DIR
+# Static linking seems to be a pain in the ass
 cmake -Bbuild -DCMAKE_INSTALL_PREFIX=$TMP_DIR -DCMAKE_OSX_DEPLOYMENT_TARGET=$TARGET_VERSION -DCMAKE_OSX_ARCHITECTURES=$AARCH
 cmake --build build --config Release
 cmake --install build
 rm -rf build
+
+# Clear target dir of old libs
+rm -f $TARGET_DIR/*.dylib
+
 cp $TMP_DIR/*.dylib $TARGET_DIR
 #cp $TMP_DIR/libwhisper.1.dylib $TARGET_DIR
 #cp $TMP_DIR/libwhisper-jni.dylib $TARGET_DIR

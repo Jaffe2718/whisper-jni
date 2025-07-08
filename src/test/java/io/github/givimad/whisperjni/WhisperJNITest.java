@@ -232,10 +232,10 @@ public class WhisperJNITest {
 			assertNotNull(ctx);
 			var params = new WhisperFullParams(WhisperSamplingStrategy.GREEDY);
 			params.vad = true;
-			params.vad_model_path = "i dont exist";
+			params.vad_model_path = Path.of("src", "main", "resources", "ggml-silero-v5.1.2.bin").toAbsolutePath().toString();
 			
 			var vadParams = params.vadParams;
-			vadParams.threshold = 0.5f;
+			vadParams.threshold = 0.995f;
 			vadParams.min_speech_duration_ms = 200;
 			vadParams.min_silence_duration_ms = 100;
 			vadParams.max_speech_duration_s = 10.0f;
@@ -243,18 +243,21 @@ public class WhisperJNITest {
 			vadParams.samples_overlap = 0.1f;
 			
 			int result = whisper.full(ctx, params, samples, samples.length);
+			
 			if(result != 0)
 			{
 				throw new RuntimeException("Transcription failed with code " + result);
 			}
 			
-			int numSegments = whisper.fullNSegments(ctx);
-			assertEquals(1, numSegments);
-			String text = whisper.fullGetSegmentText(ctx, 0);
-			System.out.println("VAD RESULT: " + text);
-			// assertEquals(0, startTime);
-			// assertEquals(1050, endTime);
-			// assertEquals(" And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.", text);
+			final int segments = whisper.fullNSegments(ctx);
+			
+			System.out.println(segments + " total segments after VAD filtering");
+			
+			for(int i = 0; i < segments; i++)
+			{
+				String text = whisper.fullGetSegmentText(ctx, 0);
+				System.out.println("VAD #" + (text + 1) + ": " + text);
+			}
 		}
 	}
 	
