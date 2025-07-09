@@ -3,7 +3,7 @@ FROM gradle:8.12.1-jdk21 as builder
 
 # Install additional dependencies
 USER root
-RUN apt-get update && apt-get install -y git build-essential make
+RUN apt-get update && apt-get install -y git build-essential cmake
 
 # Optionally get newer CMake (if needed for your build_debian.sh)
 #RUN curl -s https://apt.kitware.com/kitware-archive.sh | bash -s
