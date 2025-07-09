@@ -19,6 +19,8 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.github.givimad.whisperjni.internal.LibraryUtils;
 
@@ -31,6 +33,8 @@ public class WhisperJNITest {
 	private static Path sampleChessGrammar = Path.of("src/main/native/whisper/grammars/chess.gbnf");
 	private static Path sampleColorsGrammar = Path.of("src/main/native/whisper/grammars/colors.gbnf");
 	private static WhisperJNI whisper;
+	
+	private static Logger logger = LoggerFactory.getLogger(WhisperJNITest.class);
 	
 	@BeforeAll
 	public static void beforeAll() throws IOException
@@ -48,8 +52,8 @@ public class WhisperJNITest {
 		}
 		
 		// This doesn't check if we have Vulkan natives in the local dir
-		// So if you can use vulkan, you better! Run the vulkan build script
-		if(LibraryUtils.canUseVulkan())
+		// So if you have vulkan, you better use the natives! Run the vulkan build script
+		if(LibraryUtils.canUseVulkan(logger))
 		{
 			LibraryUtils.loadVulkan();
 		}
@@ -146,11 +150,11 @@ public class WhisperJNITest {
 					throw new RuntimeException("Transcription failed with code " + result);
 				}
 				long timeTook = (System.currentTimeMillis() - timer);
-				System.out.println("Took " + timeTook + "ms (run " + i + ")");
+				logger.info("Took {}ms (run #{})", timeTook , i);
 				totalTime += timeTook;
 			}
 			
-			System.out.println("AVERAGE TIME:: " + (totalTime / totalRuns));
+			logger.info("AVERAGE TIME:: {}", (totalTime / totalRuns));
 		}
 	}
 	
@@ -180,7 +184,7 @@ public class WhisperJNITest {
 				
 				for(TokenData token : tokens)
 				{
-					System.out.println("TOKEN:: '" + token.token);
+					logger.info("TOKEN: '{}'", token.token);
 				}
 			}
 		}
@@ -216,7 +220,7 @@ public class WhisperJNITest {
 					
 					for(TokenData token : tokens)
 					{
-						System.out.println("TOKEN: '" + token);
+						logger.info("TOKEN: '{}'", token);
 					}
 				}
 			}
@@ -251,12 +255,12 @@ public class WhisperJNITest {
 			
 			final int segments = whisper.fullNSegments(ctx);
 			
-			System.out.println(segments + " total segments after VAD filtering");
+			logger.info("{} total segments after VAD filtering", segments);
 			
 			for(int i = 0; i < segments; i++)
 			{
 				String text = whisper.fullGetSegmentText(ctx, 0);
-				System.out.println("VAD #" + (i + 1) + ": " + text);
+				logger.info("VAD #{}: {}", i + 1, text);
 			}
 		}
 	}
@@ -391,7 +395,7 @@ public class WhisperJNITest {
 	{
 		String whisperCPPSystemInfo = whisper.getSystemInfo();
 		assertFalse(whisperCPPSystemInfo.isBlank());
-		System.out.println("whisper.cpp library info: " + whisperCPPSystemInfo);
+		logger.info("whisper.cpp library info: {}", whisperCPPSystemInfo);
 	}
 	
 	@Test

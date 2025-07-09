@@ -8,6 +8,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -226,7 +227,7 @@ public class LibraryUtils {
 	 */
 	public static void loadVulkan(Logger logger)
 	{
-		if(!canUseVulkan())
+		if(!canUseVulkan(logger))
 			throw new IllegalStateException("This system can't use Vulkan natives");
 		
 		logger.info("Loading Vulkan natives for whisper-jni");
@@ -234,9 +235,10 @@ public class LibraryUtils {
 		try
 		{
 			// First load vulkan-1.dll
-			String vulkanPath = getVulkanDLL().toAbsolutePath().toString();
-			logger.info("Loading Vulkan DLL at {}", vulkanPath);
-			System.load(vulkanPath);
+			// ^ nah. It better be on the damn path
+//			String vulkanPath = getVulkanDLL().toAbsolutePath().toString();
+//			logger.info("Loading Vulkan DLL at {}", vulkanPath);
+//			System.load(vulkanPath);
 			
 			// Now load our dependencies in this specific order
 			/// ^ nvm, whisper-jni has private dependencies
@@ -250,7 +252,7 @@ public class LibraryUtils {
 			String whisperJNIPath = tempDir.resolve("whisper-jni.dll").toAbsolutePath().toString();
 			logger.info("Loading Whisper JNI at {}", whisperJNIPath);
 			System.load(whisperJNIPath);
-//			loadInOrder(logger, tempDir);
+			// loadInOrder(logger, tempDir);
 		} catch(Exception e)
 		{
 			logger.error("Failed to load Vulkan natives", e);
@@ -327,29 +329,70 @@ public class LibraryUtils {
 	 * 
 	 * @return true if this system can use Vulkan, false otherwise
 	 */
-	public static boolean canUseVulkan()
+	public static boolean canUseVulkan(Logger logger)
 	{
-		return isWindows() && getArchitecture().equals("x64") && getVulkanDLL() != null;
+		logger.debug("Checking if client can use Vulkan");
+		return isWindows() && getArchitecture().equals("x64") && isVulkanOnPath(logger);
 	}
 	
 	/**
-	 * A system with <code>vulkan-1.dll</code> present on their SystemRoot indicates it can use Vulkan.
+	 * Checks if <code>vulkan-1.dll</code> is on the path.
 	 * 
-	 * @return path to <code>vulkan-1.dll</code>, or <code>null</code> if not found
+	 * @return true if Vulkan is available on the path
 	 */
-	public static Path getVulkanDLL()
+	private static boolean isVulkanOnPath(Logger logger)
 	{
-		// do I bother checking SysWOW64?? I thought this was x64 only
-		List<Path> commonPaths = List.of(Path.of(System.getenv("SystemRoot"), "System32", "vulkan-1.dll"), Path.of(System.getenv("SystemRoot"), "SysWOW64", "vulkan-1.dll"));
+		String path = System.getenv("PATH");
+		logger.debug("Path: {}", path);
 		
-		for(Path path : commonPaths)
+		// Edge case
+		if(path == null || path.isEmpty())
 		{
-			if(Files.exists(path))
+			return false;
+		}
+		
+		for(String entry : path.split(";"))
+		{
+			logger.debug("Path entry: {}", entry);
+			
+			try
 			{
-				return path;
+				Path dllPath = Path.of(entry.trim(), "vulkan-1.dll");
+				
+				if(Files.exists(dllPath))
+				{
+					return true;
+				}
+			} catch(InvalidPathException e)
+			{
+				logger.warn("Invalid path entry at {}", entry, e);
 			}
 		}
 		
-		return null;
+		logger.warn("Unable to find Vulkan on path");
+		return false;
 	}
+	
+	// /**
+	// * A system with <code>vulkan-1.dll</code> present on their SystemRoot indicates it can use Vulkan.
+	// *
+	// * @return path to <code>vulkan-1.dll</code>, or <code>null</code> if not found
+	// */
+	// public static Path getVulkanDLL()
+	// {
+	// System.loadLibrary("vulkan-1.dll");
+	// // do I bother checking SysWOW64?? I thought this was x64 only
+	// List<Path> commonPaths = List.of(Path.of(System.getenv("SystemRoot"), "System32", "vulkan-1.dll"), Path.of(System.getenv("SystemRoot"), "SysWOW64",
+	// "vulkan-1.dll"));
+	//
+	// for(Path path : commonPaths)
+	// {
+	// if(Files.exists(path))
+	// {
+	// return path;
+	// }
+	// }
+	//
+	// return null;
+	// }
 }
