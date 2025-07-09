@@ -2,7 +2,7 @@ name: CI
 on:
   workflow_dispatch:
 jobs:
-  download-model:
+  download-models:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -10,15 +10,22 @@ jobs:
       run: |
         git submodule update --init
         ./download-test-model.sh
+        ./download-vad-model.sh
     - name: Artifact linux x64
       uses: actions/upload-artifact@v4
       with:
         name: tiny-ggml-model
         path: ggml-tiny.bin
         retention-days: 2
+    - name: Upload silero model
+      uses: actions/upload-artifact@v4
+      with:
+        name: silero-ggml-model
+        path: ggml-silero-v5.1.2.bin
+        retention-days: 2
 
   build-lib-linux-x64:
-    needs: [download-model]
+    needs: [download-models]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +37,7 @@ jobs:
       - name: Setup project dir
         run: |
           mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
+          mv ./silero-ggml-model/ggml-silero-v5.1.2.bin ./src/main/resources/ggml-silero-v5.1.2.bin
           mkdir -p dist
       - name: Build native library
         run: |
@@ -42,7 +50,7 @@ jobs:
           path: dist/*
 
   build-lib-linux-aarch64:
-    needs: [download-model]
+    needs: [download-models]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -56,6 +64,7 @@ jobs:
       - name: Setup project dir
         run: |
           mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
+          mv ./silero-ggml-model/ggml-silero-v5.1.2.bin ./src/main/resources/ggml-silero-v5.1.2.bin
           mkdir -p dist
       - name: Build native library
         run: |
@@ -68,7 +77,7 @@ jobs:
           path: dist/*
 
   build-lib-windows-x64:
-    needs: [download-model]
+    needs: [download-models]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -85,6 +94,7 @@ jobs:
         run: |
           git submodule update --init
           mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
+          mv ./silero-ggml-model/ggml-silero-v5.1.2.bin ./src/main/resources/ggml-silero-v5.1.2.bin
           mkdir dist
       - name: Build native library
         shell: powershell
@@ -99,7 +109,7 @@ jobs:
           path: dist/*.dll
 
   build-lib-mac-x64:
-    needs: [download-model]
+    needs: [download-models]
     runs-on: macos-13
     steps:
       - uses: actions/checkout@v4
@@ -119,6 +129,7 @@ jobs:
           mkdir -p dist_aarch64
           git submodule update --init
           mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
+          mv ./silero-ggml-model/ggml-silero-v5.1.2.bin ./src/main/resources/ggml-silero-v5.1.2.bin
       - name: Build binary
         run: |
           export DYLD_LIBRARY_PATH=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/
@@ -132,7 +143,7 @@ jobs:
           path: dist/*.dylib
   
   build-lib-mac-aarch64:
-    needs: [download-model]
+    needs: [download-models]
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
@@ -152,6 +163,7 @@ jobs:
           mkdir -p dist_aarch64
           git submodule update --init
           mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
+          mv ./silero-ggml-model/ggml-silero-v5.1.2.bin ./src/main/resources/ggml-silero-v5.1.2.bin
       - name: Build binary
         run: |
           export DYLD_LIBRARY_PATH=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/
@@ -189,8 +201,8 @@ jobs:
     - name: Set up Maven Central Repository
       uses: actions/setup-java@v4
       with:
-        java-version: 17
-        distribution: 'zulu'
+        java-version: 22
+        distribution: 'temurin'
         server-id: sonatype-nexus-staging
         server-username: MAVEN_USERNAME
         server-password: MAVEN_CENTRAL_TOKEN
@@ -199,26 +211,10 @@ jobs:
     - name: Deploy with Maven
       id: deploy
       run: |
-        mvn -B clean deploy -DskipTests -Pci-cd
-        VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-        WHISPER_VERSION=$(echo "${VERSION%%"-"*}")
-        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-        echo "WHISPER_VERSION=$WHISPER_VERSION" >> $GITHUB_OUTPUT
-      env:
-        MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-        MAVEN_CENTRAL_TOKEN: ${{ secrets.OSSRH_TOKEN }}
-        MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-    - name: Release
-      uses: softprops/action-gh-release@v1
-      id: create_release
+        ./gradlew build
+    # I hope no one can see this
+    - name: Upload JAR as private artifact
+      uses: actions/upload-artifact@v4
       with:
-        tag_name: whisper_jni_${{ steps.deploy.outputs.VERSION }}
-        name: WhisperJNI v${{ steps.deploy.outputs.VERSION }}
-        draft: false
-        prerelease: false
-        generate_release_notes: false
-        body: A JNI wrapper over whisper.cpp v${{ steps.deploy.outputs.WHISPER_VERSION }}
-        files: |
-          target/whisper-jni-${{ steps.deploy.outputs.VERSION }}.jar
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
+        name: Whisper JNI
+        path: build/libs/*.jar

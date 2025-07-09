@@ -9,23 +9,7 @@ pfx="resolve/main/ggml"
 BOLD="\033[1m"
 RESET='\033[0m'
 
-# get the path of this script
-get_script_path() {
-    if [ -x "$(command -v realpath)" ]; then
-        dirname "$(realpath "$0")"
-    else
-        _ret="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 || exit ; pwd -P)"
-        echo "$_ret"
-    fi
-}
-
-script_path="$(get_script_path)"
-
-# Check if the script is inside a /bin/ directory
-case "$script_path" in
-    */bin) default_download_path="$PWD" ;;  # Use current directory as default download path if in /bin/
-    *) default_download_path="$script_path" ;;  # Otherwise, use script directory
-esac
+default_download_path=src/main/resources
 
 models_path="${2:-$default_download_path}"
 
