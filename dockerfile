@@ -13,7 +13,6 @@ RUN apt-get update && apt-get install -y git build-essential make
 WORKDIR /app
 COPY ggml-tiny.bin .
 COPY build.gradle .
-COPY settings.gradle .
 COPY CMakeLists.txt .
 COPY .git ./.git
 COPY src ./src
