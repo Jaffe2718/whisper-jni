@@ -1,3 +1,6 @@
+# Don't think this matters
+FROM ubuntu:20.04
+
 # Install additional dependencies
 USER root
 RUN apt-get update && apt-get install -y git build-essential cmake
