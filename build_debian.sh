@@ -7,7 +7,7 @@ build_lib() {
   cmake --build build --config Release
   cmake --install build
   mkdir -p "$TARGET_DIR"
-  # copy *all* .so, .so.1, .so.2 … that were installed
+  # copy all .so, .so.1, .so.2 that were installed
   cp "$TMP_DIR"/*.so*  "$TARGET_DIR"/
   # if you still need the libggml‑variant rename, do it after the mass‑copy:
   if [[ -n "$LIB_VARIANT" && -f "$TARGET_DIR/libggml.so" ]]; then

@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -57,10 +58,10 @@ public class LibraryUtils {
 		loadInOrder(logger, tempLib);
 	}
 	
-	private static void loadInOrder(Logger logger, Path tempDir)
+	private static void loadInOrder(Logger logger, Path tempDir) throws IOException
 	{
 		// Now load everything in the correct order
-		Stream.of(tempDir.toFile().listFiles()).sorted(Comparator.comparing(file ->
+		List<String> natives = Stream.of(tempDir.toFile().listFiles()).sorted(Comparator.comparing(file ->
 		{
 			for(int i = 0; i < loadOrder.size(); i++)
 			{
@@ -72,11 +73,23 @@ public class LibraryUtils {
 			}
 			
 			return Integer.MAX_VALUE; // unknown files go last
-		})).map(file -> file.getAbsolutePath()).filter(file -> Stream.of(LIB_NAMES).anyMatch(suffix -> file.endsWith(suffix))).forEach(path ->
+		})).map(file -> file.getAbsolutePath()).filter(file -> Stream.of(LIB_NAMES).anyMatch(suffix -> file.matches(".*\\" + suffix + "(\\.\\d+)*$"))).collect(Collectors.toUnmodifiableList());
+		
+		// ^ collecting into a list because the consumer doesn't declare IOException
+		for(String path : natives)
 		{
 			logger.info("Loading {}", path);
-			System.load(path);
-		});
+			
+			try
+			{
+				System.load(path);
+			} catch(Exception e)
+			{
+				// Pass into parent
+				logger.error("Failed to load {}. Is the loading order incorrect?", path, e);
+				throw new IOException(e);
+			}
+		}
 	}
 	
 	/**
@@ -236,9 +249,9 @@ public class LibraryUtils {
 		{
 			// First load vulkan-1.dll
 			// ^ nah. It better be on the damn path
-//			String vulkanPath = getVulkanDLL().toAbsolutePath().toString();
-//			logger.info("Loading Vulkan DLL at {}", vulkanPath);
-//			System.load(vulkanPath);
+			// String vulkanPath = getVulkanDLL().toAbsolutePath().toString();
+			// logger.info("Loading Vulkan DLL at {}", vulkanPath);
+			// System.load(vulkanPath);
 			
 			// Now load our dependencies in this specific order
 			/// ^ nvm, whisper-jni has private dependencies
