@@ -1,6 +1,9 @@
 # Don't think this matters
 FROM ubuntu:20.04
 
+# Disable interactive prompts for apt-get
+ENV DEBIAN_FRONTEND=noninteractive
+
 # Install additional dependencies
 USER root
 RUN apt-get update && apt-get install -y git build-essential cmake
