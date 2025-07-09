@@ -14,38 +14,7 @@ default_download_path=src/main/resources
 models_path="${2:-$default_download_path}"
 
 # Whisper VAD models
-models="silero-v5.1.2"
-
-# list available models
-list_models() {
-    printf "\n"
-    printf "Available models:"
-    model_class=""
-    for model in $models; do
-        this_model_class="${model%%[.-]*}"
-        if [ "$this_model_class" != "$model_class" ]; then
-            printf "\n "
-            model_class=$this_model_class
-        fi
-        printf " %s" "$model"
-    done
-    printf "\n\n"
-}
-
-if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
-    printf "Usage: %s <model> [models_path]\n" "$0"
-    list_models
-    exit 1
-fi
-
-model=$1
-
-if ! echo "$models" | grep -q -w "$model"; then
-    printf "Invalid model: %s\n" "$model"
-    list_models
-
-    exit 1
-fi
+model="silero-v5.1.2"
 
 # download ggml model
 printf "Downloading ggml model %s from '%s' ...\n" "$model" "$src"
