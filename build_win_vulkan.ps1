@@ -1,8 +1,10 @@
 # THIS IS MEANT TO BE RUN IN THE ROOT OF THE REPO, WHERE YOU INIT SUBMODULE FIRST
 # ... since whisper JNI builds whisper anyways this top part of this script might not be necessary anymore
-$buildDir = "src/main/resources/windows-x64-vulkan"
+$buildDir = "src/main/resources/windows-x64-vulkan-build"
+$releaseDir = "src/main/resources/windows-x64-vulkan"
+
 mkdir $buildDir -Force
-#rm -r -fo .\src\main\resources\win-vulkan-x64\whisper-jni.dll
+mkdir $releaseDir -Force
 
 echo $buildDir
 echo "Building JNI"
@@ -13,15 +15,11 @@ cmake --build build --config Release
 cmake --install build --config Release
 
 # move DLLs from whisper vulkan build to win-vulkan-x64-build
-Copy-Item -Path src\main\native\whisper\build\bin\Release\ggml.dll -Destination $buildDir -Force
-Copy-Item -Path src\main\native\whisper\build\bin\Release\ggml-base.dll -Destination $buildDir -Force
-Copy-Item -Path src\main\native\whisper\build\bin\Release\ggml-cpu.dll -Destination $buildDir -Force
-Copy-Item -Path src\main\native\whisper\build\bin\Release\ggml-vulkan.dll -Destination $buildDir -Force
-Copy-Item -Path src\main\native\whisper\build\bin\Release\whisper.dll -Destination $buildDir -Force
+Copy-Item -Path "$buildDir"/*.dll -Destination $releaseDir -Force
 
-rm -r -fo build
-
+# I don't think cleanup is necessary in GH actions cause we're just uploading the release dir
+#rm -r -fo build
 # We don't need the .lib
-rm -r -fo "$buildDir/*lib"
-rm -r -fo "$buildDir/cmake"
-rm -r -fo "$buildDir/pkgconfig"
+#rm -r -fo "$buildDir/*lib"
+#rm -r -fo "$buildDir/cmake"
+#rm -r -fo "$buildDir/pkgconfig"
