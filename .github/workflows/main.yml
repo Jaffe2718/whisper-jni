@@ -57,12 +57,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      - name: Docker Setup Buildx
-        uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
         with:
           install: true
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 22
+          distribution: 'temurin'
       - name: Setup project dir
         run: |
           mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
@@ -73,10 +75,7 @@ jobs:
           docker build -f dockerfile . -t whisperjni_binary:aarch64 --platform arm64 --load
           DOCKER_BUILDKIT=1 docker run --platform=arm64 -v $(pwd)/dist:/out whisperjni_binary:aarch64 bash -c "cp src/main/resources/linux-aarch64/* /out/"
       - name: Test
-        uses: actions/setup-java@v4
-        with:
-          java-version: 22
-          distribution: 'temurin'
+        run: ./gradlew test
       - name: Artifact linux aarch64
         uses: actions/upload-artifact@v4
         with:
@@ -102,10 +101,7 @@ jobs:
         shell: powershell
         run: .\build_win.ps1
       - name: Test
-        uses: actions/setup-java@v4
-        with:
-          java-version: 22
-          distribution: 'temurin'
+        run: ./gradlew test
       - name: Artifact windows x64
         uses: actions/upload-artifact@v4
         with:
@@ -116,10 +112,13 @@ jobs:
     needs: [download-models]
     runs-on: windows-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           submodules: recursive
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 22
+          distribution: 'temurin'
       - name: Install Vulkan SDK
         uses: humbletim/install-vulkan-sdk@v1.2
         with:
@@ -129,10 +128,6 @@ jobs:
         run: .\build_win_vulkan.ps1
         shell: powershell
       - name: Test
-        uses: actions/setup-java@v4
-        with:
-          java-version: 22
-          distribution: 'temurin'
         run: ./gradlew test
       - name: Upload Vulkan DLL artifact
         uses: actions/upload-artifact@v4
@@ -162,8 +157,9 @@ jobs:
         run: |
           export DYLD_LIBRARY_PATH=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/
           ./build_macos.sh x86-64
-          ./gradlew test
           mv src/main/resources/mac-x64/*.dylib dist/
+      - name: Test
+        run: ./gradlew test
       - name: Artifact macos x64
         uses: actions/upload-artifact@v4
         with:
@@ -192,8 +188,9 @@ jobs:
         run: |
           export DYLD_LIBRARY_PATH=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/
           ./build_macos.sh aarch64
-          ./gradlew test
           mv src/main/resources/mac-aarch64/*.dylib dist_aarch64/
+      - name: Test
+        run: ./gradlew test
       - name: Artifact macos aarch64
         uses: actions/upload-artifact@v4
         with:
