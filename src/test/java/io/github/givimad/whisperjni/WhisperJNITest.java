@@ -256,7 +256,7 @@ public class WhisperJNITest {
 			for(int i = 0; i < segments; i++)
 			{
 				String text = whisper.fullGetSegmentText(ctx, 0);
-				System.out.println("VAD #" + (text + 1) + ": " + text);
+				System.out.println("VAD #" + (i + 1) + ": " + text);
 			}
 		}
 	}
