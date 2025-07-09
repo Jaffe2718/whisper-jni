@@ -213,7 +213,7 @@ jobs:
 
   deploy:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [build-lib-linux-x64,build-lib-linux-aarch64,build-lib-windows-x64,build-lib-mac-x64, build-lib-mac-aarch64]
+    needs: [build-windows-vulkan,build-lib-linux-x64,build-lib-linux-aarch64,build-lib-windows-x64,build-lib-mac-x64, build-lib-mac-aarch64]
     runs-on: ubuntu-latest
     permissions:
       contents: write
