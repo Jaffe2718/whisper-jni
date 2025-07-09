@@ -14,6 +14,7 @@ COPY ggml-tiny.bin .
 COPY CMakeLists.txt .
 COPY .git ./.git
 COPY src ./src
+COPY build.gradle .
 COPY build_debian.sh .
 
 # Init submodules
@@ -22,5 +23,5 @@ RUN git submodule update --init
 # Optional: run custom native build
 RUN ./build_debian.sh
 
-# Test
-RUN ./gradlew test
+# Test. We use the gradle tool not the wrapper (we're not copying the entire project in)
+RUN gradle test
