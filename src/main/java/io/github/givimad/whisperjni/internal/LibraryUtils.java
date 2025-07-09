@@ -153,9 +153,9 @@ public class LibraryUtils {
 	// }
 	// }
 	
-	public static Path extractFolderToTemp(Logger log, String folderName) throws IOException
+	public static Path extractFolderToTemp(Logger logger, String folderName) throws IOException
 	{
-		log.info("Extracting libs from {} (OS: {}, arch: {})", folderName, OS_NAME, OS_ARCH);
+		logger.info("Extracting libs from {} (OS: {}, arch: {})", folderName, OS_NAME, OS_ARCH);
 		
 		URI folderUri;
 		try
@@ -166,7 +166,7 @@ public class LibraryUtils {
 			throw new IOException("Resource '" + folderName + "' not found on classpath", e);
 		}
 		
-		log.info("Folder URI: {}", folderUri);
+		logger.info("Folder URI: {}", folderUri);
 		Path originDir;
 		FileSystem fs = null;
 		
@@ -181,29 +181,32 @@ public class LibraryUtils {
 			}
 			
 			originDir = fs.getPath("/" + folderName);
-			log.debug("Resource is inside JAR: {}", folderUri);
+			logger.debug("Resource is inside JAR: {}", folderUri);
 		}
 		else
 		{
 			originDir = Paths.get(folderUri);
-			log.debug("Resource is a directory on disk: {}", originDir);
+			logger.debug("Resource is a directory on disk: {}", originDir);
 		}
 		
 		Path tmpDir = Files.createTempDirectory("whisperjni_");
-		log.info("Copying natives to temporary dir {}", tmpDir);
+		logger.info("Copying natives to temporary dir {}", tmpDir);
 		
 		Files.walk(originDir).forEach(p ->
 		{
 			try
 			{
 				Path dest = tmpDir.resolve(originDir.relativize(p).toString());
+				
+				// Should never happen but because Files.walk traverses depth-first this would properly copy everything by making the parent folders first
 				if(Files.isDirectory(p))
 				{
 					Files.createDirectories(dest);
 				}
 				else
 				{
-					Files.createDirectories(dest.getParent());
+					Files.createDirectories(dest.getParent()); // probably unnecessary
+					logger.debug("Copying {} to {}", p, dest);
 					Files.copy(p, dest, StandardCopyOption.REPLACE_EXISTING);
 				}
 			} catch(IOException ex)
@@ -212,7 +215,7 @@ public class LibraryUtils {
 			}
 		});
 		
-		log.info("Finished extracting natives");
+		logger.info("Finished extracting natives");
 		return tmpDir;
 	}
 	
@@ -243,8 +246,11 @@ public class LibraryUtils {
 			// System.load(tempDir.resolve("ggml-vulkan.dll").toAbsolutePath().toString());
 			// System.load(tempDir.resolve("ggml.dll").toAbsolutePath().toString());
 			// System.load(tempDir.resolve("whisper.dll").toAbsolutePath().toString());
-			System.load(tempDir.resolve("whisper-jni.dll").toAbsolutePath().toString());
-			loadInOrder(logger, tempDir);
+			// Statically built now yippie!!
+			String whisperJNIPath = tempDir.resolve("whisper-jni.dll").toAbsolutePath().toString();
+			logger.info("Loading Whisper JNI at {}", whisperJNIPath);
+			System.load(whisperJNIPath);
+//			loadInOrder(logger, tempDir);
 		} catch(Exception e)
 		{
 			logger.error("Failed to load Vulkan natives", e);

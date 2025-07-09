@@ -37,6 +37,7 @@ public class WhisperJNITest {
 	{
 		var modelFile = testModelPath.toFile();
 		var sampleFile = samplePath.toFile();
+		
 		if(!modelFile.exists() || !modelFile.isFile())
 		{
 			throw new RuntimeException("Missing model file: " + testModelPath.toAbsolutePath());
@@ -46,9 +47,10 @@ public class WhisperJNITest {
 			throw new RuntimeException("Missing sample file");
 		}
 		
-		// We have to run 2 different tests in order to test Vulkan, IF on windows
-		// .. im not gonna deal with this rn
+		// Honestly you could just check the folders and see if we have one or the other but I think this is cleaner
 		boolean useVulkan = System.getProperty("whisper.backend", "cpu").equals("vulkan");
+		System.out.println("Use vulkan: " + useVulkan);
+		
 		if(useVulkan && LibraryUtils.canUseVulkan())
 		{
 			LibraryUtils.loadVulkan();
