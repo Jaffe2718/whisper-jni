@@ -185,20 +185,26 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Download Vulkan SDK installer (v1.4.313.0)
-        run: |
-          Invoke-WebRequest -Uri https://sdk.lunarg.com/sdk/download/1.4.313.0/windows/vulkansdk-windows-X64-1.4.313.0.exe -OutFile VulkanSDK-Installer.exe
-        shell: powershell
+      # - name: Download Vulkan SDK installer (v1.4.313.0)
+      #   run: |
+      #     Invoke-WebRequest -Uri https://sdk.lunarg.com/sdk/download/1.4.313.0/windows/vulkansdk-windows-X64-1.4.313.0.exe -OutFile VulkanSDK-Installer.exe
+      #   shell: powershell
+      - name: Prepare Vulkan SDK
+        uses: humbletim/setup-vulkan-sdk@v1.2.1
+        with:
+          vulkan-query-version: 1.4.304.1
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-use-cache: true
 
-      - name: Install Vulkan SDK
-        run: |
-          Start-Process -Wait -FilePath VulkanSDK-Installer.exe -ArgumentList "/quiet", "/install"
-        shell: powershell
+      # - name: Install Vulkan SDK
+      #   run: |
+      #     Start-Process -Wait -FilePath VulkanSDK-Installer.exe -ArgumentList "/quiet", "/install"
+      #   shell: powershell
 
-      - name: Set VULKAN_SDK environment variable
-        run: |
-          echo "VULKAN_SDK=C:\VulkanSDK\1.4.313.0" >> $env:GITHUB_ENV
-        shell: powershell
+      # - name: Set VULKAN_SDK environment variable
+      #   run: |
+      #     echo "VULKAN_SDK=C:\VulkanSDK\1.4.313.0" >> $env:GITHUB_ENV
+      #   shell: powershell
 
       - name: Build
         run: |
