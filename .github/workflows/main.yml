@@ -11,7 +11,7 @@ jobs:
         git submodule update --init
         ./download-test-model.sh
         ./download-vad-model.sh
-      uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v4
       with:
         name: tiny-ggml-model
         path: ggml-tiny.bin
