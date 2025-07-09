@@ -11,7 +11,6 @@ jobs:
         git submodule update --init
         ./download-test-model.sh
         ./download-vad-model.sh
-    - name: Artifact linux x64
       uses: actions/upload-artifact@v4
       with:
         name: tiny-ggml-model
@@ -30,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
-        uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v3
         with:
           install: true
       - uses: actions/setup-java@v4
