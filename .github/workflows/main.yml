@@ -32,10 +32,6 @@ jobs:
       - uses: docker/setup-buildx-action@v3
         with:
           install: true
-      - uses: actions/setup-java@v4
-        with:
-          java-version: 22
-          distribution: 'temurin'
       - name: Setup project dir
         run: |
           mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
@@ -45,8 +41,6 @@ jobs:
         run: |
           docker build -f dockerfile . -t whisperjni_binary:x64 --load
           docker run --platform=amd64 -v $(pwd)/dist:/out whisperjni_binary:x64 bash -c "cp src/main/resources/linux-x64/* /out/"
-      - name: Test
-        run: ./gradlew test
       - name: Artifact linux x64
         uses: actions/upload-artifact@v4
         with:
@@ -63,10 +57,6 @@ jobs:
       - uses: docker/setup-buildx-action@v3
         with:
           install: true
-      - uses: actions/setup-java@v4
-        with:
-          java-version: 22
-          distribution: 'temurin'
       - name: Setup project dir
         run: |
           mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
@@ -76,8 +66,6 @@ jobs:
         run: |
           docker build -f dockerfile . -t whisperjni_binary:aarch64 --platform arm64 --load
           DOCKER_BUILDKIT=1 docker run --platform=arm64 -v $(pwd)/dist:/out whisperjni_binary:aarch64 bash -c "cp src/main/resources/linux-aarch64/* /out/"
-      - name: Test
-        run: ./gradlew test
       - name: Artifact linux aarch64
         uses: actions/upload-artifact@v4
         with:

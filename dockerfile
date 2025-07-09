@@ -1,5 +1,5 @@
 # Don't think this matters
-FROM ubuntu:20.04
+FROM gradle:8.12.1-jdk21 as builder
 
 # Disable interactive prompts for apt-get
 ENV DEBIAN_FRONTEND=noninteractive
@@ -21,3 +21,6 @@ RUN git submodule update --init
 
 # Optional: run custom native build
 RUN ./build_debian.sh
+
+# Test
+RUN ./gradlew test
