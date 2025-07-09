@@ -1,4 +1,4 @@
-name: CI
+name: Build Whisper JNI
 on:
   workflow_dispatch:
 jobs:
@@ -121,12 +121,19 @@ jobs:
       #   run: |
       #     Invoke-WebRequest -Uri https://sdk.lunarg.com/sdk/download/1.4.313.0/windows/vulkansdk-windows-X64-1.4.313.0.exe -OutFile VulkanSDK-Installer.exe
       #   shell: powershell
-      - name: Prepare Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.2.1
+      - name: Install Vulkan SDK
+        uses: humbletim/install-vulkan-sdk@v1.2
         with:
-          vulkan-query-version: 1.4.304.1
-          vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang, SPIRV-Tools
-          vulkan-use-cache: true
+          version: 1.4.309.0
+          cache: true
+
+          # Haven't had much success with this. We probably need to install the whole SDKß
+      # - name: Prepare Vulkan SDK
+      #   uses: humbletim/setup-vulkan-sdk@v1.2.1
+      #   with:
+      #     vulkan-query-version: 1.4.304.1
+      #     vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang, SPIRV-Tools
+      #     vulkan-use-cache: true
 
       # - name: Install Vulkan SDK
       #   run: |

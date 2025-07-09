@@ -1,15 +1,33 @@
-FROM maven:3.9.3-eclipse-temurin-17-focal
-# use kitware repo to get upper cmake version; fixes armv7l build
-RUN curl -s https://apt.kitware.com/kitware-archive.sh | bash -s
-RUN apt update && apt install -y git build-essential cmake
+# Browse at https://hub.docker.com/_/gradle/tags
+FROM gradle:8.12.1-jdk21 as builder
+
+# Install additional dependencies
+USER root
+RUN apt-get update && apt-get install -y git build-essential make
+
+# Optionally get newer CMake (if needed for your build_debian.sh)
+#RUN curl -s https://apt.kitware.com/kitware-archive.sh | bash -s
+#RUN apt-get update && apt-get install -y cmake
+
+# Copy necessary project files
+WORKDIR /app
 COPY ggml-tiny.bin .
-COPY pom.xml .
+COPY build.gradle .
+COPY settings.gradle .
 COPY CMakeLists.txt .
 COPY .git ./.git
 COPY src ./src
-RUN git submodule update --init
 COPY build_debian.sh .
+
+# Init submodules
+RUN git submodule update --init
+
+# Optional: run custom native build
 RUN ./build_debian.sh
+
+# Build project with Gradle
+#RUN gradle build
+
+# Optionally run tests if RUN_TESTS is set
 ARG RUN_TESTS
-# fix later
-# RUN if [ $(echo $RUN_TESTS) ]; then mvn  && echo "Done"; fi
+RUN if [ "$RUN_TESTS" = "true" ]; then gradle test; fi
