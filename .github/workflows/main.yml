@@ -123,7 +123,7 @@ jobs:
         run: .\build_win_vulkan.ps1
         shell: powershell
       - name: Test
-        run: ./gradlew test -Dwhisper.backend=vulkan
+        run: ./gradlew test "-Dwhisper.backend=vulkan"
       - name: Upload Vulkan DLL artifact
         uses: actions/upload-artifact@v4
         with:
