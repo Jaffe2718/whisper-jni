@@ -9,7 +9,7 @@ pfx="resolve/main/ggml"
 BOLD="\033[1m"
 RESET='\033[0m'
 
-default_download_path=src/main/resources
+default_download_path=./
 
 models_path="${2:-$default_download_path}"
 
