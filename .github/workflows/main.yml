@@ -30,10 +30,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
-      - name: Docker Setup Buildx
         uses: docker/setup-buildx-action@v3
         with:
           install: true
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 22
+          distribution: 'temurin'
       - name: Setup project dir
         run: |
           mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
