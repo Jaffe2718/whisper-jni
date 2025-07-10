@@ -50,7 +50,7 @@ jobs:
         uses: mikepenz/action-junit-report@v5
         if: success() || failure()
         with:
-          report_paths: '**/build/test-results/test/test-*.xml'
+          report_paths: '**/build/test-results/**/*.xml'
       - name: Artifact linux x64
         uses: actions/upload-artifact@v4
         with:
@@ -85,7 +85,7 @@ jobs:
         uses: mikepenz/action-junit-report@v5
         if: success() || failure()
         with:
-          report_paths: '**/build/test-results/test/test-*.xml'
+          report_paths: '**/build/test-results/**/*.xml'
       - name: Artifact linux aarch64
         uses: actions/upload-artifact@v4
         with:
@@ -116,7 +116,7 @@ jobs:
         uses: mikepenz/action-junit-report@v5
         if: success() || failure()
         with:
-          report_paths: '**/build/test-results/test/test-*.xml'
+          report_paths: '**/build/test-results/**/*.xml'
       - name: Artifact windows x64
         uses: actions/upload-artifact@v4
         with:
@@ -190,7 +190,7 @@ jobs:
         uses: mikepenz/action-junit-report@v5
         if: success() || failure()
         with:
-          report_paths: '**/build/test-results/test/test-*.xml'
+          report_paths: '**/build/test-results/**/*.xml'
       - name: Artifact macos x64
         uses: actions/upload-artifact@v4
         with:
@@ -225,7 +225,7 @@ jobs:
         uses: mikepenz/action-junit-report@v5
         if: success() || failure()
         with:
-          report_paths: '**/build/test-results/test/test-*.xml'
+          report_paths: '**/build/test-results/**/*.xml'
       - name: Artifact macos aarch64
         uses: actions/upload-artifact@v4
         with:
@@ -249,13 +249,16 @@ jobs:
         mv ./whisper-jni-vulkan/*.dll ./src/main/resources/windows-x64-vulkan/
         mv ./mac-binary-x64/*.dylib ./src/main/resources/mac-x64/
         mv ./mac-binary-aarch64/*.dylib ./src/main/resources/mac-aarch64/
+    - uses: actions/setup-java@v4
+      with:
+        java-version: 22
+        distribution: 'temurin'
     - name: Build
       run: ./gradlew clean build publish --stacktrace
     - name: Publish
       run: ./gradlew jreleaserDeploy --stacktrace
       env:
-        # Don't publish, just upload so I can review it
-        # JRELEASER_MAVENCENTRAL_STAGE: UPLOAD
+        JRELEASER_MAVENCENTRAL_STAGE: UPLOAD # Don't publish, just upload so I can review it
         JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.JRELEASER_MAVENCENTRAL_USERNAME }}
         JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.JRELEASER_MAVENCENTRAL_PASSWORD }}
         JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
