@@ -209,8 +209,9 @@ jobs:
         mv ./whisper-jni-vulkan/*.dll ./src/main/resources/windows-x64-vulkan/
         mv ./mac-binary-x64/*.dylib ./src/main/resources/mac-x64/
         mv ./mac-binary-aarch64/*.dylib ./src/main/resources/mac-aarch64/
-    - name: Build and publish
+    - name: Build
       run: ./gradlew clean build publish --stacktrace
+    - name: Publish
       run: ./gradlew jreleaserDeploy --stacktrace
       env:
         # Don't publish, just upload so I can review it
