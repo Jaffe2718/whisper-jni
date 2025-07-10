@@ -1,4 +1,4 @@
-name: Build Whisper JNI
+name: Build and publish
 on:
   workflow_dispatch:
 jobs:
@@ -195,14 +195,12 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     needs: [build-linux-x64, build-linux-aarch64, build-windows-x64, build-windows-vulkan, build-mac-x64, build-mac-aarch64]
-    permissions:
-      contents: write
     steps:
     - uses: actions/checkout@v4
     - uses: actions/download-artifact@v4
     - name: Check tree
       run: ls -R
-    - name: setup resources
+    - name: Move natives
       run: |
         mv ./silero-ggml-model/ggml-silero-v5.1.2.bin ./src/main/resources
         mv ./linux-binary-x64/*.so ./src/main/resources/linux-x64/
@@ -211,23 +209,14 @@ jobs:
         mv ./whisper-jni-vulkan/*.dll ./src/main/resources/windows-x64-vulkan/
         mv ./mac-binary-x64/*.dylib ./src/main/resources/mac-x64/
         mv ./mac-binary-aarch64/*.dylib ./src/main/resources/mac-aarch64/
-    - name: Set up Maven Central Repository
-      uses: actions/setup-java@v4
-      with:
-        java-version: 22
-        distribution: 'temurin'
-        server-id: sonatype-nexus-staging
-        server-username: MAVEN_USERNAME
-        server-password: MAVEN_CENTRAL_TOKEN
-        gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
-        gpg-passphrase: MAVEN_GPG_PASSPHRASE
-    - name: Deploy with Maven
-      id: deploy
-      run: |
-        ./gradlew build
-    # I hope no one can see this
-    - name: Upload JAR as private artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Whisper JNI
-        path: build/libs/*.jar
+    - name: Build and publish
+      run: ./gradlew clean build publish --stacktrace
+      run: ./gradlew jreleaserDeploy --stacktrace
+      env:
+        # Don't publish, just upload so I can review it
+        # JRELEASER_MAVENCENTRAL_STAGE: UPLOAD
+        JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.JRELEASER_MAVENCENTRAL_USERNAME }}
+        JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.JRELEASER_MAVENCENTRAL_PASSWORD }}
+        JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
+        JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.JRELEASER_GPG_PUBLIC_KEY }}
+        JRELEASER_GPG_SECRET_KEY: ${{ secrets.JRELEASER_GPG_SECRET_KEY }}

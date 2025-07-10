@@ -58,7 +58,7 @@ public class WhisperJNITest {
 		
 		// This doesn't check if we have Vulkan natives in the local dir
 		// So if you have vulkan, you better use the natives! Run the vulkan build script
-		if(LibraryUtils.canUseVulkan(logger))
+		if(LibraryUtils.canUseVulkan())
 		{
 			LibraryUtils.loadVulkan();
 		}

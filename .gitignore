@@ -9,9 +9,6 @@ src/main/resources/**/*.dylib
 src/main/resources/**/*.dll
 ggml-*.bin
 
-# Gradle
-gradle.properties
-
 ### IntelliJ IDEA ###
 .idea
 *.iws

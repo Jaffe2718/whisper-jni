@@ -33,7 +33,7 @@ public class LibraryUtils {
 	public static final String OS_ARCH = System.getProperty("os.arch").toLowerCase();
 	
 	/**
-	 * We need to load multiple files but all in order.
+	 * We need to load multiple files but all in order. This is only applicable to the libs that aren't statically linked.
 	 * 
 	 * <p>
 	 * Linux's ggml lib is named that insane string and happens to not get picked up in the correct order but somehow it still works
@@ -63,7 +63,7 @@ public class LibraryUtils {
 	}
 	
 	/**
-	 * Loads Vulkan natives with a default logger. Use {@link #canUseVulkan(Logger)} before calling this method.
+	 * Loads Vulkan natives with a default logger. Use {@link #canUseVulkan()} before calling this method.
 	 */
 	public static void loadVulkan()
 	{
@@ -252,27 +252,25 @@ public class LibraryUtils {
 	}
 	
 	/**
-	 * Loads Vulkan natives. Use {@link #canUseVulkan(Logger)} before calling this method.
+	 * Loads Vulkan natives. Use {@link #canUseVulkan()} before calling this method.
 	 * 
 	 * @param logger SLF4J {@link Logger}
 	 */
 	public static void loadVulkan(Logger logger)
 	{
-		if(!canUseVulkan(logger))
+		if(!canUseVulkan())
 			throw new IllegalStateException("This system can't use Vulkan natives");
 		
 		logger.info("Loading Vulkan natives for whisper-jni");
 		
 		try
 		{
-			// First load vulkan-1.dll
-			// ^ nah. It better be on the damn path
-			// String vulkanPath = getVulkanDLL().toAbsolutePath().toString();
-			// logger.info("Loading Vulkan DLL at {}", vulkanPath);
-			// System.load(vulkanPath);
+			String vulkanPath = getVulkanDLL().toAbsolutePath().toString();
+			logger.info("Loading Vulkan DLL at {}", vulkanPath);
+			System.load(vulkanPath);
 			
 			// Now load our dependencies in this specific order
-			/// ^ nvm, whisper-jni has private dependencies
+			/// ^ nvm, whisper-jni statically links everything
 			Path tempDir = extractFolderToTemp(logger, "windows-x64-vulkan");
 			// System.load(tempDir.resolve("ggml-base.dll").toAbsolutePath().toString());
 			// System.load(tempDir.resolve("ggml-cpu.dll").toAbsolutePath().toString());
@@ -292,53 +290,72 @@ public class LibraryUtils {
 	
 	/**
 	 * Use to determine if this system can custom-built Vulkan libs. Must be on Windows with a 64-bit processor, and <b>most importantly</b>
-	 * <code>vulkan-1.dll</code> on the path.
+	 * <code>vulkan-1.dll</code> at <code>/System32/vulkan-1.dll</code>.
 	 * 
-	 * @param logger SLF4J {@link Logger}
 	 * @return true if this system can use the Vulkan natives, false otherwise
 	 */
-	public static boolean canUseVulkan(Logger logger)
+	public static boolean canUseVulkan()
 	{
-		logger.debug("Checking if client can use Vulkan");
-		return isWindows() && getArchitecture().equals("x64") && isVulkanOnPath(logger);
+		return isWindows() && getArchitecture().equals("x64") && getVulkanDLL() != null;
 	}
 	
 	/**
-	 * Checks if <code>vulkan-1.dll</code> is on the path.
+	 * A system with <code>vulkan-1.dll</code> present on their SystemRoot indicates it can use Vulkan.
 	 * 
-	 * @param logger SLF4J {@link Logger}
-	 * @return true if Vulkan is available on the path
+	 * @return path to <code>vulkan-1.dll</code>, or <code>null</code> if not found
 	 */
-	private static boolean isVulkanOnPath(Logger logger)
+	public static Path getVulkanDLL()
 	{
-		String path = System.getenv("PATH");
-		logger.debug("Path: {}", path);
+		// do I bother checking SysWOW64?? I thought this was x64 only
+		List<Path> commonPaths = List.of(Path.of(System.getenv("SystemRoot"), "System32", "vulkan-1.dll"), Path.of(System.getenv("SystemRoot"), "SysWOW64", "vulkan-1.dll"));
 		
-		// Edge case
-		if(path == null || path.isEmpty())
+		for(Path path : commonPaths)
 		{
-			return false;
-		}
-		
-		for(String entry : path.split(";"))
-		{
-			logger.debug("Path entry: {}", entry);
-			
-			try
+			if(Files.exists(path))
 			{
-				Path dllPath = Path.of(entry.trim(), "vulkan-1.dll");
-				
-				if(Files.exists(dllPath))
-				{
-					return true;
-				}
-			} catch(InvalidPathException e)
-			{
-				logger.warn("Invalid path entry at {}", entry, e);
+				return path;
 			}
 		}
 		
-		logger.warn("Unable to find Vulkan on path");
-		return false;
+		return null;
 	}
+	
+	// /**
+	// * Checks if <code>vulkan-1.dll</code> is on the path.
+	// *
+	// * @param logger SLF4J {@link Logger}
+	// * @return true if Vulkan is available on the path
+	// */
+	// private static boolean isVulkanOnPath(Logger logger)
+	// {
+	// String path = System.getenv("PATH");
+	// logger.debug("Path: {}", path);
+	//
+	// // Edge case
+	// if(path == null || path.isEmpty())
+	// {
+	// return false;
+	// }
+	//
+	// for(String entry : path.split(";"))
+	// {
+	// logger.debug("Path entry: {}", entry);
+	//
+	// try
+	// {
+	// Path dllPath = Path.of(entry.trim(), "vulkan-1.dll");
+	//
+	// if(Files.exists(dllPath))
+	// {
+	// return true;
+	// }
+	// } catch(InvalidPathException e)
+	// {
+	// logger.warn("Invalid path entry at {}", entry, e);
+	// }
+	// }
+	//
+	// logger.warn("Unable to find Vulkan on path");
+	// return false;
+	// }
 }

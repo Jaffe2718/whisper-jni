@@ -49,6 +49,9 @@ publishing {
             from components.java
             
 	        pom {
+	            // Apparently you need to do this because it doesn't get autofilled (at least for description)
+	            name = project.name
+	            description = project.description
 	            url = 'https://github.com/FreshSupaSulley/whisper-jni'
 	            
 	            licenses {
@@ -81,10 +84,6 @@ publishing {
 }
 
 jreleaser {
-	environment {
-        variables = 'gradle.properties'
-    }
-    
     signing {
         active = 'ALWAYS'
         armored = true

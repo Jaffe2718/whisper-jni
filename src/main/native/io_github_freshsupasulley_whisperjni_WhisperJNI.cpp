@@ -446,7 +446,7 @@ JNIEXPORT void JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_free
 // Logging
 static jobject globalLoggerRef = NULL;
 static JavaVM* jvm = NULL;
- 
+
 static void whisper_log_proxy(enum ggml_log_level level, const char *text, void *user_data) {
     if (!jvm || !globalLoggerRef || !text) return;
     
@@ -491,11 +491,14 @@ static void whisper_log_proxy(enum ggml_log_level level, const char *text, void 
     }
     
     if (logMethod) {
-        jstring jMessage = env->NewStringUTF(text);
-        if (jMessage) {
-            env->CallVoidMethod(globalLoggerRef, logMethod, jMessage);
-            env->DeleteLocalRef(jMessage);
-        }
+		// Raw logs come with \n bs appended to them so we're going to call Java's .stripTrailing
+        jclass stringClass = env->FindClass("java/lang/String");
+        jmethodID stripTrailingMethod = env->GetMethodID(stringClass, "stripTrailing", "()Ljava/lang/String;");
+        jobject strippedMessage = env->CallObjectMethod(jMessage, stripTrailingMethod);
+        // Pass the stripped message to the logger
+        env->CallVoidMethod(globalLoggerRef, logMethod, strippedMessage);
+        env->DeleteLocalRef(strippedMessage);
+        env->DeleteLocalRef(stringClass);
     }
     
     env->DeleteLocalRef(jMessage);
