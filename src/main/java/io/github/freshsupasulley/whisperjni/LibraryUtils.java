@@ -141,6 +141,7 @@ public class LibraryUtils {
 				}
 			}
 			
+			logger.warn("File not handled in load order: {}", file);
 			return Integer.MAX_VALUE; // unknown files go last
 		})).map(file -> file.getAbsolutePath()).filter(file -> Stream.of(LIB_NAMES).anyMatch(suffix -> file.matches(".*\\" + suffix + "(\\.\\d+)*$"))).collect(Collectors.toUnmodifiableList());
 		
@@ -159,6 +160,8 @@ public class LibraryUtils {
 				throw new IOException(e);
 			}
 		}
+		
+		logger.info("Done loading natives");
 	}
 	
 	private static Path extractFolderToTemp(Logger logger, String folderName) throws IOException

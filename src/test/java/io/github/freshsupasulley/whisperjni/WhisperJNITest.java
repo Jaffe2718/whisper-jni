@@ -40,6 +40,7 @@ public class WhisperJNITest {
 	@BeforeAll
 	public static void beforeAll() throws IOException
 	{
+		System.out.println("/app/src/main/resources/linux/libwhisper.so.1.7.5".matches(".*\\.so(\\.\\d+)*$"));
 		var modelFile = testModelPath.toFile();
 		var sampleFile = samplePath.toFile();
 		

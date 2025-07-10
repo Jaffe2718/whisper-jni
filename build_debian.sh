@@ -9,9 +9,11 @@ build_lib() {
   mkdir -p "$TARGET_DIR"
   # copy all .so, .so.1, .so.2 that were installed
   cp "$TMP_DIR"/*.so*  "$TARGET_DIR"/
-  # if you still need the libggml‑variant rename, do it after the mass‑copy:
+  # Rename the optimized variant to libggml.so (overwriting default if needed)
   if [[ -n "$LIB_VARIANT" && -f "$TARGET_DIR/libggml.so" ]]; then
+      echo "Overwriting libggml.so with optimized variant: $LIB_VARIANT"
       mv "$TARGET_DIR/libggml.so" "$TARGET_DIR/libggml$LIB_VARIANT.so"
+      cp "$TARGET_DIR/libggml$LIB_VARIANT.so" "$TARGET_DIR/libggml.so"
   fi
   rm -rf "$TMP_DIR" build
 }

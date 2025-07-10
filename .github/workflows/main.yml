@@ -40,7 +40,17 @@ jobs:
       - name: Build native library
         run: |
           docker build -f dockerfile . -t whisperjni_binary:x64 --load
-          docker run --platform=amd64 -v $(pwd)/dist:/out whisperjni_binary:x64 bash -c "cp src/main/resources/linux-x64/* /out/"
+          docker run \
+            --platform=amd64 \
+            -v $(pwd)/dist:/out \
+            -v $(pwd)/build:/app/build \
+            whisperjni_binary:x64 \
+            bash -c "cp src/main/resources/linux-x64/* /out/"
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v5
+        if: success() || failure()
+        with:
+          report_paths: '**/build/test-results/test/test-*.xml'
       - name: Artifact linux x64
         uses: actions/upload-artifact@v4
         with:
@@ -65,7 +75,17 @@ jobs:
       - name: Build native library
         run: |
           docker build -f dockerfile . -t whisperjni_binary:aarch64 --platform arm64 --load
-          DOCKER_BUILDKIT=1 docker run --platform=arm64 -v $(pwd)/dist:/out whisperjni_binary:aarch64 bash -c "cp src/main/resources/linux-aarch64/* /out/"
+          DOCKER_BUILDKIT=1 docker run \
+            --platform=arm64 \
+            -v $(pwd)/dist:/out \
+            -v $(pwd)/build:/app/build \
+            whisperjni_binary:aarch64 \
+            bash -c "cp src/main/resources/linux-aarch64/* /out/"
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v5
+        if: success() || failure()
+        with:
+          report_paths: '**/build/test-results/test/test-*.xml'
       - name: Artifact linux aarch64
         uses: actions/upload-artifact@v4
         with:
@@ -92,6 +112,11 @@ jobs:
         run: .\build_win.ps1
       - name: Test
         run: ./gradlew test
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v5
+        if: success() || failure()
+        with:
+          report_paths: '**/build/test-results/test/test-*.xml'
       - name: Artifact windows x64
         uses: actions/upload-artifact@v4
         with:
@@ -125,6 +150,11 @@ jobs:
       # Scary! I can't seem to find vulkan-1.dll in the runner anywhere. Don't want to do a proper install (yet) so this job will just require a manual test
       # - name: Test
       #   run: ./gradlew test
+      # - name: Publish Test Report
+      #   uses: mikepenz/action-junit-report@v5
+      #   if: success() || failure()
+      #   with:
+      #     report_paths: '**/build/test-results/test/test-*.xml'
       - name: Upload Vulkan DLL artifact
         uses: actions/upload-artifact@v4
         with:
@@ -156,6 +186,11 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew test
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v5
+        if: success() || failure()
+        with:
+          report_paths: '**/build/test-results/test/test-*.xml'
       - name: Artifact macos x64
         uses: actions/upload-artifact@v4
         with:
@@ -186,6 +221,11 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew test
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v5
+        if: success() || failure()
+        with:
+          report_paths: '**/build/test-results/test/test-*.xml'
       - name: Artifact macos aarch64
         uses: actions/upload-artifact@v4
         with:
