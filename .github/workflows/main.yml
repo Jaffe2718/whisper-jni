@@ -234,15 +234,14 @@ jobs:
 
   publish:
     runs-on: ubuntu-latest
-    needs: [build-linux-x64, build-linux-aarch64, build-windows-x64, build-windows-vulkan, build-mac-x64, build-mac-aarch64]
+    needs: [download-models, build-linux-x64, build-linux-aarch64, build-windows-x64, build-windows-vulkan, build-mac-x64, build-mac-aarch64]
     steps:
     - uses: actions/checkout@v4
     - uses: actions/download-artifact@v4
     - name: Check tree
       run: ls -R
     - name: Move natives
-      run: |
-        mv ./silero-ggml-model/ggml-silero-v5.1.2.bin ./src/main/resources
+      run:
         mv ./linux-binary-x64/*.so ./src/main/resources/linux-x64/
         mv ./linux-binary-aarch64/*.so ./src/main/resources/linux-aarch64/
         mv ./windows-binary-x64/*.dll ./src/main/resources/windows-x64/
@@ -253,8 +252,17 @@ jobs:
       with:
         java-version: 22
         distribution: 'temurin'
+    - name: Setup project dir
+      run: |
+        mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
+        mv ./silero-ggml-model/ggml-silero-v5.1.2.bin ./src/main/resources
     - name: Build
       run: ./gradlew clean build publish --stacktrace
+    - name: Publish Test Report
+      uses: mikepenz/action-junit-report@v5
+      if: success() || failure()
+      with:
+        report_paths: '**/build/test-results/**/*.xml'
     - name: Publish
       run: ./gradlew jreleaserDeploy --stacktrace
       env:
