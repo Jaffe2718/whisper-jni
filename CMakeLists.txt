@@ -53,7 +53,7 @@ endif()
 # ---- Declare libraries ----
 
 add_library(whisper-jni SHARED
-  src/main/native/io_github_givimad_whisperjni_WhisperJNI.cpp
+  src/main/native/io_github_freshsupasulley_whisperjni_WhisperJNI.cpp
   src/main/native/whisper/examples/grammar-parser.cpp
 )
 

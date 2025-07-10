@@ -1,4 +1,4 @@
-package io.github.givimad.whisperjni;
+package io.github.freshsupasulley.whisperjni;
 
 /**
  * Represents the data of an individual token.

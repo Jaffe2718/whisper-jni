@@ -1,4 +1,4 @@
-package io.github.givimad.whisperjni;
+package io.github.freshsupasulley.whisperjni;
 
 /**
  * The {@link WhisperContextParams} class contains the {@link WhisperContext} params.

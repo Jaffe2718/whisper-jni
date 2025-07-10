@@ -1,4 +1,4 @@
-package io.github.givimad.whisperjni;
+package io.github.freshsupasulley.whisperjni;
 
 /**
  * The {@link WhisperContext} class represents a native whisper.cpp context.

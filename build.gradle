@@ -1,10 +1,11 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
+    id 'org.jreleaser' version '1.17.0'
 }
 
-group = 'io.github.givimad'
-version = '1.8.0'
+group = 'io.github.freshsupasulley'
+version = '0.1.0'
 description = 'Java port of whisper.cpp, forked from whisper-jni by GiviMAD'
 
 repositories {
@@ -44,16 +45,100 @@ test {
 
 publishing {
     publications {
-        mavenJava(MavenPublication) {
+        maven(MavenPublication) {
             from components.java
-        }
+            
+	        pom {
+	            url = 'https://github.com/FreshSupaSulley/whisper-jni'
+	            
+	            licenses {
+	                license {
+	                    name = 'MIT License'
+	                    url = 'https://opensource.org/license/mit'
+	                }
+	            }
+	            
+	            developers {
+	                developer {
+	                    name = 'Erich Boschert'
+	                    email = 'erich.boschert10@gmail.com'
+	                }
+	            }
+	            
+	            scm {
+	                connection = 'scm:git:https://github.com/FreshSupaSulley/whisper-jni.git'
+	                developerConnection = 'scm:git:ssh://github.com/FreshSupaSulley/whisper-jni.git'
+	                url = 'https://github.com/FreshSupaSulley/whisper-jni'
+	            }
+	        }
+	    }
     }
     repositories {
-        mavenLocal()
+        maven {
+            url = layout.buildDirectory.dir('staging-deploy')
+        }
     }
 }
 
-// Always republish to ~/.m2 even if nothing changed
-tasks.named('publishToMavenLocal') {
-    outputs.upToDateWhen { false }   // disable incremental check
+jreleaser {
+	environment {
+        variables = 'gradle.properties'
+    }
+    
+    signing {
+        active = 'ALWAYS'
+        armored = true
+    }
+    
+    deploy {
+        maven {
+            mavenCentral {
+                sonatype {
+                    active = 'ALWAYS'
+                    url = 'https://central.sonatype.com/api/v1/publisher'
+                    stagingRepository('build/staging-deploy')
+                    
+                    // Double the retry delay as publishing takes a long time
+                    // Alternatively you can set JRELEASER_MAVENCENTRAL_STAGE: UPLOAD and manually publish
+                    retryDelay = 40
+                }
+            }
+        }
+    }
 }
+
+task generateHeaders(type: JavaCompile) {
+    group = 'whisper-jni' 
+    source = fileTree('src/main/java')
+    classpath = sourceSets.main.compileClasspath
+    destinationDir = file("build/generated/jni-headers")
+    options.headerOutputDirectory = file("src/main/native")
+}
+
+// Custom tasks for ease of use
+task deployLocal {
+	group = 'whisper-jni'
+	description = 'Convenience method to publish to maven local'
+	
+	dependsOn 'clean', 'build', 'publish'
+	
+	build.mustRunAfter clean
+    publish.mustRunAfter build
+    
+    finalizedBy 'publishToMavenLocal'
+    
+    println "Published version ${version}"
+}
+
+task deployMaven {
+	group = 'whisper-jni'
+	description = 'Convenience method to publish to maven central'
+	
+	dependsOn deployLocal
+	finalizedBy 'jreleaserDeploy'
+}
+
+// Always republish to ~/.m2 even if nothing changed
+//tasks.named('publishToMavenLocal') {
+//    outputs.upToDateWhen { false }   // disable incremental check
+//}

@@ -1,4 +1,4 @@
-package io.github.givimad.whisperjni;
+package io.github.freshsupasulley.whisperjni;
 
 /**
  * The {@link WhisperContext} enum to configure whisper's sampling strategy

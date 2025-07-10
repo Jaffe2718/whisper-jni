@@ -1,4 +1,4 @@
-package io.github.givimad.whisperjni;
+package io.github.freshsupasulley.whisperjni;
 
 import java.io.IOException;
 import java.nio.file.Files;

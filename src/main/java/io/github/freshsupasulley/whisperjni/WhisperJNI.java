@@ -1,4 +1,4 @@
-package io.github.givimad.whisperjni;
+package io.github.freshsupasulley.whisperjni;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -8,8 +8,6 @@ import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import io.github.givimad.whisperjni.internal.LibraryUtils;
 
 /**
  * The {@link WhisperJNI} class allows to use whisper.cpp thought the JNI.
@@ -69,9 +67,19 @@ public class WhisperJNI {
 	
 	private native String printSystemInfo();
 	
-	private native static void setLogger(boolean enabled);
+	private native static void setLogger(Logger logger);
 	
 	// endregion
+	
+	/**
+	 * Sets the SLF4J {@link Logger} to receive internal whisper events.
+	 * 
+	 * @param logger {@link Logger} SLF4J instance
+	 */
+	public void setWhisperLogger(Logger logger)
+	{
+		setLogger(logger);
+	}
 	
 	/**
 	 * Creates a new whisper context.

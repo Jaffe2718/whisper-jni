@@ -1,6 +1,6 @@
-package io.github.givimad.whisperjni;
+package io.github.freshsupasulley.whisperjni;
 
-import static io.github.givimad.whisperjni.WhisperGrammar.assertValidGrammar;
+import static io.github.freshsupasulley.whisperjni.WhisperGrammar.assertValidGrammar;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
 
@@ -22,8 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.github.givimad.whisperjni.internal.LibraryUtils;
-
 // @Disabled
 public class WhisperJNITest {
 	
@@ -35,6 +34,8 @@ public class WhisperJNITest {
 	private static WhisperJNI whisper;
 	
 	private static Logger logger = LoggerFactory.getLogger(WhisperJNITest.class);
+	
+	private static Path tempVAD;
 	
 	@BeforeAll
 	public static void beforeAll() throws IOException
@@ -51,6 +52,10 @@ public class WhisperJNITest {
 			throw new RuntimeException("Missing sample file");
 		}
 		
+		// Test extracting the VAD model
+		tempVAD = Files.createTempFile("tempVAD", ".bin");
+		LibraryUtils.exportVADModel(logger, tempVAD);
+		
 		// This doesn't check if we have Vulkan natives in the local dir
 		// So if you have vulkan, you better use the natives! Run the vulkan build script
 		if(LibraryUtils.canUseVulkan(logger))
@@ -63,6 +68,7 @@ public class WhisperJNITest {
 		}
 		
 		whisper = new WhisperJNI();
+		whisper.setWhisperLogger(logger);
 	}
 	
 	@Test
@@ -150,7 +156,7 @@ public class WhisperJNITest {
 					throw new RuntimeException("Transcription failed with code " + result);
 				}
 				long timeTook = (System.currentTimeMillis() - timer);
-				logger.info("Took {}ms (run #{})", timeTook , i);
+				logger.info("Took {}ms (run #{})", timeTook, i);
 				totalTime += timeTook;
 			}
 			

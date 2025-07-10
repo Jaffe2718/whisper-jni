@@ -1,4 +1,4 @@
-package io.github.givimad.whisperjni;
+package io.github.freshsupasulley.whisperjni;
 
 /**
  * The {@link WhisperFullParams} instances needed to configure full whisper execution
@@ -139,7 +139,7 @@ public class WhisperFullParams {
 	/** Path to VAD model */
 	public String vad_model_path;
 	
-	public VADParams vadParams = new VADParams(); // needs to be initialized to something cause cpp side won't null check it
+	public final VADParams vadParams = new VADParams(); // needs to be initialized to something cause cpp side won't null check it
 	
 	/**
 	 * Creates a new {@link WhisperFullParams} instance using the provided {@link WhisperSamplingStrategy}
@@ -159,7 +159,7 @@ public class WhisperFullParams {
 		this(WhisperSamplingStrategy.BEAM_SEARCH);
 	}
 	
-	class VADParams {
+	public class VADParams {
 		
 		/** Probability threshold to consider as speech */
 		public float threshold;

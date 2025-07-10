@@ -1,7 +1,7 @@
 #include <iostream>
 #include <map>
 #include <jni.h>
-#include "io_github_givimad_whisperjni_WhisperJNI.h"
+#include "io_github_freshsupasulley_whisperjni_WhisperJNI.h"
 #include "whisper.h"
 #include "grammar-parser.h"
 
@@ -9,20 +9,6 @@ std::map<int, whisper_context *> contextMap;
 std::map<int, whisper_state *> stateMap;
 std::map<int, grammar_parser::parse_state *> grammarMap;
 
-static JavaVM *jvmRef = nullptr;
-static void whisper_log_proxy(enum ggml_log_level level, const char * text, void * user_data) {
-    if(jvmRef) {
-        JNIEnv *env;
-        if (jvmRef->AttachCurrentThread((void**)&env, NULL) != JNI_OK) {
-          return;
-        }
-        jclass whisperJNIClass = env->FindClass("io/github/givimad/whisperjni/WhisperJNI");
-        jmethodID logMethodId = env->GetStaticMethodID(whisperJNIClass, "log", "(Ljava/lang/String;)V");
-        jstring jstr = env->NewStringUTF(text);
-        env->CallStaticVoidMethod(whisperJNIClass, logMethodId, jstr);
-        jvmRef->DetachCurrentThread();
-    }
-}
 int getContextId() {
     int i = 0;
     while (i++ < 1000) {
@@ -150,7 +136,7 @@ struct whisper_full_params newWhisperFullParams(JNIEnv *env, jobject jParams)
   
   // VAD arams
   whisper_vad_params vadParams = whisper_vad_default_params();
-  jfieldID fidVADParams = env->GetFieldID(paramsJClass, "vadParams", "Lio/github/givimad/whisperjni/WhisperFullParams$VADParams;");
+  jfieldID fidVADParams = env->GetFieldID(paramsJClass, "vadParams", "Lio/github/freshsupasulley/whisperjni/WhisperFullParams$VADParams;");
   jobject jVadParamsObj = env->GetObjectField(jParams, fidVADParams);
   jclass vadCls = env->GetObjectClass(jVadParamsObj);
   // Fill
@@ -171,7 +157,7 @@ struct whisper_full_params newWhisperFullParams(JNIEnv *env, jobject jParams)
 }
 
 
-JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_init(JNIEnv *env, jobject thisObject, jstring modelPath, jobject jParams)
+JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_init(JNIEnv *env, jobject thisObject, jstring modelPath, jobject jParams)
 {
   const char *path = env->GetStringUTFChars(modelPath, NULL);
   struct whisper_context *context = whisper_init_from_file_with_params(path, newWhisperContextParams(env, jParams));
@@ -182,7 +168,7 @@ JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_init(JNIEnv 
   return insertModel(context);
 }
 
-JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_initNoState(JNIEnv *env, jobject thisObject, jstring modelPath, jobject jParams)
+JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_initNoState(JNIEnv *env, jobject thisObject, jstring modelPath, jobject jParams)
 {
   const char *path = env->GetStringUTFChars(modelPath, NULL);
   struct whisper_context *context = whisper_init_from_file_with_params_no_state(path, newWhisperContextParams(env, jParams));
@@ -193,7 +179,7 @@ JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_initNoState(
   return insertModel(context);
 }
 
-JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_initState(JNIEnv *env, jobject thisObject, jint ctxRef)
+JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_initState(JNIEnv *env, jobject thisObject, jint ctxRef)
 {
   int stateRef = getStateId();
   whisper_state *state = whisper_init_state(contextMap.at(ctxRef));
@@ -204,23 +190,23 @@ JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_initState(JN
   return stateRef;
 }
 
-JNIEXPORT void JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_initOpenVINOEncoder(JNIEnv *env, jobject thisObject, jint ctxRef, jstring deviceString) {
+JNIEXPORT void JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_initOpenVINOEncoder(JNIEnv *env, jobject thisObject, jint ctxRef, jstring deviceString) {
   const char* device = env->GetStringUTFChars(deviceString, NULL);
   whisper_ctx_init_openvino_encoder(contextMap.at(ctxRef), nullptr, device, nullptr);
   env->ReleaseStringUTFChars(deviceString, device);
 }
 
-JNIEXPORT jboolean JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_isMultilingual(JNIEnv *env, jobject thisObject, jint ctxRef)
+JNIEXPORT jboolean JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_isMultilingual(JNIEnv *env, jobject thisObject, jint ctxRef)
 {
   return whisper_is_multilingual(contextMap.at(ctxRef));
 }
 
-JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_full(JNIEnv *env, jobject thisObject, jint ctxRef, jobject jParams, jfloatArray samples, jint numSamples)
+JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_full(JNIEnv *env, jobject thisObject, jint ctxRef, jobject jParams, jfloatArray samples, jint numSamples)
 {
     whisper_full_params params = newWhisperFullParams(env, jParams);
     // I was unable to handle the grammar inside the newWhisperFullParams fn
     jclass paramsJClass = env->GetObjectClass(jParams);
-    jobject jGrammar = env->GetObjectField(jParams, env->GetFieldID(paramsJClass, "grammar", "Lio/github/givimad/whisperjni/WhisperGrammar;"));
+    jobject jGrammar = env->GetObjectField(jParams, env->GetFieldID(paramsJClass, "grammar", "Lio/github/freshsupasulley/whisperjni/WhisperGrammar;"));
     float grammarPenalty = env->GetFloatField(jParams, env->GetFieldID(paramsJClass, "grammarPenalty", "F"));
     std::vector<const whisper_grammar_element *> grammar_rules; // I don't know why, this one needs to be declared outside the 'if' statement.
     if(jGrammar) {
@@ -243,12 +229,12 @@ JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_full(JNIEnv 
     return result;
 }
 
-JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullWithState(JNIEnv *env, jobject thisObject, jint ctxRef, jint stateRef, jobject jParams, jfloatArray samples, jint numSamples)
+JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_fullWithState(JNIEnv *env, jobject thisObject, jint ctxRef, jint stateRef, jobject jParams, jfloatArray samples, jint numSamples)
 {
     whisper_full_params params = newWhisperFullParams(env, jParams);
     // I was unable to handle the grammar inside the newWhisperFullParams fn
     jclass paramsJClass = env->GetObjectClass(jParams);
-    jobject jGrammar = env->GetObjectField(jParams, env->GetFieldID(paramsJClass, "grammar", "Lio/github/givimad/whisperjni/WhisperGrammar;"));
+    jobject jGrammar = env->GetObjectField(jParams, env->GetFieldID(paramsJClass, "grammar", "Lio/github/freshsupasulley/whisperjni/WhisperGrammar;"));
     float grammarPenalty = env->GetFloatField(jParams, env->GetFieldID(paramsJClass, "grammarPenalty", "F"));
     std::vector<const whisper_grammar_element *> grammar_rules; // I don't know why, this one needs to be declared outside the 'if' statement.
     if(jGrammar) {
@@ -271,13 +257,13 @@ JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullWithStat
 }
 
 // START SUPASULLEY EPIC METHODS
-JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullNTokens(JNIEnv *env, jobject thisObject, jint ctxRef, jint segment)
+JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_fullNTokens(JNIEnv *env, jobject thisObject, jint ctxRef, jint segment)
 {
   whisper_context *whisper_ctx = contextMap.at(ctxRef);
   return whisper_full_n_tokens(whisper_ctx, segment);
 }
 
-JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullNTokensFromState(JNIEnv *env, jobject thisObject, jint stateRef, jint segment)
+JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_fullNTokensFromState(JNIEnv *env, jobject thisObject, jint stateRef, jint segment)
 {
   whisper_state *state = stateMap.at(stateRef);
   return whisper_full_n_tokens_from_state(state, segment);
@@ -287,7 +273,7 @@ static jobject createTokenData(JNIEnv *env, const char *tokenText, whisper_token
 {
   jstring jTok = env->NewStringUTF(tokenText);
   // Build the java wrapper
-  jclass cls = env->FindClass("io/github/givimad/whisperjni/TokenData");
+  jclass cls = env->FindClass("io/github/freshsupasulley/whisperjni/TokenData");
   jmethodID ctor = env->GetMethodID(cls, "<init>", "(Ljava/lang/String;IIFFFFJJJF)V");
   jobject obj = env->NewObject(cls, ctor,
                           jTok,
@@ -306,7 +292,7 @@ static jobject createTokenData(JNIEnv *env, const char *tokenText, whisper_token
   return obj;
 }
 
-JNIEXPORT jobject JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_getTokenData(JNIEnv *env, jobject thisObject, jint ctxRef, jint segment, jint token)
+JNIEXPORT jobject JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_getTokenData(JNIEnv *env, jobject thisObject, jint ctxRef, jint segment, jint token)
 {
   whisper_context *whisper_ctx = contextMap.at(ctxRef);
   whisper_token_data td = whisper_full_get_token_data(whisper_ctx, segment, token);
@@ -315,7 +301,7 @@ JNIEXPORT jobject JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_getTokenD
   return createTokenData(env, tokenText, td);
 }
 
-JNIEXPORT jobject JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_getTokenDataFromState(JNIEnv *env, jobject thisObject, jint ctxRef, jint stateRef, jint segment, jint token)
+JNIEXPORT jobject JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_getTokenDataFromState(JNIEnv *env, jobject thisObject, jint ctxRef, jint stateRef, jint segment, jint token)
 {
   whisper_context *whisper_ctx = contextMap.at(ctxRef);
   whisper_state *state = stateMap.at(stateRef);
@@ -328,17 +314,17 @@ JNIEXPORT jobject JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_getTokenD
 
 // END TOKEN SCHENANIGANS
 
-JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullNSegments(JNIEnv *env, jobject thisObject, jint ctxRef)
+JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_fullNSegments(JNIEnv *env, jobject thisObject, jint ctxRef)
 {
   return whisper_full_n_segments(contextMap.at(ctxRef));
 }
 
-JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullNSegmentsFromState(JNIEnv *env, jobject thisObject, jint stateRef)
+JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_fullNSegmentsFromState(JNIEnv *env, jobject thisObject, jint stateRef)
 {
   return whisper_full_n_segments_from_state(stateMap.at(stateRef));
 }
 
-JNIEXPORT jlong JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullGetSegmentTimestamp0(JNIEnv *env, jobject thisObject, jint ctxRef, jint index)
+JNIEXPORT jlong JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_fullGetSegmentTimestamp0(JNIEnv *env, jobject thisObject, jint ctxRef, jint index)
 {
   whisper_context *whisper_ctx = contextMap.at(ctxRef);
   int nSegments = whisper_full_n_segments(whisper_ctx);
@@ -351,7 +337,7 @@ JNIEXPORT jlong JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullGetSegm
   return whisper_full_get_segment_t0(whisper_ctx, index);
 }
 
-JNIEXPORT jlong JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullGetSegmentTimestamp1(JNIEnv *env, jobject thisObject, jint ctxRef, jint index)
+JNIEXPORT jlong JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_fullGetSegmentTimestamp1(JNIEnv *env, jobject thisObject, jint ctxRef, jint index)
 {
   whisper_context *whisper_ctx = contextMap.at(ctxRef);
   int nSegments = whisper_full_n_segments(whisper_ctx);
@@ -364,7 +350,7 @@ JNIEXPORT jlong JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullGetSegm
   return whisper_full_get_segment_t1(whisper_ctx, index);
 }
 
-JNIEXPORT jstring JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullGetSegmentText(JNIEnv *env, jobject thisObject, jint ctxRef, jint index)
+JNIEXPORT jstring JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_fullGetSegmentText(JNIEnv *env, jobject thisObject, jint ctxRef, jint index)
 {
   whisper_context *whisper_ctx = contextMap.at(ctxRef);
   int nSegments = whisper_full_n_segments(whisper_ctx);
@@ -378,7 +364,7 @@ JNIEXPORT jstring JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullGetSe
   return env->NewStringUTF(text);
 }
 
-JNIEXPORT jlong JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullGetSegmentTimestamp0FromState(JNIEnv *env, jobject thisObject, jint stateRef, jint index)
+JNIEXPORT jlong JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_fullGetSegmentTimestamp0FromState(JNIEnv *env, jobject thisObject, jint stateRef, jint index)
 {
   whisper_state *state = stateMap.at(stateRef);
   int nSegments = whisper_full_n_segments_from_state(state);
@@ -391,7 +377,7 @@ JNIEXPORT jlong JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullGetSegm
   return whisper_full_get_segment_t0_from_state(state, index);
 }
 
-JNIEXPORT jlong JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullGetSegmentTimestamp1FromState(JNIEnv *env, jobject thisObject, jint stateRef, jint index)
+JNIEXPORT jlong JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_fullGetSegmentTimestamp1FromState(JNIEnv *env, jobject thisObject, jint stateRef, jint index)
 {
   whisper_state *state = stateMap.at(stateRef);
   int nSegments = whisper_full_n_segments_from_state(state);
@@ -404,7 +390,7 @@ JNIEXPORT jlong JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullGetSegm
   return whisper_full_get_segment_t1_from_state(state, index);
 }
 
-JNIEXPORT jstring JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullGetSegmentTextFromState(JNIEnv *env, jobject thisObject, jint stateRef, jint index)
+JNIEXPORT jstring JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_fullGetSegmentTextFromState(JNIEnv *env, jobject thisObject, jint stateRef, jint index)
 {
   whisper_state *state = stateMap.at(stateRef);
   int nSegments = whisper_full_n_segments_from_state(state);
@@ -418,7 +404,7 @@ JNIEXPORT jstring JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_fullGetSe
   return env->NewStringUTF(text);
 }
 
-JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_loadGrammar(JNIEnv *env, jobject thisObject, jstring grammarText) {
+JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_loadGrammar(JNIEnv *env, jobject thisObject, jstring grammarText) {
     const char* grammarChars = env->GetStringUTFChars(grammarText, NULL);
     grammar_parser::parse_state* grammarPointer = new grammar_parser::parse_state{};
     try {
@@ -435,37 +421,108 @@ JNIEXPORT jint JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_loadGrammar(
     return grammarRef;
 }
 
-JNIEXPORT jstring JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_printSystemInfo(JNIEnv *env, jobject thisObject)
+JNIEXPORT jstring JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_printSystemInfo(JNIEnv *env, jobject thisObject)
 {
   const char *text = whisper_print_system_info();
   return env->NewStringUTF(text);
 }
-JNIEXPORT void JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_freeContext(JNIEnv *env, jobject thisObject, jint ctxRef)
+JNIEXPORT void JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_freeContext(JNIEnv *env, jobject thisObject, jint ctxRef)
 {
   whisper_free(contextMap.at(ctxRef));
   contextMap.erase(ctxRef);
 }
 
-JNIEXPORT void JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_freeState(JNIEnv *env, jobject thisObject, jint stateRef)
+JNIEXPORT void JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_freeState(JNIEnv *env, jobject thisObject, jint stateRef)
 {
   whisper_free_state(stateMap.at(stateRef));
   stateMap.erase(stateRef);
 }
-JNIEXPORT void JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_freeGrammar(JNIEnv *env, jobject thisClass, jint grammarRef)
+JNIEXPORT void JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_freeGrammar(JNIEnv *env, jobject thisClass, jint grammarRef)
 {
   free(grammarMap.at(grammarRef));
   stateMap.erase(grammarRef);
 }
-JNIEXPORT void JNICALL Java_io_github_givimad_whisperjni_WhisperJNI_setLogger(JNIEnv *env, jclass thisClass, jboolean enabled)
-{
-    if (enabled) {
-        if (!jvmRef && env->GetJavaVM(&jvmRef) != JNI_OK) {
-            jclass exClass = env->FindClass("java/lang/RuntimeException");
-            env->ThrowNew(exClass, "Failed getting reference to Java VM");
-            return;
-        }
-    } else {
-        jvmRef = nullptr;
+
+// Logging
+static jobject globalLoggerRef = NULL;
+static JavaVM* jvm = NULL;
+ 
+static void whisper_log_proxy(enum ggml_log_level level, const char *text, void *user_data) {
+    if (!jvm || !globalLoggerRef || !text) return;
+    
+    JNIEnv *env;
+    if (jvm->AttachCurrentThread((void**)&env, NULL) != JNI_OK) {
+        return;
     }
+    
+    jclass loggerClass = env->GetObjectClass(globalLoggerRef);
+    if (!loggerClass) {
+		jvm->DetachCurrentThread();
+		return;
+	}
+    
+    jstring jMessage = env->NewStringUTF(text);
+    if (!jMessage) {
+		jvm->DetachCurrentThread();
+		return;
+	}
+    
+    jmethodID logMethod = NULL;
+    
+    switch (level) {
+        case GGML_LOG_LEVEL_ERROR:
+            logMethod = env->GetMethodID(loggerClass, "error", "(Ljava/lang/String;)V");
+            break;
+        case GGML_LOG_LEVEL_WARN:
+            logMethod = env->GetMethodID(loggerClass, "warn", "(Ljava/lang/String;)V");
+            break;
+        case GGML_LOG_LEVEL_INFO:
+            logMethod = env->GetMethodID(loggerClass, "info", "(Ljava/lang/String;)V");
+            break;
+        case GGML_LOG_LEVEL_DEBUG:
+            logMethod = env->GetMethodID(loggerClass, "debug", "(Ljava/lang/String;)V");
+            break;
+        case GGML_LOG_LEVEL_CONT:
+        case GGML_LOG_LEVEL_NONE:
+        default:
+            // Treat CONT and NONE as INFO or skip
+            logMethod = env->GetMethodID(loggerClass, "info", "(Ljava/lang/String;)V");
+            break;
+    }
+    
+    if (logMethod) {
+        jstring jMessage = env->NewStringUTF(text);
+        if (jMessage) {
+            env->CallVoidMethod(globalLoggerRef, logMethod, jMessage);
+            env->DeleteLocalRef(jMessage);
+        }
+    }
+    
+    env->DeleteLocalRef(jMessage);
+    env->DeleteLocalRef(loggerClass);
+    
+    jvm->DetachCurrentThread();
+}
+
+/*
+ * Class:     io_github_freshsupasulley_whisperjni_WhisperJNI
+ * Method:    setLogger
+ * Signature: (Lorg/slf4j/Logger;)V
+ */
+JNIEXPORT void JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_setLogger(JNIEnv *env, jclass thisClass, jobject logger)
+{
+	// We need this for later
+    if (!jvm && env->GetJavaVM(&jvm) != JNI_OK) {
+        jclass exClass = env->FindClass("java/lang/RuntimeException");
+        env->ThrowNew(exClass, "Failed getting reference to Java VM");
+        return;
+    }
+    // Clean up previous logger reference
+    if (globalLoggerRef != NULL) {
+        env->DeleteGlobalRef(globalLoggerRef);
+    }
+    // Store new logger as a global reference
+    globalLoggerRef = env->NewGlobalRef(logger);
+    // Register the proxy log function
     whisper_log_set(whisper_log_proxy, nullptr);
 }

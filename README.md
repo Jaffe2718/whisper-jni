@@ -15,15 +15,9 @@ Please open an issue if you found it don't work on any of the supported platform
 
 ## Installation
 
-The package is distributed through [Maven Central](https://central.sonatype.com/artifact/io.github.givimad/whisper-jni).
+The package is distributed through [Maven Central](https://central.sonatype.com/artifact/io.github.freshsupasulley/whisper-jni).
 
 You can also find the package's jar attached to each [release](https://github.com/GiviMAD/whisper-jni/releases).
-
-### Use external whisper shared library.
-
-It's possible to use an external whisper.cpp shared library instead of the one packaged in the jar.
-
-On linux/mac set the property `io.github.givimad.whisperjni.libdir` to an alternative directory that contains the whisper-jni and whisper-cpp libraries.
 
 On `windows` an external `whisper.dll` it's automatically used if it exists in some of the directories in the $env:PATH variable.
 
@@ -83,16 +77,14 @@ Run the appropriate build script for your platform (build_debian.sh, build_macos
 Finally, you can run the project tests to confirm it works:
 
 ```sh
-mvn test
+./gradlew test
 ```
 
 ## Extending the native api
 
 If you want to add any missing whisper.cpp functionality you need to:
 
-* Add the native method description in src/main/java/io/github/givimad/whisperjni/WhisperJNI.java.
-* Run the gen_header.sh script to regenerate the src/main/native/io_github_givimad_whisperjni_WhisperJNI.h header file. 
-* Add the native method implementation in src/main/native/io_github_givimad_whisperjni_WhisperJNI.cpp.
-* Add a new test for it at src/test/java/io/github/givimad/whisperjni/WhisperJNITest.java.
-
-BR
+- Add the native method description in `WhisperJNI.java`.
+- Run the `generateHeaders` gradle task to regenerate the src/main/native/io_github_freshsupasulley_whisperjni_WhisperJNI.h header file.
+- Add the native method implementation in src/main/native/io_github_freshsupasulley_whisperjni_WhisperJNI.cpp.
+- Add a new test for it in `WhisperJNITest.java`.
