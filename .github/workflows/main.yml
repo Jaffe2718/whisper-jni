@@ -80,7 +80,7 @@ jobs:
       - name: Build native library
         run: |
           OUTPUT_DIR="src/main/resources/${OS_ARCH}"
-          docker build -f dockerfile . -t whisperjni_binary:aarch64 --load
+          docker build -f dockerfile . -t whisperjni_binary:aarch64 --platform arm64 --load
           docker run \
             --platform=arm64 \
             -v "$(pwd)/$OUTPUT_DIR:/app/$OUTPUT_DIR" \
