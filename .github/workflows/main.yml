@@ -72,6 +72,8 @@ jobs:
       - uses: docker/setup-buildx-action@v3
         with:
           install: true
+        # Unique to arm64!!
+      - uses: docker/setup-qemu-action@v3
       - name: Setup project dir
         run: |
           mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
