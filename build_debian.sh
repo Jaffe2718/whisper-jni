@@ -1,7 +1,7 @@
 #!/bin/bash
 set -xe
 build_lib() {
-  TMP_DIR=src/main/resources/linux
+  TMP_DIR=src/main/resources/linux-build
   TARGET_DIR=src/main/resources/linux-"$OUT_ARCH"
   cmake -B build $CMAKE_ARGS -DCMAKE_C_FLAGS="$CMAKE_CFLAGS" -DCMAKE_INSTALL_PREFIX=$TMP_DIR
   cmake --build build --config Release
@@ -15,7 +15,7 @@ build_lib() {
       mv "$TARGET_DIR/libggml.so" "$TARGET_DIR/libggml$LIB_VARIANT.so"
       cp "$TARGET_DIR/libggml$LIB_VARIANT.so" "$TARGET_DIR/libggml.so"
   fi
-  rm -rf "$TMP_DIR" build
+  rm -rf "$TMP_DIR"
 }
 
 # ------------------------- architecture map ------------------------
