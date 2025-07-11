@@ -26,6 +26,8 @@ jobs:
   build-linux-x64:
     needs: [download-models]
     runs-on: ubuntu-latest
+    env:
+      OS_ARCH: linux-x64
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -36,36 +38,37 @@ jobs:
         run: |
           mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
           mv ./silero-ggml-model/ggml-silero-v5.1.2.bin ./src/main/resources
-          mkdir -p dist
+          mkdir -p test-results
       - name: Build native library
+        # Ok... the build script runs at docker build
+        # If you try -v in docker run, the mount will overwrite what's in there
         run: |
+          OUTPUT_DIR="src/main/resources/${OS_ARCH}"
           docker build -f dockerfile . -t whisperjni_binary:x64 --load
           docker run \
             --platform=amd64 \
-            -v $(pwd)/dist:/out \
-            -v $(pwd)/build:/app/build \
-            whisperjni_binary:x64 \
-            bash -c "cp src/main/resources/linux-x64/* /out/"
-      - name: Test
-        run: ./gradlew test
-      - name: Publish Test Report
+            -v "$(pwd)/$OUTPUT_DIR:/app/$OUTPUT_DIR" \
+            -v "$(pwd)/test-results:/app/build/test-results" \
+            whisperjni_binary:x64
+      - name: Publish test report
         uses: mikepenz/action-junit-report@v5
         if: success() || failure()
         with:
-          report_paths: '**/build/test-results/**/*.xml'
-      - name: Artifact linux x64
+          report_paths: '**/test-results/**/*.xml'
+      - name: Upload natives
         uses: actions/upload-artifact@v4
         with:
           name: linux-binary-x64
-          path: dist/*
+          path: src/main/resources/${{ env.OS_ARCH }}/*
 
   build-linux-aarch64:
     needs: [download-models]
     runs-on: ubuntu-latest
+    env:
+      OS_ARCH: linux-aarch64
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
-      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
         with:
           install: true
@@ -73,28 +76,26 @@ jobs:
         run: |
           mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
           mv ./silero-ggml-model/ggml-silero-v5.1.2.bin ./src/main/resources
-          mkdir -p dist
+          mkdir -p test-results
       - name: Build native library
         run: |
-          docker build -f dockerfile . -t whisperjni_binary:aarch64 --platform arm64 --load
-          DOCKER_BUILDKIT=1 docker run \
+          OUTPUT_DIR="src/main/resources/${OS_ARCH}"
+          docker build -f dockerfile . -t whisperjni_binary:aarch64 --load
+          docker run \
             --platform=arm64 \
-            -v $(pwd)/dist:/out \
-            -v $(pwd)/build:/app/build \
-            whisperjni_binary:aarch64 \
-            bash -c "cp src/main/resources/linux-aarch64/* /out/"
-      - name: Test
-        run: ./gradlew test
-      - name: Publish Test Report
+            -v "$(pwd)/$OUTPUT_DIR:/app/$OUTPUT_DIR" \
+            -v "$(pwd)/test-results:/app/build/test-results" \
+            whisperjni_binary:aarch64
+      - name: Publish test report
         uses: mikepenz/action-junit-report@v5
         if: success() || failure()
         with:
-          report_paths: '**/build/test-results/**/*.xml'
-      - name: Artifact linux aarch64
+          report_paths: '**/test-results/**/*.xml'
+      - name: Upload natives
         uses: actions/upload-artifact@v4
         with:
           name: linux-binary-aarch64
-          path: dist/*
+          path: src/main/resources/${{ env.OS_ARCH }}/*
 
   build-windows-x64:
     needs: [download-models]
@@ -116,7 +117,7 @@ jobs:
         run: .\build_win.ps1
       - name: Test
         run: ./gradlew test
-      - name: Publish Test Report
+      - name: Publish test report
         uses: mikepenz/action-junit-report@v5
         if: success() || failure()
         with:
@@ -154,7 +155,7 @@ jobs:
       # Scary! I can't seem to find vulkan-1.dll in the runner anywhere. Don't want to do a proper install (yet) so this job will just require a manual test
       # - name: Test
       #   run: ./gradlew test
-      # - name: Publish Test Report
+      # - name: Publish test report
       #   uses: mikepenz/action-junit-report@v5
       #   if: success() || failure()
       #   with:
@@ -190,7 +191,7 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew test
-      - name: Publish Test Report
+      - name: Publish test report
         uses: mikepenz/action-junit-report@v5
         if: success() || failure()
         with:
@@ -225,7 +226,7 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew test
-      - name: Publish Test Report
+      - name: Publish test report
         uses: mikepenz/action-junit-report@v5
         if: success() || failure()
         with:
@@ -263,7 +264,7 @@ jobs:
         mv ./silero-ggml-model/ggml-silero-v5.1.2.bin ./src/main/resources
     - name: Build
       run: ./gradlew clean build publish --stacktrace
-    - name: Publish Test Report
+    - name: Publish test report
       uses: mikepenz/action-junit-report@v5
       if: success() || failure()
       with:

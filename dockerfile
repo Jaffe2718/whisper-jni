@@ -20,9 +20,7 @@ COPY build_debian.sh .
 # Init submodules
 RUN git submodule update --init
 
-# Optional: run custom native build
-RUN ./build_debian.sh
-
-# Test. We use the gradle tool not the wrapper (we're not copying the entire project in)
-# NO MORE
-#RUN gradle test
+# This will run not on `docker build`, but on `docker run`
+# This is because we need to build the natives AFTER we define mounts so nothing gets overridden
+# ... a little ugly but gets the job done
+CMD ["/bin/bash", "-c", "./build_debian.sh && gradle test"]
