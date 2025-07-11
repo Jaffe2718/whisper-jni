@@ -8,7 +8,6 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -20,12 +19,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Adapted from <a href="https://github.com/henkelmax/rnnoise4j/blob/master/src/main/java/de/maxhenkel/rnnoise4j/LibraryLoader.java">RNNoise4J</a>
+ * Adapted from <a href="https://github.com/henkelmax/rnnoise4j/blob/master/src/main/java/de/maxhenkel/rnnoise4j/LibraryLoader.java">RNNoise4J</a>.
+ * 
+ * <p>
+ * Clients should not need to use this class.
+ * </p>
  */
-public class LibraryUtils {
+class LibraryUtils {
 	
 	/** OS name */
 	public static final String OS_NAME = System.getProperty("os.name").toLowerCase();
@@ -46,31 +48,7 @@ public class LibraryUtils {
 	{
 	}
 	
-	/**
-	 * Loads the native library, should be called at first. This must be called before whisper native methods are invoked.
-	 * 
-	 * <p>
-	 * You can alternatively call {@link #loadVulkan()} if on the right machine.
-	 * </p>
-	 * 
-	 * @param logger SLF4J {@link Logger}
-	 * @throws IOException when unable to load the native library
-	 */
-	public static void loadLibrary(Logger logger) throws IOException
-	{
-		Path tempLib = extractFolderToTemp(logger, getPlatform() + "-" + getArchitecture());
-		loadInOrder(logger, tempLib);
-	}
-	
-	/**
-	 * Loads Vulkan natives with a default logger. Use {@link #canUseVulkan()} before calling this method.
-	 */
-	public static void loadVulkan()
-	{
-		loadVulkan(LoggerFactory.getLogger(LibraryUtils.class));
-	}
-	
-	private static String getArchitecture()
+	public static String getArchitecture()
 	{
 		switch(OS_ARCH)
 		{
@@ -92,7 +70,7 @@ public class LibraryUtils {
 		}
 	}
 	
-	private static String getPlatform() throws IOException
+	public static String getPlatform() throws IOException
 	{
 		if(isWindows())
 		{
@@ -112,7 +90,7 @@ public class LibraryUtils {
 		}
 	}
 	
-	private static boolean isWindows()
+	public static boolean isWindows()
 	{
 		return OS_NAME.contains("win");
 	}
@@ -125,6 +103,80 @@ public class LibraryUtils {
 	private static boolean isLinux()
 	{
 		return OS_NAME.contains("nux");
+	}
+	
+	/**
+	 * A system with <code>vulkan-1.dll</code> present on their SystemRoot indicates it can use Vulkan.
+	 * 
+	 * @return path to <code>vulkan-1.dll</code>, or <code>null</code> if not found
+	 */
+	public static Path getVulkanDLL()
+	{
+		// do I bother checking SysWOW64?? I thought this was x64 only
+		List<Path> commonPaths = List.of(Path.of(System.getenv("SystemRoot"), "System32", "vulkan-1.dll"), Path.of(System.getenv("SystemRoot"), "SysWOW64", "vulkan-1.dll"));
+		
+		for(Path path : commonPaths)
+		{
+			if(Files.exists(path))
+			{
+				return path;
+			}
+		}
+		
+		return null;
+	}
+	
+	/**
+	 * Loads the native library, should be called at first. This must be called before whisper native methods are invoked.
+	 * 
+	 * <p>
+	 * You can alternatively call {@link #loadVulkan()} if on the right machine.
+	 * </p>
+	 * 
+	 * @param logger SLF4J {@link Logger}
+	 * @throws IOException when unable to load the native library
+	 */
+	public static void loadLibrary(Logger logger) throws IOException
+	{
+		logger.info("Loading natives for whisper-jni");
+		Path tempLib = extractFolderToTemp(logger, getPlatform() + "-" + getArchitecture());
+		loadInOrder(logger, tempLib);
+	}
+	
+	/**
+	 * Loads Vulkan natives. Use {@link #canUseVulkan()} before calling this method.
+	 * 
+	 * @param logger SLF4J {@link Logger}
+	 */
+	public static void loadVulkan(Logger logger)
+	{
+		if(!WhisperJNI.canUseVulkan())
+			throw new IllegalStateException("This system can't use Vulkan natives");
+		
+		logger.info("Loading Vulkan natives for whisper-jni");
+		
+		try
+		{
+			String vulkanPath = getVulkanDLL().toAbsolutePath().toString();
+			logger.info("Loading Vulkan DLL at {}", vulkanPath);
+			System.load(vulkanPath);
+			
+			// Now load our dependencies in this specific order
+			Path tempDir = extractFolderToTemp(logger, "windows-x64-vulkan");
+			loadInOrder(logger, tempDir);
+			// System.load(tempDir.resolve("ggml-base.dll").toAbsolutePath().toString());
+			// System.load(tempDir.resolve("ggml-cpu.dll").toAbsolutePath().toString());
+			// System.load(tempDir.resolve("ggml-vulkan.dll").toAbsolutePath().toString());
+			// System.load(tempDir.resolve("ggml.dll").toAbsolutePath().toString());
+			// System.load(tempDir.resolve("whisper.dll").toAbsolutePath().toString());
+			// Statically built now yippie!!
+			// String whisperJNIPath = tempDir.resolve("whisper-jni.dll").toAbsolutePath().toString();
+			// logger.info("Loading Whisper JNI at {}", whisperJNIPath);
+			// System.load(whisperJNIPath);
+		} catch(Exception e)
+		{
+			logger.error("Failed to load Vulkan natives", e);
+		}
 	}
 	
 	private static void loadInOrder(Logger logger, Path tempDir) throws IOException
@@ -200,7 +252,7 @@ public class LibraryUtils {
 		return tmpDir;
 	}
 	
-	private static Path getInternalResource(Logger logger, String resourceName) throws IOException
+	public static Path getInternalResource(Logger logger, String resourceName) throws IOException
 	{
 		URI uri;
 		
@@ -233,132 +285,4 @@ public class LibraryUtils {
 		logger.debug("Resource is a directory on disk: {}", originDir);
 		return originDir;
 	}
-	
-	/**
-	 * Extracts the bundled <code>ggml-silero-v5.1.2</code> model to a directory on your machine.
-	 * 
-	 * <p>
-	 * After exporting, you can use that path to fill {@link WhisperFullParams#vad_model_path}.
-	 * </p>
-	 * 
-	 * @param logger      SLF4J {@link Logger}
-	 * @param destination path to store the model
-	 * @throws IOException if something goes wrong (like the path being malformed)
-	 */
-	public static void exportVADModel(Logger logger, Path destination) throws IOException
-	{
-		logger.info("Looking for VAD model");
-		Path path = getInternalResource(logger, "ggml-silero-v5.1.2.bin");
-		
-		logger.debug("Copying {} to {}", path, destination);
-		Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
-	}
-	
-	/**
-	 * Loads Vulkan natives. Use {@link #canUseVulkan()} before calling this method.
-	 * 
-	 * @param logger SLF4J {@link Logger}
-	 */
-	public static void loadVulkan(Logger logger)
-	{
-		if(!canUseVulkan())
-			throw new IllegalStateException("This system can't use Vulkan natives");
-		
-		logger.info("Loading Vulkan natives for whisper-jni");
-		
-		try
-		{
-			String vulkanPath = getVulkanDLL().toAbsolutePath().toString();
-			logger.info("Loading Vulkan DLL at {}", vulkanPath);
-			System.load(vulkanPath);
-			
-			// Now load our dependencies in this specific order
-			/// ^ nvm, whisper-jni statically links everything
-			Path tempDir = extractFolderToTemp(logger, "windows-x64-vulkan");
-			// System.load(tempDir.resolve("ggml-base.dll").toAbsolutePath().toString());
-			// System.load(tempDir.resolve("ggml-cpu.dll").toAbsolutePath().toString());
-			// System.load(tempDir.resolve("ggml-vulkan.dll").toAbsolutePath().toString());
-			// System.load(tempDir.resolve("ggml.dll").toAbsolutePath().toString());
-			// System.load(tempDir.resolve("whisper.dll").toAbsolutePath().toString());
-			// Statically built now yippie!!
-			String whisperJNIPath = tempDir.resolve("whisper-jni.dll").toAbsolutePath().toString();
-			logger.info("Loading Whisper JNI at {}", whisperJNIPath);
-			System.load(whisperJNIPath);
-			// loadInOrder(logger, tempDir);
-		} catch(Exception e)
-		{
-			logger.error("Failed to load Vulkan natives", e);
-		}
-	}
-	
-	/**
-	 * Use to determine if this system can custom-built Vulkan libs. Must be on Windows with a 64-bit processor, and <b>most importantly</b>
-	 * <code>vulkan-1.dll</code> at <code>/System32/vulkan-1.dll</code>.
-	 * 
-	 * @return true if this system can use the Vulkan natives, false otherwise
-	 */
-	public static boolean canUseVulkan()
-	{
-		return isWindows() && getArchitecture().equals("x64") && getVulkanDLL() != null;
-	}
-	
-	/**
-	 * A system with <code>vulkan-1.dll</code> present on their SystemRoot indicates it can use Vulkan.
-	 * 
-	 * @return path to <code>vulkan-1.dll</code>, or <code>null</code> if not found
-	 */
-	public static Path getVulkanDLL()
-	{
-		// do I bother checking SysWOW64?? I thought this was x64 only
-		List<Path> commonPaths = List.of(Path.of(System.getenv("SystemRoot"), "System32", "vulkan-1.dll"), Path.of(System.getenv("SystemRoot"), "SysWOW64", "vulkan-1.dll"));
-		
-		for(Path path : commonPaths)
-		{
-			if(Files.exists(path))
-			{
-				return path;
-			}
-		}
-		
-		return null;
-	}
-	
-	// /**
-	// * Checks if <code>vulkan-1.dll</code> is on the path.
-	// *
-	// * @param logger SLF4J {@link Logger}
-	// * @return true if Vulkan is available on the path
-	// */
-	// private static boolean isVulkanOnPath(Logger logger)
-	// {
-	// String path = System.getenv("PATH");
-	// logger.debug("Path: {}", path);
-	//
-	// // Edge case
-	// if(path == null || path.isEmpty())
-	// {
-	// return false;
-	// }
-	//
-	// for(String entry : path.split(";"))
-	// {
-	// logger.debug("Path entry: {}", entry);
-	//
-	// try
-	// {
-	// Path dllPath = Path.of(entry.trim(), "vulkan-1.dll");
-	//
-	// if(Files.exists(dllPath))
-	// {
-	// return true;
-	// }
-	// } catch(InvalidPathException e)
-	// {
-	// logger.warn("Invalid path entry at {}", entry, e);
-	// }
-	// }
-	//
-	// logger.warn("Unable to find Vulkan on path");
-	// return false;
-	// }
 }

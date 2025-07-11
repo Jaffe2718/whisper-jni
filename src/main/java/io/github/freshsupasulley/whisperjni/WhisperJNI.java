@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -466,6 +467,26 @@ public class WhisperJNI {
 	}
 	
 	/**
+	 * Extracts the bundled <code>ggml-silero-v5.1.2</code> model to a directory on your machine.
+	 * 
+	 * <p>
+	 * After exporting, you can use that path to fill {@link WhisperFullParams#vad_model_path}.
+	 * </p>
+	 * 
+	 * @param logger      SLF4J {@link Logger}
+	 * @param destination path to store the model
+	 * @throws IOException if something goes wrong (like the path being malformed)
+	 */
+	public static void exportVADModel(Logger logger, Path destination) throws IOException
+	{
+		logger.info("Looking for VAD model");
+		Path path = LibraryUtils.getInternalResource(logger, "ggml-silero-v5.1.2.bin");
+		
+		logger.debug("Copying {} to {}", path, destination);
+		Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
+	}
+	
+	/**
 	 * Register the native library, should be called at first.
 	 * 
 	 * <p>
@@ -494,6 +515,38 @@ public class WhisperJNI {
 		
 		LibraryUtils.loadLibrary(logger);
 		libraryLoaded = true;
+	}
+	
+	/**
+	 * Use to determine if this system can custom-built Vulkan libs. Must be on Windows with a 64-bit processor, and <b>most importantly</b>
+	 * <code>vulkan-1.dll</code> at <code>/System32/vulkan-1.dll</code>.
+	 * 
+	 * @return true if this system can use the Vulkan natives, false otherwise
+	 */
+	public static boolean canUseVulkan()
+	{
+		return LibraryUtils.isWindows() && LibraryUtils.getArchitecture().equals("x64") && LibraryUtils.getVulkanDLL() != null;
+	}
+	
+	/**
+	 * Loads Vulkan natives with a default logger. Use {@link #canUseVulkan()} before calling this method.
+	 * 
+	 * @throws IOException if something went wrong loading Vulkan natives
+	 */
+	public static void loadVulkan() throws IOException
+	{
+		LibraryUtils.loadVulkan(LoggerFactory.getLogger(WhisperJNI.class));
+	}
+	
+	/**
+	 * Loads Vulkan natives. Use {@link #canUseVulkan()} before calling this method.
+	 * 
+	 * @param logger SLF4J {@link Logger}
+	 * @throws IOException if something went wrong loading Vulkan natives
+	 */
+	public static void loadVulkan(Logger logger) throws IOException
+	{
+		LibraryUtils.loadVulkan(logger);
 	}
 	
 	/**

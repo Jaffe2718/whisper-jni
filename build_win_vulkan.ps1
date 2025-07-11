@@ -17,9 +17,4 @@ cmake --install build --config Release
 echo "Moving DLLs into release dir at $releaseDir"
 Copy-Item -Path "$buildDir\*.dll" -Destination $releaseDir -Force
 
-# I don't think cleanup is necessary in GH actions cause we're just uploading the release dir
-#rm -r -fo build
-# We don't need the .lib
-#rm -r -fo "$buildDir/*lib"
-#rm -r -fo "$buildDir/cmake"
-#rm -r -fo "$buildDir/pkgconfig"
+# In a perfect world, this would be a sh script so I can clear the build dir without dumb shit code
