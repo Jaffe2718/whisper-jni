@@ -241,7 +241,7 @@ jobs:
     - name: Check tree
       run: ls -R
     - name: Move natives
-      run:
+      run: |
         mv ./linux-binary-x64/*.so ./src/main/resources/linux-x64/
         mv ./linux-binary-aarch64/*.so ./src/main/resources/linux-aarch64/
         mv ./windows-binary-x64/*.dll ./src/main/resources/windows-x64/

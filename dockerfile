@@ -24,5 +24,4 @@ RUN git submodule update --init
 RUN ./build_debian.sh
 
 # Test. We use the gradle tool not the wrapper (we're not copying the entire project in)
-# Results get scooped up by workflow
-RUN gradle --project-cache-dir=/app/build test
+RUN gradle test
