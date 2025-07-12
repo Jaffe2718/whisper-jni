@@ -4,11 +4,7 @@ A JNI wrapper for [whisper.cpp](https://github.com/ggerganov/whisper.cpp), allow
 
 ## Platform support
 
-This library aims to support the following platforms:
-
-* Windows10 x86_64 (included binary requires CPU features avx2, fma, f16c, avx)
-* Linux GLIBC x86_64/arm64 (built with debian focal, GLIBC version 2.31)
-* macOS x86_64/arm64 (built targeting v11.0)
+This library aims to support Windows x64, Mac (both AMD x64 and ARM), and Linux (both AMD x64 and ARM).
 
 The native binaries for those platforms are included in the distributed jar.
 Please open an issue if you found it don't work on any of the supported platforms.
@@ -17,16 +13,11 @@ Please open an issue if you found it don't work on any of the supported platform
 
 The package is distributed through [Maven Central](https://central.sonatype.com/artifact/io.github.freshsupasulley/whisper-jni).
 
-You can also find the package's jar attached to each [release](https://github.com/GiviMAD/whisper-jni/releases).
-
-On `windows` an external `whisper.dll` it's automatically used if it exists in some of the directories in the $env:PATH variable.
-
 ## Basic Example
 
 ```java
         ...
         WhisperJNI.loadLibrary(); // load platform binaries
-        WhisperJNI.setLibraryLogger(null); // capture/disable whisper.cpp log
         var whisper = new WhisperJNI();
         float[] samples = readJFKFileSamples();
         var ctx = whisper.init(Path.of(System.getProperty("user.home"), 'ggml-tiny.bin'));
