@@ -159,6 +159,9 @@ public class WhisperFullParams {
 		this(WhisperSamplingStrategy.BEAM_SEARCH);
 	}
 	
+	/**
+	 * VAD params don't appear to work while using {@link WhisperState}. Stick with full!
+	 */
 	public class VADParams {
 		
 		/** Probability threshold to consider as speech */

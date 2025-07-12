@@ -28,6 +28,7 @@ public class WhisperJNITest {
 	
 	private static Path testModelPath = Path.of("ggml-tiny.bin");
 	private static Path samplePath = Path.of("src/main/native/whisper/samples/jfk.wav");
+	private static Path sample2Path = Path.of("src/test/resources/progress.wav");
 	private static Path sampleAssistantGrammar = Path.of("src/main/native/whisper/grammars/assistant.gbnf");
 	private static Path sampleChessGrammar = Path.of("src/main/native/whisper/grammars/chess.gbnf");
 	private static Path sampleColorsGrammar = Path.of("src/main/native/whisper/grammars/colors.gbnf");
@@ -124,7 +125,7 @@ public class WhisperJNITest {
 	public void testPointerUnavailableException() throws UnsupportedAudioFileException, IOException
 	{
 		var ctx = whisper.init(testModelPath);
-		float[] samples = readJFKFileSamples();
+		float[] samples = readFileSamples(samplePath);
 		var params = new WhisperFullParams();
 		ctx.close();
 		Exception exception = assertThrows(RuntimeException.class, () ->
@@ -138,7 +139,7 @@ public class WhisperJNITest {
 	@Test
 	public void testSpeed() throws Exception
 	{
-		float[] samples = readJFKFileSamples();
+		float[] samples = readFileSamples(samplePath);
 		long totalTime = 0;
 		int totalRuns = 3;
 		
@@ -167,7 +168,7 @@ public class WhisperJNITest {
 	@Test
 	public void testTokens() throws Exception
 	{
-		float[] samples = readJFKFileSamples();
+		float[] samples = readFileSamples(samplePath);
 		try(var ctx = whisper.init(testModelPath))
 		{
 			assertNotNull(ctx);
@@ -199,7 +200,7 @@ public class WhisperJNITest {
 	@Test
 	public void testTokensWithState() throws Exception
 	{
-		float[] samples = readJFKFileSamples();
+		float[] samples = readFileSamples(samplePath);
 		try(var ctx = whisper.initNoState(testModelPath))
 		{
 			assertNotNull(ctx);
@@ -236,7 +237,6 @@ public class WhisperJNITest {
 	@Test
 	public void testVAD() throws Exception
 	{
-		float[] samples = readJFKFileSamples();
 		try(var ctx = whisper.init(testModelPath))
 		{
 			assertNotNull(ctx);
@@ -252,29 +252,100 @@ public class WhisperJNITest {
 			vadParams.speech_pad_ms = 30;
 			vadParams.samples_overlap = 0.1f;
 			
-			int result = whisper.full(ctx, params, samples, samples.length);
-			
-			if(result != 0)
 			{
-				throw new RuntimeException("Transcription failed with code " + result);
+				float[] samples = readFileSamples(samplePath);
+				int result = whisper.full(ctx, params, samples, samples.length);
+				
+				if(result != 0)
+				{
+					throw new RuntimeException("Transcription failed with code " + result);
+				}
+				
+				final int segments = whisper.fullNSegments(ctx);
+				
+				logger.info("{} total segments after VAD filtering", segments);
+				
+				for(int i = 0; i < segments; i++)
+				{
+					String text = whisper.fullGetSegmentText(ctx, 0);
+					logger.info("VAD #{}: {}", i + 1, text);
+					// It should be pretty short (America)
+					assert text.length() < 20;
+				}
 			}
 			
-			final int segments = whisper.fullNSegments(ctx);
-			
-			logger.info("{} total segments after VAD filtering", segments);
-			
-			for(int i = 0; i < segments; i++)
 			{
-				String text = whisper.fullGetSegmentText(ctx, 0);
-				logger.info("VAD #{}: {}", i + 1, text);
+				float[] samples = readFileSamples(sample2Path);
+				int result = whisper.full(ctx, params, samples, samples.length);
+				
+				if(result != 0)
+				{
+					throw new RuntimeException("Transcription failed with code " + result);
+				}
+				
+				final int segments = whisper.fullNSegments(ctx);
+				
+				logger.info("{} total segments after VAD filtering", segments);
+				
+				for(int i = 0; i < segments; i++)
+				{
+					String text = whisper.fullGetSegmentText(ctx, 0);
+					logger.info("VAD #{}: {}", i + 1, text);
+					// It should be pretty short (America)
+					assert text.length() < 20;
+				}
 			}
 		}
 	}
 	
+	// It seems, weirdly, that state doesn't work with VAD?? Check out the whisper.cpp file to see for yourself
+	// @Test
+	// public void testVADWithState() throws Exception
+	// {
+	// float[] samples = readJFKFileSamples();
+	// try(var ctx = whisper.initNoState(testModelPath))
+	// {
+	// assertNotNull(ctx);
+	// var params = new WhisperFullParams(WhisperSamplingStrategy.GREEDY);
+	// params.vad = true;
+	// params.vad_model_path = Path.of("src", "main", "resources", "ggml-silero-v5.1.2.bin").toAbsolutePath().toString();
+	//
+	// var vadParams = params.vadParams;
+	// vadParams.threshold = 0.995f;
+	// vadParams.min_speech_duration_ms = 200;
+	// vadParams.min_silence_duration_ms = 100;
+	// vadParams.max_speech_duration_s = 10.0f;
+	// vadParams.speech_pad_ms = 30;
+	// vadParams.samples_overlap = 0.1f;
+	//
+	// try(var state = whisper.initState(ctx))
+	// {
+	// int result = whisper.fullWithState(ctx, state, params, samples, samples.length);
+	//
+	// if(result != 0)
+	// {
+	// throw new RuntimeException("Transcription failed with code " + result);
+	// }
+	//
+	// final int segments = whisper.fullNSegmentsFromState(state);
+	//
+	// logger.info("{} total segments after VAD filtering", segments);
+	//
+	// for(int i = 0; i < segments; i++)
+	// {
+	// String text = whisper.fullGetSegmentTextFromState(state, 0);
+	// logger.info("VAD #{}: {}", i + 1, text);
+	// // It should be pretty short (America)
+	// assert text.length() < 20;
+	// }
+	// }
+	// }
+	// }
+	
 	@Test
 	public void testFull() throws Exception
 	{
-		float[] samples = readJFKFileSamples();
+		float[] samples = readFileSamples(samplePath);
 		try(var ctx = whisper.init(testModelPath))
 		{
 			assertNotNull(ctx);
@@ -298,7 +369,7 @@ public class WhisperJNITest {
 	@Test
 	public void testFullBeamSearch() throws Exception
 	{
-		float[] samples = readJFKFileSamples();
+		float[] samples = readFileSamples(samplePath);
 		try(var ctx = whisper.init(testModelPath))
 		{
 			assertNotNull(ctx);
@@ -319,7 +390,7 @@ public class WhisperJNITest {
 	@Test
 	public void testFullWithState() throws Exception
 	{
-		float[] samples = readJFKFileSamples();
+		float[] samples = readFileSamples(samplePath);
 		try(var ctx = whisper.initNoState(testModelPath))
 		{
 			assertNotNull(ctx);
@@ -347,7 +418,7 @@ public class WhisperJNITest {
 	@Test
 	public void testFullWithStateBeamSearch() throws Exception
 	{
-		float[] samples = readJFKFileSamples();
+		float[] samples = readFileSamples(samplePath);
 		try(var ctx = whisper.initNoState(testModelPath))
 		{
 			assertNotNull(ctx);
@@ -374,7 +445,7 @@ public class WhisperJNITest {
 	{
 		// Init trailing space is important
 		String grammarText = "root ::= \" And so, my fellow American, ask not what your country can do for you, ask what you can do for your country.\"";
-		float[] samples = readJFKFileSamples();
+		float[] samples = readFileSamples(samplePath);
 		try(WhisperGrammar grammar = whisper.parseGrammar(grammarText))
 		{
 			assertNotNull(grammar);
@@ -422,7 +493,7 @@ public class WhisperJNITest {
 		assertValidGrammar(sampleChessGrammar);
 	}
 	
-	private float[] readJFKFileSamples() throws UnsupportedAudioFileException, IOException
+	private float[] readFileSamples(Path samplePath) throws UnsupportedAudioFileException, IOException
 	{
 		// sample is a 16 bit int 16000hz little endian wav file
 		AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(samplePath.toFile());
