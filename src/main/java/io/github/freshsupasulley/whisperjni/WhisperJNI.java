@@ -44,6 +44,11 @@ public class WhisperJNI {
 	
 	private native TokenData getTokenDataFromState(int context, int state, int segment, int token);
 	
+	// These go hand in hand
+	private native float[][] detectSpeechSegments(int ctxRef, String modelPath, float[] samples, int numSamples);
+	
+	private native String transcribeSegment(int ctxRef, float[] samples, int startSample, int numSamples);
+	
 	private native int fullNSegments(int context);
 	
 	private native int fullNSegmentsFromState(int state);
@@ -307,6 +312,16 @@ public class WhisperJNI {
 		// if (text.rfind("[_", 0) == 0) {
 		// An alternative would be grabbing the special token IDs, either programatically or hard coding them
 		return Stream.of(tokens).filter(token -> !token.token.startsWith("[_") && !token.token.startsWith("<|")).toArray(TokenData[]::new);
+	}
+	
+	public float[][] detectSpeechSegments(WhisperContext context, String modelPath, float[] samples, int numSamples)
+	{
+		return detectSpeechSegments(context.ref, modelPath, samples, numSamples);
+	}
+	
+	public String transcribeSegment(WhisperContext context, float[] samples, int startSample, int numSamples)
+	{
+		return transcribeSegment(context.ref, samples, startSample, numSamples);
 	}
 	
 	/**

@@ -105,6 +105,22 @@ JNIEXPORT jobject JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_g
 
 /*
  * Class:     io_github_freshsupasulley_whisperjni_WhisperJNI
+ * Method:    detectSpeechSegments
+ * Signature: (ILjava/lang/String;[FI)[[F
+ */
+JNIEXPORT jobjectArray JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_detectSpeechSegments
+  (JNIEnv *, jobject, jint, jstring, jfloatArray, jint);
+
+/*
+ * Class:     io_github_freshsupasulley_whisperjni_WhisperJNI
+ * Method:    transcribeSegment
+ * Signature: (I[FII)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_transcribeSegment
+  (JNIEnv *, jobject, jint, jfloatArray, jint, jint);
+
+/*
+ * Class:     io_github_freshsupasulley_whisperjni_WhisperJNI
  * Method:    fullNSegments
  * Signature: (I)I
  */

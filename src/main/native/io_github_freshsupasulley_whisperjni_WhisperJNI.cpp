@@ -229,6 +229,97 @@ JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_full
     return result;
 }
 
+JNIEXPORT jobjectArray JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_detectSpeechSegments(JNIEnv *env, jobject thisObject, jint ctxRef, jstring modelPath, jfloatArray samples, jint numSamples)
+{
+    // Convert Java strings/arrays to native
+    const char *modelPathCStr = env->GetStringUTFChars(modelPath, 0);
+    jfloat *nativeSamples = env->GetFloatArrayElements(samples, NULL);
+
+    // VAD context init
+    whisper_vad_context_params ctxParams = whisper_vad_default_context_params();
+    whisper_vad_context *vadCtx = whisper_vad_init_from_file_with_params(modelPathCStr, ctxParams);
+    if (!vadCtx) {
+        env->ReleaseStringUTFChars(modelPath, modelPathCStr);
+        env->ReleaseFloatArrayElements(samples, nativeSamples, 0);
+        return nullptr;
+    }
+
+    // Run VAD
+    whisper_vad_params vadParams = whisper_vad_default_params();
+    whisper_vad_segments *segments = whisper_vad_segments_from_samples(
+        vadCtx, vadParams, nativeSamples, numSamples);
+
+    // Extract results into Java array
+    int numSegments = whisper_vad_segments_n_segments(segments);
+    jclass floatArrayClass = env->FindClass("[F");
+    jobjectArray result = env->NewObjectArray(numSegments, floatArrayClass, nullptr);
+
+    for (int i = 0; i < numSegments; ++i) {
+        float t0 = whisper_vad_segments_get_segment_t0(segments, i);
+        float t1 = whisper_vad_segments_get_segment_t1(segments, i);
+        jfloat segment[2] = { t0, t1 };
+
+        jfloatArray segmentArray = env->NewFloatArray(2);
+        env->SetFloatArrayRegion(segmentArray, 0, 2, segment);
+        env->SetObjectArrayElement(result, i, segmentArray);
+        env->DeleteLocalRef(segmentArray);
+    }
+
+    // Cleanup
+    whisper_vad_free_segments(segments);
+    whisper_vad_free(vadCtx);
+    env->ReleaseStringUTFChars(modelPath, modelPathCStr);
+    env->ReleaseFloatArrayElements(samples, nativeSamples, 0);
+
+    return result;
+}
+
+JNIEXPORT jstring JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_transcribeSegment(JNIEnv *env, jobject thisObject, jint ctxRef, jfloatArray samples, jint startSample, jint numSamples)
+{
+    whisper_context *ctx = contextMap.at(ctxRef);
+
+    // Convert Java float array to native pointer
+    jfloat *nativeSamples = env->GetFloatArrayElements(samples, NULL);
+    if (!nativeSamples) {
+        return env->NewStringUTF("[failed to access samples]");
+    }
+
+    const float *segment = nativeSamples + startSample;
+
+    // Initialize whisper state
+    whisper_state *state = whisper_init_state(ctx);
+    if (!state) {
+        env->ReleaseFloatArrayElements(samples, nativeSamples, 0);
+        return env->NewStringUTF("[failed to init state]");
+    }
+
+    // Set parameters
+    whisper_full_params params = whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
+    params.print_progress = false;
+    params.print_special = false;
+    params.print_realtime = false;
+
+    // Perform transcription
+    int result = whisper_full_with_state(ctx, state, params, segment, numSamples);
+
+    std::string output;
+    if (result == 0) {
+        int n_segments = whisper_full_n_segments_from_state(state);
+        for (int i = 0; i < n_segments; ++i) {
+            const char *text = whisper_full_get_segment_text_from_state(state, i);
+            output += text;
+        }
+    } else {
+        output = "[transcription failed]";
+    }
+
+    // Clean up
+    whisper_free_state(state);
+    env->ReleaseFloatArrayElements(samples, nativeSamples, 0);
+
+    return env->NewStringUTF(output.c_str());
+}
+
 JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_fullWithState(JNIEnv *env, jobject thisObject, jint ctxRef, jint stateRef, jobject jParams, jfloatArray samples, jint numSamples)
 {
     whisper_full_params params = newWhisperFullParams(env, jParams);
@@ -249,6 +340,18 @@ JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_full
           params.grammar_penalty = grammarPenalty;
       }
     }
+/*    params.vad = true;
+    //params.vad_model_path = ;
+    std::string modelPath = "/Users/boschert.12/shit/whisper-jni/src/main/resources/ggml-silero-v5.1.2.bin";
+    params.vad_model_path = modelPath.c_str();  // safe, because modelPath is still in scope
+    fprintf(stderr, "HI, %s\n", params.vad_model_path);
+    fflush(stderr);
+	/*params.vad_params.threshold = 0.995f;
+	params.vad_params.min_speech_duration_ms = 200;
+	params.vad_params.min_silence_duration_ms = 100;
+	params.vad_params.max_speech_duration_s = 10.0f;
+	params.vad_params.speech_pad_ms = 30;
+	params.vad_params.samples_overlap = 0.1f;*/
     jfloat *samplesPointer = env->GetFloatArrayElements(samples, NULL);
     int result = whisper_full_with_state(contextMap.at(ctxRef), stateMap.at(stateRef), params, samplesPointer, numSamples);
     freeWhisperFullParams(env, jParams, params);

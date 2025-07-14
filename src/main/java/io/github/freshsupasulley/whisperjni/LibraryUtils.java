@@ -197,23 +197,30 @@ class LibraryUtils {
 			return Integer.MAX_VALUE; // unknown files go last
 		})).map(file -> file.getAbsolutePath()).filter(file -> Stream.of(LIB_NAMES).anyMatch(suffix -> file.matches(".*\\" + suffix + "(\\.\\d+)*$"))).collect(Collectors.toUnmodifiableList());
 		
-		// ^ collecting into a list because the consumer doesn't declare IOException
-		for(String path : natives)
+		if(natives.isEmpty())
 		{
-			logger.info("Loading {}", path);
-			
-			try
-			{
-				System.load(path);
-			} catch(Exception e)
-			{
-				// Pass into parent
-				logger.error("Failed to load {}. Is the loading order incorrect?", path, e);
-				throw new IOException(e);
-			}
+			logger.error("Failed to find any natives. If you're running in an IDE, make sure you build the natives for your platform before testing using the build scripts");
 		}
-		
-		logger.info("Done loading natives");
+		else
+		{
+			// ^ collecting into a list because the consumer doesn't declare IOException
+			for(String path : natives)
+			{
+				logger.info("Loading {}", path);
+				
+				try
+				{
+					System.load(path);
+				} catch(Exception e)
+				{
+					// Pass into parent
+					logger.error("Failed to load {}. Is the loading order incorrect?", path, e);
+					throw new IOException(e);
+				}
+			}
+			
+			logger.info("Done loading natives");
+		}
 	}
 	
 	private static Path extractFolderToTemp(Logger logger, String folderName) throws IOException

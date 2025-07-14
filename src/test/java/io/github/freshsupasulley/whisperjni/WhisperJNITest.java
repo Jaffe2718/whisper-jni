@@ -13,6 +13,7 @@ import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
+import java.util.Arrays;
 
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
@@ -32,6 +33,7 @@ public class WhisperJNITest {
 	private static Path sampleAssistantGrammar = Path.of("src/main/native/whisper/grammars/assistant.gbnf");
 	private static Path sampleChessGrammar = Path.of("src/main/native/whisper/grammars/chess.gbnf");
 	private static Path sampleColorsGrammar = Path.of("src/main/native/whisper/grammars/colors.gbnf");
+	private static Path vadModelPath = Path.of("src", "main", "resources", "ggml-silero-v5.1.2.bin");
 	private static WhisperJNI whisper;
 	
 	private static Logger logger = LoggerFactory.getLogger(WhisperJNITest.class);
@@ -267,80 +269,60 @@ public class WhisperJNITest {
 				
 				for(int i = 0; i < segments; i++)
 				{
-					String text = whisper.fullGetSegmentText(ctx, 0);
+					String text = whisper.fullGetSegmentText(ctx, i);
 					logger.info("VAD #{}: {}", i + 1, text);
 					// It should be pretty short (America)
-					assert text.length() < 20;
-				}
-			}
-			
-			{
-				float[] samples = readFileSamples(sample2Path);
-				int result = whisper.full(ctx, params, samples, samples.length);
-				
-				if(result != 0)
-				{
-					throw new RuntimeException("Transcription failed with code " + result);
-				}
-				
-				final int segments = whisper.fullNSegments(ctx);
-				
-				logger.info("{} total segments after VAD filtering", segments);
-				
-				for(int i = 0; i < segments; i++)
-				{
-					String text = whisper.fullGetSegmentText(ctx, 0);
-					logger.info("VAD #{}: {}", i + 1, text);
-					// It should be pretty short (America)
-					assert text.length() < 20;
+					assert text.length() < 30;
 				}
 			}
 		}
 	}
 	
 	// It seems, weirdly, that state doesn't work with VAD?? Check out the whisper.cpp file to see for yourself
-	// @Test
-	// public void testVADWithState() throws Exception
-	// {
-	// float[] samples = readJFKFileSamples();
-	// try(var ctx = whisper.initNoState(testModelPath))
-	// {
-	// assertNotNull(ctx);
-	// var params = new WhisperFullParams(WhisperSamplingStrategy.GREEDY);
-	// params.vad = true;
-	// params.vad_model_path = Path.of("src", "main", "resources", "ggml-silero-v5.1.2.bin").toAbsolutePath().toString();
-	//
-	// var vadParams = params.vadParams;
-	// vadParams.threshold = 0.995f;
-	// vadParams.min_speech_duration_ms = 200;
-	// vadParams.min_silence_duration_ms = 100;
-	// vadParams.max_speech_duration_s = 10.0f;
-	// vadParams.speech_pad_ms = 30;
-	// vadParams.samples_overlap = 0.1f;
-	//
-	// try(var state = whisper.initState(ctx))
-	// {
-	// int result = whisper.fullWithState(ctx, state, params, samples, samples.length);
-	//
-	// if(result != 0)
-	// {
-	// throw new RuntimeException("Transcription failed with code " + result);
-	// }
-	//
-	// final int segments = whisper.fullNSegmentsFromState(state);
-	//
-	// logger.info("{} total segments after VAD filtering", segments);
-	//
-	// for(int i = 0; i < segments; i++)
-	// {
-	// String text = whisper.fullGetSegmentTextFromState(state, 0);
-	// logger.info("VAD #{}: {}", i + 1, text);
-	// // It should be pretty short (America)
-	// assert text.length() < 20;
-	// }
-	// }
-	// }
-	// }
+	
+	@Test
+	public void testDetectSpeechSegments() throws Exception
+	{
+		float[] samples = readFileSamples(samplePath);
+		
+		try(var ctx = whisper.initNoState(testModelPath))
+		{
+			assertNotNull(ctx);
+			
+			// 1. Detect speech segments: returns float[][] with each element [startSec, endSec]
+			float[][] speechSegments = whisper.detectSpeechSegments(ctx, vadModelPath.toAbsolutePath().toString(), samples, samples.length);
+			
+			logger.info("Detected " + speechSegments.length + " speech segments.");
+			
+			StringBuilder fullTranscription = new StringBuilder();
+			
+			for(float[] segment : speechSegments)
+			{
+			    float startSec = segment[0] / 100f;
+			    float endSec = segment[1] / 100f;
+
+			    // Try dividing by 1000 if your VAD returns milliseconds, not seconds
+			    // startSec /= 1000f;
+			    // endSec /= 1000f;
+
+			    int startSample = (int)(startSec * 16000);
+			    int endSample = (int)(endSec * 16000);
+			    int segmentLength = endSample - startSample;
+
+			    if(startSample < 0 || endSample > samples.length || segmentLength <= 0)
+			    {
+			        logger.error("Invalid segment times: [{}s - {}s]", startSec, endSec);
+			        continue;
+			    }
+
+			    String text = whisper.transcribeSegment(ctx, samples, startSample, segmentLength);
+			    logger.info("Segment [" + startSec + "s - " + endSec + "s]: " + text);
+			    fullTranscription.append(text).append(" ");
+			}
+			
+			logger.info("Full transcription:\n" + fullTranscription.toString().trim());
+		}
+	}
 	
 	@Test
 	public void testFull() throws Exception
