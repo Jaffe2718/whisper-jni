@@ -13,7 +13,6 @@ import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
-import java.util.Arrays;
 
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
@@ -247,12 +246,12 @@ public class WhisperJNITest {
 			params.vad_model_path = Path.of("src", "main", "resources", "ggml-silero-v5.1.2.bin").toAbsolutePath().toString();
 			
 			var vadParams = params.vadParams;
-			vadParams.threshold = 0.995f;
-			vadParams.min_speech_duration_ms = 200;
-			vadParams.min_silence_duration_ms = 100;
-			vadParams.max_speech_duration_s = 10.0f;
-			vadParams.speech_pad_ms = 30;
-			vadParams.samples_overlap = 0.1f;
+			// vadParams.threshold = 0.995f;
+			// vadParams.min_speech_duration_ms = 200;
+			// vadParams.min_silence_duration_ms = 100;
+			// vadParams.max_speech_duration_s = 10.0f;
+			// vadParams.speech_pad_ms = 30;
+			// vadParams.samples_overlap = 0.1f;
 			
 			{
 				float[] samples = readFileSamples(samplePath);
@@ -285,42 +284,26 @@ public class WhisperJNITest {
 	{
 		float[] samples = readFileSamples(samplePath);
 		
-		try(var ctx = whisper.initNoState(testModelPath))
+		try(var ctx = whisper.initNoState(testModelPath); var state = whisper.initState(ctx))
 		{
 			assertNotNull(ctx);
+			assertNotNull(state);
 			
-			// 1. Detect speech segments: returns float[][] with each element [startSec, endSec]
-			float[][] speechSegments = whisper.detectSpeechSegments(ctx, vadModelPath.toAbsolutePath().toString(), samples, samples.length);
+			var params = new WhisperFullParams(WhisperSamplingStrategy.GREEDY);
+			params.vad = true;
+			params.vad_model_path = Path.of("src", "main", "resources", "ggml-silero-v5.1.2.bin").toAbsolutePath().toString();
 			
-			logger.info("Detected " + speechSegments.length + " speech segments.");
+			// Keep default
+//			var vadParams = params.vadParams;
+//			vadParams.threshold = 0.995f;
+//			vadParams.min_speech_duration_ms = 200;
+//			vadParams.min_silence_duration_ms = 100;
+//			vadParams.max_speech_duration_s = 10.0f;
+//			vadParams.speech_pad_ms = 30;
+//			vadParams.samples_overlap = 0.1f;
 			
-			StringBuilder fullTranscription = new StringBuilder();
-			
-			for(float[] segment : speechSegments)
-			{
-			    float startSec = segment[0] / 100f;
-			    float endSec = segment[1] / 100f;
-
-			    // Try dividing by 1000 if your VAD returns milliseconds, not seconds
-			    // startSec /= 1000f;
-			    // endSec /= 1000f;
-
-			    int startSample = (int)(startSec * 16000);
-			    int endSample = (int)(endSec * 16000);
-			    int segmentLength = endSample - startSample;
-
-			    if(startSample < 0 || endSample > samples.length || segmentLength <= 0)
-			    {
-			        logger.error("Invalid segment times: [{}s - {}s]", startSec, endSec);
-			        continue;
-			    }
-
-			    String text = whisper.transcribeSegment(ctx, samples, startSample, segmentLength);
-			    logger.info("Segment [" + startSec + "s - " + endSec + "s]: " + text);
-			    fullTranscription.append(text).append(" ");
-			}
-			
-			logger.info("Full transcription:\n" + fullTranscription.toString().trim());
+			String result = whisper.vadState(ctx, state, params, new WhisperVADContextParams(), samples, samples.length);
+			logger.info("VAD result: {}", result);
 		}
 	}
 	

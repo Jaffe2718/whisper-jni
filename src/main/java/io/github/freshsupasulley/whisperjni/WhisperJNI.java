@@ -44,10 +44,8 @@ public class WhisperJNI {
 	
 	private native TokenData getTokenDataFromState(int context, int state, int segment, int token);
 	
-	// These go hand in hand
-	private native float[][] detectSpeechSegments(int ctxRef, String modelPath, float[] samples, int numSamples);
-	
-	private native String transcribeSegment(int ctxRef, float[] samples, int startSample, int numSamples);
+	// New convenience method yipee
+	private native String vadState(int content, int state, WhisperFullParams params, WhisperVADContextParams vadContextParams, float[] samples, int numSamples);
 	
 	private native int fullNSegments(int context);
 	
@@ -314,14 +312,9 @@ public class WhisperJNI {
 		return Stream.of(tokens).filter(token -> !token.token.startsWith("[_") && !token.token.startsWith("<|")).toArray(TokenData[]::new);
 	}
 	
-	public float[][] detectSpeechSegments(WhisperContext context, String modelPath, float[] samples, int numSamples)
+	public String vadState(WhisperContext context, WhisperState state, WhisperFullParams params, WhisperVADContextParams vadContextParams, float[] samples, int numSamples)
 	{
-		return detectSpeechSegments(context.ref, modelPath, samples, numSamples);
-	}
-	
-	public String transcribeSegment(WhisperContext context, float[] samples, int startSample, int numSamples)
-	{
-		return transcribeSegment(context.ref, samples, startSample, numSamples);
+		return vadState(context.ref, state.ref, params, vadContextParams, samples, numSamples);
 	}
 	
 	/**

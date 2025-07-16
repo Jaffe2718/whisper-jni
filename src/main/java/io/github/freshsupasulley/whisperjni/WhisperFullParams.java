@@ -83,7 +83,7 @@ public class WhisperFullParams {
 	/**
 	 * Tokenizer option
 	 */
-	public boolean suppressNonSpeechTokens;
+	public boolean suppressNonSpeechTokens = true;
 	/**
 	 * Initial decoding temperature
 	 */
@@ -162,19 +162,19 @@ public class WhisperFullParams {
 	/**
 	 * VAD params don't appear to work while using {@link WhisperState}. Stick with full!
 	 */
-	public class VADParams {
+	public static class VADParams {
 		
 		/** Probability threshold to consider as speech */
-		public float threshold;
+		public float threshold = 0.5f;
 		/** Min duration for a valid speech segment */
-		public int min_speech_duration_ms;
+		public int min_speech_duration_ms = 250;
 		/** Min silence duration to consider speech as ended */
-		public int min_silence_duration_ms;
+		public int min_silence_duration_ms = 100;
 		/** Max duration of a speech segment before forcing a new segment */
-		public float max_speech_duration_s;
+		public float max_speech_duration_s = Float.MAX_VALUE;
 		/** Padding added before and after speech segments */
-		public int speech_pad_ms;
+		public int speech_pad_ms = 30;
 		/** Overlap in seconds when copying audio samples from speech segment */
-		public float samples_overlap;
+		public float samples_overlap = 0.1f;
 	}
 }
