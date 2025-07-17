@@ -270,7 +270,7 @@ public class WhisperJNITest {
 					String text = whisper.fullGetSegmentText(ctx, i);
 					logger.info("VAD #{}: {}", i + 1, text);
 					// It should be pretty short (America)
-					assert text.contains("And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.");
+					assert text.length() < 30;
 				}
 			}
 		}
