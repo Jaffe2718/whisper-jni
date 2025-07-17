@@ -246,13 +246,12 @@ public class WhisperJNITest {
 			params.vad_model_path = Path.of("src", "main", "resources", "ggml-silero-v5.1.2.bin").toAbsolutePath().toString();
 			
 			var vadParams = params.vadParams;
-			// vadParams.threshold = 0.995f;
+			vadParams.threshold = 0.995f;
 			// vadParams.min_speech_duration_ms = 200;
 			// vadParams.min_silence_duration_ms = 100;
 			// vadParams.max_speech_duration_s = 10.0f;
 			// vadParams.speech_pad_ms = 30;
 			// vadParams.samples_overlap = 0.1f;
-			
 			{
 				float[] samples = readFileSamples(samplePath);
 				int result = whisper.full(ctx, params, samples, samples.length);
@@ -294,13 +293,13 @@ public class WhisperJNITest {
 			params.vad_model_path = Path.of("src", "main", "resources", "ggml-silero-v5.1.2.bin").toAbsolutePath().toString();
 			
 			// Keep default
-//			var vadParams = params.vadParams;
-//			vadParams.threshold = 0.995f;
-//			vadParams.min_speech_duration_ms = 200;
-//			vadParams.min_silence_duration_ms = 100;
-//			vadParams.max_speech_duration_s = 10.0f;
-//			vadParams.speech_pad_ms = 30;
-//			vadParams.samples_overlap = 0.1f;
+			var vadParams = params.vadParams;
+			vadParams.threshold = 0.995f;
+			// vadParams.min_speech_duration_ms = 200;
+			// vadParams.min_silence_duration_ms = 100;
+			// vadParams.max_speech_duration_s = 10.0f;
+			// vadParams.speech_pad_ms = 30;
+			// vadParams.samples_overlap = 0.1f;
 			
 			String result = whisper.vadState(ctx, state, params, new WhisperVADContextParams(), samples, samples.length);
 			logger.info("VAD result: {}", result);
