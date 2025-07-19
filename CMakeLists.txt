@@ -15,7 +15,7 @@ option(GGML_STATIC              "ggml: static link libraries"     OFF)
 option(GGML_NATIVE              "ggml: enable -march=native flag" OFF)
 option(BUILD_SHARED_LIBS        "whisper: build shared libs"      ON )
 option(GGML_VULKAN              "ggml: enable Vulkan backend"     OFF)
-option(GGML_BLAS                "ggml: BLAS CPU support"          ON)
+option(GGML_BLAS                "ggml: BLAS CPU support"          OFF)
 
 set(JAVA_AWT_LIBRARY NotNeeded)
 set(JAVA_JVM_LIBRARY NotNeeded)
