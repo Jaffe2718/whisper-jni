@@ -14,7 +14,8 @@ option(GGML_F16C                "ggml: enable F16c"               ON )
 option(GGML_STATIC              "ggml: static link libraries"     OFF)
 option(GGML_NATIVE              "ggml: enable -march=native flag" OFF)
 option(BUILD_SHARED_LIBS        "whisper: build shared libs"      ON )
-option(GGML_VULKAN             "ggml: enable Vulkan backend"     OFF)
+option(GGML_VULKAN              "ggml: enable Vulkan backend"     OFF)
+option(GGML_BLAS                "ggml: BLAS CPU support"          ON)
 
 set(JAVA_AWT_LIBRARY NotNeeded)
 set(JAVA_JVM_LIBRARY NotNeeded)
@@ -76,6 +77,7 @@ if(NOT DEFINED WHISPER_DIR)
       -DCMAKE_C_FLAGS=${EXTERNAL_C_FLAGS}
       -DCMAKE_CXX_FLAGS=${EXTERNAL_CXX_FLAGS}
       -DGGML_VULKAN=${GGML_VULKAN}
+      -DGGML_BLAS=${GGML_BLAS}
       -DGGML_STATIC=${GGML_STATIC}
       -DGGML_NATIVE=${GGML_NATIVE}
       -DGGML_AVX=${GGML_AVX}

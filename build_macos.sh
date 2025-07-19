@@ -14,6 +14,7 @@ case "$AARCH" in
     ;;
   *)
     echo Unsupported arch $AARCH
+    exit 1
     ;;
     
 esac
@@ -27,7 +28,8 @@ TMP_DIR=src/main/resources/tmp-mac-$AARCH_NAME
 
 mkdir -p $TMP_DIR
 # Static linking seems to be a pain in the ass
-cmake -Bbuild -DCMAKE_INSTALL_PREFIX=$TMP_DIR -DCMAKE_OSX_DEPLOYMENT_TARGET=$TARGET_VERSION -DCMAKE_OSX_ARCHITECTURES=$AARCH
+cmake -Bbuild -DCMAKE_INSTALL_PREFIX=$TMP_DIR -DCMAKE_OSX_DEPLOYMENT_TARGET=$TARGET_VERSION -DCMAKE_OSX_ARCHITECTURES=$AARCH \
+ -DGGML_BLAS=0 # This makes it compatible 
 cmake --build build --config Release
 cmake --install build
 rm -rf build
