@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstring>
 #include <map>
 #include <jni.h>
 #include "io_github_freshsupasulley_whisperjni_WhisperJNI.h"
