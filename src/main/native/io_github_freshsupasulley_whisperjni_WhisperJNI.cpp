@@ -280,12 +280,15 @@ JNIEXPORT jstring JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_v
 
   jfloat *nativeSamples = env->GetFloatArrayElements(samples, NULL);
   whisper_vad_segments *segments = whisper_vad_segments_from_samples(vadCtx, params.vad_params, nativeSamples, numSamples);
-
-  if (!segments)
+  
+  if(!segments)
   {
     env->ReleaseFloatArrayElements(samples, nativeSamples, 0);
     whisper_vad_free(vadCtx);
-    return env->NewStringUTF("[VAD failed]");
+    //return env->NewStringUTF("[VAD failed]");
+    jclass exceptionClass = env->FindClass("java/lang/RuntimeException");
+    env->ThrowNew(exceptionClass, "Transcription failed");
+    return NULL;
   }
 
   int numSegments = whisper_vad_segments_n_segments(segments);
@@ -294,9 +297,10 @@ JNIEXPORT jstring JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_v
     env->ReleaseFloatArrayElements(samples, nativeSamples, 0);
     whisper_vad_free_segments(segments);
     whisper_vad_free(vadCtx);
-    return env->NewStringUTF("[no speech detected]");
+    //return env->NewStringUTF("[no speech detected]");
+    return NULL;
   }
-
+  
   // Calculate total samples for filtered audio
   int silence_samples = static_cast<int>(0.1f * WHISPER_SAMPLE_RATE);
   int total_samples = 0;
@@ -367,15 +371,15 @@ JNIEXPORT jstring JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_v
   }
   else
   {
-    output = "[transcription failed]";
+    jclass exceptionClass = env->FindClass("java/lang/RuntimeException");
+    env->ThrowNew(exceptionClass, "Transcription failed");
   }
-
+  
   // Cleanup
   env->ReleaseFloatArrayElements(samples, nativeSamples, 0);
   whisper_vad_free_segments(segments);
   whisper_vad_free(vadCtx);
-
-  return env->NewStringUTF(output.c_str());
+  return output.empty() ? NULL : env->NewStringUTF(output.c_str());
 }
 
 JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_fullWithState(JNIEnv *env, jobject thisObject, jint ctxRef, jint stateRef, jobject jParams, jfloatArray samples, jint numSamples)

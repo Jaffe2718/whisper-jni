@@ -136,36 +136,6 @@ public class WhisperJNITest {
 		assertEquals("Unavailable pointer, object is closed", exception.getMessage());
 	}
 	
-	// Helpful to gauge the speed of using Vulkan
-	@Test
-	public void testSpeed() throws Exception
-	{
-		float[] samples = readFileSamples(samplePath);
-		long totalTime = 0;
-		int totalRuns = 3;
-		
-		try(var ctx = whisper.init(testModelPath))
-		{
-			assertNotNull(ctx);
-			var params = new WhisperFullParams(WhisperSamplingStrategy.GREEDY);
-			
-			for(int i = 0; i < totalRuns; i++)
-			{
-				long timer = System.currentTimeMillis();
-				int result = whisper.full(ctx, params, samples, samples.length);
-				if(result != 0)
-				{
-					throw new RuntimeException("Transcription failed with code " + result);
-				}
-				long timeTook = (System.currentTimeMillis() - timer);
-				logger.info("Took {}ms (run #{})", timeTook, i);
-				totalTime += timeTook;
-			}
-			
-			logger.info("AVERAGE TIME:: {}", (totalTime / totalRuns));
-		}
-	}
-	
 	@Test
 	public void testTokens() throws Exception
 	{
@@ -194,6 +164,8 @@ public class WhisperJNITest {
 				{
 					logger.info("TOKEN: '{}'", token.token);
 				}
+				
+				assertEquals(tokens.length, 26);
 			}
 		}
 	}
@@ -228,15 +200,17 @@ public class WhisperJNITest {
 					
 					for(TokenData token : tokens)
 					{
-						logger.info("TOKEN: '{}'", token);
+						logger.info("TOKEN: '{}'", token.token);
 					}
+					
+					assertEquals(tokens.length, 23);
 				}
 			}
 		}
 	}
 	
 	@Test
-	public void testVAD() throws Exception
+	public void testVADFull() throws Exception
 	{
 		try(var ctx = whisper.init(testModelPath))
 		{
@@ -252,26 +226,25 @@ public class WhisperJNITest {
 			// vadParams.max_speech_duration_s = 10.0f;
 			// vadParams.speech_pad_ms = 30;
 			// vadParams.samples_overlap = 0.1f;
+			
+			float[] samples = readFileSamples(samplePath);
+			int result = whisper.full(ctx, params, samples, samples.length);
+			
+			if(result != 0)
 			{
-				float[] samples = readFileSamples(samplePath);
-				int result = whisper.full(ctx, params, samples, samples.length);
-				
-				if(result != 0)
-				{
-					throw new RuntimeException("Transcription failed with code " + result);
-				}
-				
-				final int segments = whisper.fullNSegments(ctx);
-				
-				logger.info("{} total segments after VAD filtering", segments);
-				
-				for(int i = 0; i < segments; i++)
-				{
-					String text = whisper.fullGetSegmentText(ctx, i);
-					logger.info("VAD #{}: {}", i + 1, text);
-					// It should be pretty short (America)
-					assert text.length() < 30;
-				}
+				throw new RuntimeException("Transcription failed with code " + result);
+			}
+			
+			final int segments = whisper.fullNSegments(ctx);
+			
+			logger.info("{} total segments after VAD filtering", segments);
+			
+			for(int i = 0; i < segments; i++)
+			{
+				String text = whisper.fullGetSegmentText(ctx, i);
+				logger.info("VAD #{}: {}", i + 1, text);
+				// It should be pretty short (America)
+				assert text.length() < 30;
 			}
 		}
 	}
@@ -279,7 +252,7 @@ public class WhisperJNITest {
 	// It seems, weirdly, that state doesn't work with VAD?? Check out the whisper.cpp file to see for yourself
 	
 	@Test
-	public void testDetectSpeechSegments() throws Exception
+	public void testVADState() throws Exception
 	{
 		float[] samples = readFileSamples(samplePath);
 		
@@ -303,6 +276,34 @@ public class WhisperJNITest {
 			
 			String result = whisper.vadState(ctx, state, params, new WhisperVADContextParams(), samples, samples.length);
 			logger.info("VAD result: {}", result);
+		}
+	}
+	
+	@Test
+	public void testBlankVADState() throws Exception
+	{
+		float[] samples = new float[(int) Math.pow(2, 16)];
+		
+		try(var ctx = whisper.initNoState(testModelPath); var state = whisper.initState(ctx))
+		{
+			assertNotNull(ctx);
+			assertNotNull(state);
+			
+			var params = new WhisperFullParams(WhisperSamplingStrategy.GREEDY);
+			params.vad = true;
+			params.vad_model_path = Path.of("src", "main", "resources", "ggml-silero-v5.1.2.bin").toAbsolutePath().toString();
+			
+			// Keep default
+			var vadParams = params.vadParams;
+			vadParams.threshold = 0.995f;
+			// vadParams.min_speech_duration_ms = 200;
+			// vadParams.min_silence_duration_ms = 100;
+			// vadParams.max_speech_duration_s = 10.0f;
+			// vadParams.speech_pad_ms = 30;
+			// vadParams.samples_overlap = 0.1f;
+			
+			String result = whisper.vadState(ctx, state, params, new WhisperVADContextParams(), samples, samples.length);
+			assert result == null;
 		}
 	}
 	
