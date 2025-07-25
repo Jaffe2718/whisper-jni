@@ -23,17 +23,37 @@ jobs:
         path: ggml-silero-v5.1.2.bin
         retention-days: 2
 
-  build-linux-x64:
+  build-linux:
     needs: [download-models]
     runs-on: ubuntu-latest
-    env:
-      OS_ARCH: linux-x64
+    strategy:
+      matrix:
+        # arch: [linux-x64, linux-aarch64]
+        # platform: [amd64, arm64]
+        # vulkan: [OFF, ON]
+        # Define combinations of architecture and platform
+        include:
+          - arch: linux-x64
+            platform: amd64
+            vulkan: OFF
+          - arch: linux-x64
+            platform: amd64
+            vulkan: ON
+          - arch: linux-aarch64
+            platform: arm64
+            vulkan: OFF
+          - arch: linux-aarch64
+            platform: arm64
+            vulkan: ON
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
       - uses: docker/setup-buildx-action@v3
         with:
           install: true
+        # arm64 only!
+      - uses: docker/setup-qemu-action@v3
+        if: matrix.platform == 'arm64'
       - name: Setup project dir
         run: |
           mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
@@ -43,13 +63,15 @@ jobs:
         # Ok... the build script runs at docker build
         # If you try -v in docker run, the mount will overwrite what's in there
         run: |
-          OUTPUT_DIR="src/main/resources/${OS_ARCH}"
-          docker build -f dockerfile . -t whisperjni_binary:x64 --load
+          # Specify if we're building for Vulkan
+          export VULKAN_ARG=${{ matrix.vulkan }}
+          OUTPUT_DIR="src/main/resources/${{ matrix.arch }}"
+          docker build -f dockerfile . -t whisperjni_binary:${{ matrix.platform }} --platform ${{ platform }} --load
           docker run \
-            --platform=amd64 \
+            --platform=${{ platform }} \
             -v "$(pwd)/$OUTPUT_DIR:/app/$OUTPUT_DIR" \
             -v "$(pwd)/test-results:/app/build/test-results" \
-            whisperjni_binary:x64
+            whisperjni_binary:${{ platform }}
       - name: Publish test report
         uses: mikepenz/action-junit-report@v5
         if: success() || failure()
@@ -58,46 +80,8 @@ jobs:
       - name: Upload natives
         uses: actions/upload-artifact@v4
         with:
-          name: linux-binary-x64
-          path: src/main/resources/${{ env.OS_ARCH }}/*
-
-  build-linux-aarch64:
-    needs: [download-models]
-    runs-on: ubuntu-latest
-    env:
-      OS_ARCH: linux-aarch64
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-      - uses: docker/setup-buildx-action@v3
-        with:
-          install: true
-        # Unique to arm64!!
-      - uses: docker/setup-qemu-action@v3
-      - name: Setup project dir
-        run: |
-          mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
-          mv ./silero-ggml-model/ggml-silero-v5.1.2.bin ./src/main/resources
-          mkdir -p test-results
-      - name: Build native library
-        run: |
-          OUTPUT_DIR="src/main/resources/${OS_ARCH}"
-          docker build -f dockerfile . -t whisperjni_binary:aarch64 --platform arm64 --load
-          docker run \
-            --platform=arm64 \
-            -v "$(pwd)/$OUTPUT_DIR:/app/$OUTPUT_DIR" \
-            -v "$(pwd)/test-results:/app/build/test-results" \
-            whisperjni_binary:aarch64
-      - name: Publish test report
-        uses: mikepenz/action-junit-report@v5
-        if: success() || failure()
-        with:
-          report_paths: '**/test-results/**/*.xml'
-      - name: Upload natives
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-binary-aarch64
-          path: src/main/resources/${{ env.OS_ARCH }}/*
+          name: linux-binary-${{ matrix.platform }}-${{ matrix.vulkan }}
+          path: src/main/resources/${{ matrix.arch }}/*
 
   build-windows-x64:
     needs: [download-models]
@@ -140,11 +124,12 @@ jobs:
         with:
           java-version: 22
           distribution: 'temurin'
-      # Also install Vulkan
+      # Also install Vulkan 
       - name: Install Vulkan SDK
-        uses: humbletim/install-vulkan-sdk@v1.2
+        uses: jakoch/install-vulkan-sdk-action@v1
         with:
-          version: 1.4.309.0
+          vulkan_version: 1.4.309.0
+          install_runtime: true
           cache: true
       - name: Setup project dir
         run: |
@@ -154,14 +139,13 @@ jobs:
       - name: Build
         run: .\build_win_vulkan.ps1
         shell: powershell
-      # Scary! I can't seem to find vulkan-1.dll in the runner anywhere. Don't want to do a proper install (yet) so this job will just require a manual test
-      # - name: Test
-      #   run: ./gradlew test
-      # - name: Publish test report
-      #   uses: mikepenz/action-junit-report@v5
-      #   if: success() || failure()
-      #   with:
-      #     report_paths: '**/build/test-results/test/test-*.xml'
+      - name: Test
+        run: ./gradlew test
+      - name: Publish test report
+        uses: mikepenz/action-junit-report@v5
+        if: success() || failure()
+        with:
+          report_paths: '**/build/test-results/test/test-*.xml'
       - name: Upload Vulkan DLL artifact
         uses: actions/upload-artifact@v4
         with:
@@ -239,7 +223,7 @@ jobs:
 
   publish:
     runs-on: ubuntu-latest
-    needs: [download-models, build-linux-x64, build-linux-aarch64, build-windows-x64, build-windows-vulkan, build-mac-x64, build-mac-aarch64]
+    needs: [download-models, build-linux, build-windows-x64, build-windows-vulkan, build-mac-x64, build-mac-aarch64]
     steps:
     - uses: actions/checkout@v4
     - uses: actions/download-artifact@v4
@@ -252,8 +236,10 @@ jobs:
     - name: Move natives
       run: |
         find ./src/main/resources -name ".gitkeep" -type f -delete
-        mv ./linux-binary-x64/*.so ./src/main/resources/linux-x64/
-        mv ./linux-binary-aarch64/*.so ./src/main/resources/linux-aarch64/
+        mv ./linux-binary-x64-ON/*.so ./src/main/resources/linux-x64-vulkan/
+        mv ./linux-binary-aarch64-ON/*.so ./src/main/resources/linux-aarch64-vulkan/
+        mv ./linux-binary-x64-OFF/*.so ./src/main/resources/linux-x64/
+        mv ./linux-binary-aarch64-OFF/*.so ./src/main/resources/linux-aarch64/
         mv ./windows-binary-x64/*.dll ./src/main/resources/windows-x64/
         mv ./whisper-jni-vulkan/*.dll ./src/main/resources/windows-x64-vulkan/
         mv ./mac-binary-x64/*.dylib ./src/main/resources/mac-x64/
