@@ -63,7 +63,6 @@ jobs:
         # Ok... the build script runs at docker build
         # If you try -v in docker run, the mount will overwrite what's in there
         run: |
-          # Specify if we're building for Vulkan
           export VULKAN_ARG=${{ matrix.vulkan }}
           OUTPUT_DIR="src/main/resources/${{ matrix.arch }}"
           docker build -f dockerfile . -t whisperjni_binary:${{ matrix.platform }} --platform ${{ platform }} --load
