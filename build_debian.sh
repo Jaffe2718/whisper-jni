@@ -3,7 +3,11 @@ set -xe
 build_lib() {
   TMP_DIR=src/main/resources/linux-build
   TARGET_DIR=src/main/resources/linux-"$OUT_ARCH"
-  cmake -B build $CMAKE_ARGS -DCMAKE_C_FLAGS="$CMAKE_CFLAGS" -DCMAKE_INSTALL_PREFIX=$TMP_DIR
+  
+  # Define Vulkan as an environment variable
+  export VULKAN_ARG=${VULKAN_ARG:-OFF} # set through CI/CD
+  
+  cmake -B build $CMAKE_ARGS -DCMAKE_C_FLAGS="$CMAKE_CFLAGS" -DCMAKE_INSTALL_PREFIX=$TMP_DIR -DGGML_VULKAN=${VULKAN_ARG}
   cmake --build build --config Release
   cmake --install build
   mkdir -p "$TARGET_DIR"
