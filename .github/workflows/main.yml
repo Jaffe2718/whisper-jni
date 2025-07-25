@@ -23,7 +23,7 @@ jobs:
         path: ggml-silero-v5.1.2.bin
         retention-days: 2
 
-  build-linux-x64:
+  build-linux-x64-vulkan:
     # add vulkan
     needs: [download-models]
     runs-on: ubuntu-latest
@@ -36,10 +36,9 @@ jobs:
         with:
           install: true
       - name: Install Vulkan SDK
-        uses: jakoch/install-vulkan-sdk-action@v1
+        uses: humbletim/install-vulkan-sdk@v1.2
         with:
-          vulkan_version: 1.4.309.0
-          install_runtime: true
+          version: 1.4.309.0
           cache: true
       - name: Setup project dir
         run: |
@@ -119,10 +118,9 @@ jobs:
           java-version: 22
           distribution: 'temurin'
       - name: Install Vulkan SDK
-        uses: jakoch/install-vulkan-sdk-action@v1
+        uses: humbletim/install-vulkan-sdk@v1.2
         with:
-          vulkan_version: 1.4.309.0
-          install_runtime: true
+          version: 1.4.309.0
           cache: true
       - name: Setup project dir
         run: |
