@@ -63,14 +63,15 @@ jobs:
         # Ok... the build script runs at docker build
         # If you try -v in docker run, the mount will overwrite what's in there
         run: |
+          # Specify if we're building for Vulkan
           export VULKAN_ARG=${{ matrix.vulkan }}
           OUTPUT_DIR="src/main/resources/${{ matrix.arch }}"
-          docker build -f dockerfile . -t whisperjni_binary:${{ matrix.platform }} --platform ${{ platform }} --load
+          docker build -f dockerfile . -t whisperjni_binary:${{ matrix.platform }} --platform ${{ matrix.platform }} --load
           docker run \
-            --platform=${{ platform }} \
+            --platform=${{ matrix.platform }} \
             -v "$(pwd)/$OUTPUT_DIR:/app/$OUTPUT_DIR" \
             -v "$(pwd)/test-results:/app/build/test-results" \
-            whisperjni_binary:${{ platform }}
+            whisperjni_binary:${{ matrix.platform }}
       - name: Publish test report
         uses: mikepenz/action-junit-report@v5
         if: success() || failure()
