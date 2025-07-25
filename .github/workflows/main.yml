@@ -35,18 +35,11 @@ jobs:
       - uses: docker/setup-buildx-action@v3
         with:
           install: true
-      - name: Download Vulkan SDK
-        run: |
-          wget -qO- https://sdk.lunarg.com/sdk/download/1.4.309.0/linux/vulkan_sdk.tar.gz | tar xz
-          export VULKAN_SDK=$(pwd)/1.4.309.0/x86_64
-          echo "VULKAN_SDK=$VULKAN_SDK" >> $GITHUB_ENV
-          echo "$VULKAN_SDK/include" >> $GITHUB_PATH
-
-      - name: Confirm Vulkan SDK Install
-        run: test -f $VULKAN_SDK/include/vulkan/vulkan.h
-      - name: Configure CMake
-        run: |
-          cmake -DVULKAN_INCLUDE_DIR=$VULKAN_SDK/include .
+      - name: Prepare Vulkan SDK
+        uses: humbletim/setup-vulkan-sdk@v1.2.1
+        with:
+          vulkan-query-version: 1.4.309.0
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
       - name: Setup project dir
         run: |
           mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
@@ -91,7 +84,6 @@ jobs:
         with:
           vulkan_version: 1.4.309.0
           install_runtime: true
-          cache: true
       - name: Setup project dir
         run: |
           git submodule update --init
@@ -113,7 +105,7 @@ jobs:
           name: whisper-jni-vulkan
           path: src/main/resources/windows-x64-vulkan/*.dll
 
-  build-mac-x64:
+  build-mac-x64-vulkan:
     # add vulkan
     needs: [download-models]
     runs-on: macos-13
@@ -128,7 +120,6 @@ jobs:
         uses: humbletim/install-vulkan-sdk@v1.2
         with:
           version: 1.4.309.0
-          cache: true
       - name: Setup project dir
         run: |
           git submodule update --init
