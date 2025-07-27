@@ -81,7 +81,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-natives-${{ matrix.platform }}-${{ matrix.vulkan }}
-          path: linux-build/*
+          path: whisperjni-build/*
 
   build-windows:
     needs: [download-models]
@@ -126,7 +126,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-natives-${{ matrix.vulkan }}
-          path: windows-build/*.dll
+          path: whisperjni-build/*.dll
 #
 #  build-windows-vulkan:
 #    needs: [download-models]
@@ -207,7 +207,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mac-natives-${{ matrix.arch }}
-          path: mac-build/*.dylib
+          path: whisperjni-build/*.dylib
 
   publish:
     runs-on: ubuntu-latest

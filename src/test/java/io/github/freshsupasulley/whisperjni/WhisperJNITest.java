@@ -10,8 +10,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.text.ParseException;
 
 import javax.sound.sampled.AudioInputStream;
@@ -61,14 +63,17 @@ public class WhisperJNITest {
 		whisper = new WhisperJNI();
 		
 		// Check if we have Vulkan natives
-		Path testVulkanNatives = Path.of("test-vulkan"); // for CI/CD
+		Path testVulkanNatives = Path.of("whisperjni-build"); // for CI/CD
 		
+		// For CI/CD purposes, if you can use Vulkan, then you best believe the natives better be built for Vulkan too
 		if(LibraryUtils.canUseVulkan() && Files.isDirectory(testVulkanNatives))
 		{
 			LibraryUtils.loadVulkan(logger, testVulkanNatives);
 		}
 		else
 		{
+			// Move build dir into where WhisperJNI expects the natives to be
+			Files.copy(testVulkanNatives, Path.of("src", "main", "resources", LibraryUtils.getOS() + "-" + LibraryUtils.getArchitecture()), StandardCopyOption.REPLACE_EXISTING);
 			whisper.loadLibrary(logger);
 			WhisperJNI.setLogger(logger);
 		}

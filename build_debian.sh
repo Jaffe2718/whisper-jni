@@ -2,8 +2,10 @@
 set -xe
 build_lib() {
   TMP_DIR=tmp-build
-  TARGET_DIR=linux-build
-  
+  TARGET_DIR=whisperjni-build
+
+  mkdir -p $TMP_DIR $TARGET_DIR
+
   # Define Vulkan as an environment variable
   export VULKAN_ARG=${VULKAN_ARG:-OFF} # set through CI/CD
 

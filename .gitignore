@@ -1,3 +1,7 @@
+# WhisperJNI build stuff
+tmp-build/
+whisperjni-build/
+
 target/
 bin/
 !.mvn/wrapper/maven-wrapper.jar

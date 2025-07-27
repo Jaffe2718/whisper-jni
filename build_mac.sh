@@ -25,9 +25,9 @@ INCLUDE_JAVA="-I $JAVA_HOME/include -I $JAVA_HOME/include/darwin"
 # Is this ever used??
 #TARGET=$AARCH-apple-macosx$TARGET_VERSION
 TMP_DIR=tmp-build
-TARGET_DIR=mac-build
+TARGET_DIR=whisperjni-build
 
-mkdir -p $TMP_DIR
+mkdir -p $TMP_DIR $TARGET_DIR
 # Static linking seems to be a pain in the ass
 cmake -Bbuild -DCMAKE_INSTALL_PREFIX=$TMP_DIR -DCMAKE_OSX_DEPLOYMENT_TARGET=$TARGET_VERSION -DCMAKE_OSX_ARCHITECTURES=$AARCH
 cmake --build build --config Release
