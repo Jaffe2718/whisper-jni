@@ -166,7 +166,7 @@ jobs:
 #          name: whisper-jni-vulkan
 #          path: src/main/resources/windows-x64-vulkan/*.dll
 
-  build-mac-x64:
+  build-mac:
     needs: [download-models]
     strategy:
       matrix:
