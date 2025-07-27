@@ -224,12 +224,12 @@ jobs:
     - name: Move natives
       run: |
         find ./src/main/resources -name ".gitkeep" -type f -delete
-#        mv ./linux-natives-x64-ON/*.so ./src/main/resources/linux-x64-vulkan/
-#        mv ./linux-natives-aarch64-ON/*.so ./src/main/resources/linux-aarch64-vulkan/
+        # mv ./linux-natives-x64-ON/*.so ./src/main/resources/linux-x64-vulkan/
+        # mv ./linux-natives-aarch64-ON/*.so ./src/main/resources/linux-aarch64-vulkan/
         mv ./linux-natives-x64-OFF/*.so ./src/main/resources/linux-x64/
         mv ./linux-natives-aarch64-OFF/*.so ./src/main/resources/linux-aarch64/
         mv ./windows-natives/*.dll ./src/main/resources/windows-x64/
-#        mv ./whisper-jni-vulkan/*.dll ./src/main/resources/windows-x64-vulkan/
+        # mv ./whisper-jni-vulkan/*.dll ./src/main/resources/windows-x64-vulkan/
         mv ./mac-natives-x64/*.dylib ./src/main/resources/mac-x64/
         mv ./mac-natives-aarch64/*.dylib ./src/main/resources/mac-aarch64/
     - name: Setup project dir
