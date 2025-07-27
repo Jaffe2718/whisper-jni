@@ -217,8 +217,9 @@ JNIEXPORT jboolean JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_
   return whisper_is_multilingual(contextMap.at(ctxRef));
 }
 
-JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_full(JNIEnv *env, jobject thisObject, jint ctxRef, jobject jParams, jfloatArray samples, jint numSamples)
+JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_full(JNIEnv *env, jobject thisObject, jint ctxRef, jobject jParams, jfloatArray samples, jint jNumSamples)
 {
+  int numSamples = static_cast<int>(jNumSamples);
   whisper_full_params params = newWhisperFullParams(env, jParams);
   // I was unable to handle the grammar inside the newWhisperFullParams fn
   jclass paramsJClass = env->GetObjectClass(jParams);
@@ -254,7 +255,7 @@ static int cs_to_samples(int64_t cs)
   return (int)((cs / 100.0) * WHISPER_SAMPLE_RATE + 0.5);
 }
 
-JNIEXPORT jstring JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_vadState(JNIEnv *env, jobject thisObject, jint ctxRef, jint stateRef, jobject jParams, jobject jVADCxtParams, jfloatArray samples, jint numSamples)
+JNIEXPORT jstring JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_vadState(JNIEnv *env, jobject thisObject, jint ctxRef, jint stateRef, jobject jParams, jobject jVADCxtParams, jfloatArray samples, jint jNumSamples)
 {
   // Setup
   whisper_full_params params = newWhisperFullParams(env, jParams);
@@ -279,6 +280,8 @@ JNIEXPORT jstring JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_v
   whisper_vad_context *vadCtx = whisper_vad_init_from_file_with_params(params.vad_model_path, vadCtxParams);
 
   jfloat *nativeSamples = env->GetFloatArrayElements(samples, NULL);
+  // Don't confuse the compilier (didn't work on my machine but worked fine in gh actions)
+  int numSamples = static_cast<int>(jNumSamples);
   whisper_vad_segments *segments = whisper_vad_segments_from_samples(vadCtx, params.vad_params, nativeSamples, numSamples);
   
   if(!segments)
@@ -382,8 +385,9 @@ JNIEXPORT jstring JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_v
   return output.empty() ? NULL : env->NewStringUTF(output.c_str());
 }
 
-JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_fullWithState(JNIEnv *env, jobject thisObject, jint ctxRef, jint stateRef, jobject jParams, jfloatArray samples, jint numSamples)
+JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_fullWithState(JNIEnv *env, jobject thisObject, jint ctxRef, jint stateRef, jobject jParams, jfloatArray samples, jint jNumSamples)
 {
+  int numSamples = static_cast<int>(jNumSamples);
   whisper_full_params params = newWhisperFullParams(env, jParams);
   // I was unable to handle the grammar inside the newWhisperFullParams fn
   jclass paramsJClass = env->GetObjectClass(jParams);

@@ -22,9 +22,10 @@ esac
 echo "Detected architecture: $AARCH"
 
 INCLUDE_JAVA="-I $JAVA_HOME/include -I $JAVA_HOME/include/darwin"
-TARGET=$AARCH-apple-macosx$TARGET_VERSION
-TARGET_DIR=src/main/resources/mac-$AARCH_NAME
-TMP_DIR=src/main/resources/tmp-mac-$AARCH_NAME
+# Is this ever used??
+#TARGET=$AARCH-apple-macosx$TARGET_VERSION
+TMP_DIR=tmp-build
+TARGET_DIR=mac-build
 
 mkdir -p $TMP_DIR
 # Static linking seems to be a pain in the ass

@@ -51,24 +51,13 @@ public class LibraryUtils {
 	
 	static String getArchitecture()
 	{
-		switch(OS_ARCH)
+		return switch(OS_ARCH)
 		{
-			case "i386":
-			case "i486":
-			case "i586":
-			case "i686":
-			case "x86":
-			case "x86_32":
-				return "x86";
-			case "amd64":
-			case "x86_64":
-			case "x86-64":
-				return "x64";
-			case "aarch64":
-				return "aarch64";
-			default:
-				return OS_ARCH;
-		}
+			case "i386", "i486", "i586", "i686", "x86", "x86_32" -> "x86";
+			case "amd64", "x86_64", "x86-64" -> "x64";
+			case "aarch64" -> "aarch64";
+			default -> OS_ARCH;
+		};
 	}
 	
 	/**
@@ -77,7 +66,7 @@ public class LibraryUtils {
 	 * @return OS of this machine as a string
 	 * @throws IOException if this OS isn't supported
 	 */
-	public static String getPlatform() throws IOException
+	public static String getOS() throws IOException
 	{
 		if(isWindows())
 		{

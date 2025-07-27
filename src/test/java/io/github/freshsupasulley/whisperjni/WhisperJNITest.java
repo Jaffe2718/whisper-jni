@@ -60,11 +60,12 @@ public class WhisperJNITest {
 		// Initialize before loading natives
 		whisper = new WhisperJNI();
 		
-		if(LibraryUtils.canUseVulkan())
+		// Check if we have Vulkan natives
+		Path testVulkanNatives = Path.of("test-vulkan"); // for CI/CD
+		
+		if(LibraryUtils.canUseVulkan() && Files.isDirectory(testVulkanNatives))
 		{
-			// Check if we have Vulkan natives
-			LibraryUtils.loadVulkan(logger, sampleAssistantGrammar);
-//			whisper.loadVulkan();
+			LibraryUtils.loadVulkan(logger, testVulkanNatives);
 		}
 		else
 		{
