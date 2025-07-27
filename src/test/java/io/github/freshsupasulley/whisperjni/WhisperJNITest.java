@@ -28,11 +28,10 @@ public class WhisperJNITest {
 	
 	private static Path testModelPath = Path.of("ggml-tiny.bin");
 	private static Path samplePath = Path.of("src/main/native/whisper/samples/jfk.wav");
-	private static Path sample2Path = Path.of("src/test/resources/progress.wav");
+//	private static Path sample2Path = Path.of("src/test/resources/progress.wav");
 	private static Path sampleAssistantGrammar = Path.of("src/main/native/whisper/grammars/assistant.gbnf");
 	private static Path sampleChessGrammar = Path.of("src/main/native/whisper/grammars/chess.gbnf");
 	private static Path sampleColorsGrammar = Path.of("src/main/native/whisper/grammars/colors.gbnf");
-	private static Path vadModelPath = Path.of("src", "main", "resources", "ggml-silero-v5.1.2.bin");
 	private static WhisperJNI whisper;
 	
 	private static Logger logger = LoggerFactory.getLogger(WhisperJNITest.class);
@@ -56,21 +55,22 @@ public class WhisperJNITest {
 		
 		// Test extracting the VAD model
 		tempVAD = Files.createTempFile("tempVAD", ".bin");
-		WhisperJNI.exportVADModel(logger, tempVAD);
+		LibraryUtils.exportVADModel(tempVAD);
 		
-		// This doesn't check if we have Vulkan natives in the local dir
-		// So if you have vulkan, you better use the natives! Run the vulkan build script
-		if(WhisperJNI.canUseVulkan())
+		// Initialize before loading natives
+		whisper = new WhisperJNI();
+		
+		if(LibraryUtils.canUseVulkan())
 		{
-			WhisperJNI.loadVulkan();
+			// Check if we have Vulkan natives
+			LibraryUtils.loadVulkan(logger, sampleAssistantGrammar);
+//			whisper.loadVulkan();
 		}
 		else
 		{
-			WhisperJNI.loadLibrary(); // uses a default logger
+			whisper.loadLibrary(logger);
+			WhisperJNI.setLogger(logger);
 		}
-		
-		whisper = new WhisperJNI();
-		whisper.setWhisperLogger(logger);
 	}
 	
 	@Test
@@ -217,7 +217,7 @@ public class WhisperJNITest {
 			assertNotNull(ctx);
 			var params = new WhisperFullParams(WhisperSamplingStrategy.GREEDY);
 			params.vad = true;
-			params.vad_model_path = Path.of("src", "main", "resources", "ggml-silero-v5.1.2.bin").toAbsolutePath().toString();
+			params.vad_model_path = tempVAD.toAbsolutePath().toString();
 			
 			var vadParams = params.vadParams;
 			vadParams.threshold = 0.995f;
@@ -263,7 +263,7 @@ public class WhisperJNITest {
 			
 			var params = new WhisperFullParams(WhisperSamplingStrategy.GREEDY);
 			params.vad = true;
-			params.vad_model_path = Path.of("src", "main", "resources", "ggml-silero-v5.1.2.bin").toAbsolutePath().toString();
+			params.vad_model_path = tempVAD.toAbsolutePath().toString();
 			
 			// Keep default
 			var vadParams = params.vadParams;
@@ -291,7 +291,7 @@ public class WhisperJNITest {
 			
 			var params = new WhisperFullParams(WhisperSamplingStrategy.GREEDY);
 			params.vad = true;
-			params.vad_model_path = Path.of("src", "main", "resources", "ggml-silero-v5.1.2.bin").toAbsolutePath().toString();
+			params.vad_model_path = tempVAD.toAbsolutePath().toString();
 			
 			// Keep default
 			var vadParams = params.vadParams;
@@ -303,6 +303,7 @@ public class WhisperJNITest {
 			// vadParams.samples_overlap = 0.1f;
 			
 			String result = whisper.vadState(ctx, state, params, new WhisperVADContextParams(), samples, samples.length);
+			logger.info("Result: {}", result);
 			assert result == null;
 		}
 	}

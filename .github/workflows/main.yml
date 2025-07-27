@@ -86,6 +86,9 @@ jobs:
   build-windows-x64:
     needs: [download-models]
     runs-on: windows-latest
+    strategy:
+      matrix:
+        vulkan: [OFF, ON]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -93,13 +96,24 @@ jobs:
         with:
           java-version: 22
           distribution: 'temurin'
+      # Also install Vulkan if we're building for it
+      - name: Install Vulkan SDK
+        uses: jakoch/install-vulkan-sdk-action@v1
+        if: matrix.vulkan == 'ON'
+        with:
+          vulkan_version: 1.4.309.0
+          install_runtime: true
+          cache: true
       - name: Setup project dir
         run: |
           git submodule update --init
           mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
           mv ./silero-ggml-model/ggml-silero-v5.1.2.bin ./src/main/resources
-      - name: Build native library
+      - name: Build
         shell: powershell
+        env:
+          # Picked up in the ps script
+          VULKAN: ${{ matrix.vulkan }}
         run: .\build_win.ps1
       - name: Test
         run: ./gradlew test

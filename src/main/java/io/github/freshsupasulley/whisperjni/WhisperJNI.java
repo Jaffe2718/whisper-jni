@@ -2,9 +2,9 @@ package io.github.freshsupasulley.whisperjni;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -12,14 +12,15 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The {@link WhisperJNI} class allows to use whisper.cpp thought the JNI.
+ * 
+ * <p>
+ * Be sure to load the natives using {@link #loadLibrary()} before invoking any native methods!
+ * </p>
  *
  * @author Miguel Alvarez Díez - Initial contribution
  */
 public class WhisperJNI {
 	
-	private static boolean libraryLoaded;
-	
-	// region native api
 	private native int init(String model, WhisperContextParams params);
 	
 	private native int initNoState(String model, WhisperContextParams params);
@@ -71,18 +72,56 @@ public class WhisperJNI {
 	
 	private native String printSystemInfo();
 	
-	private native static void setLogger(Logger logger);
-	
-	// endregion
+	/**
+	 * Sets the whisper.cpp logger.
+	 * 
+	 * <p>
+	 * You must first load the natives before calling this method.
+	 * </p>
+	 * 
+	 * @param logger SLF4J {@link Logger}
+	 */
+	public static native void setLogger(Logger logger);
 	
 	/**
-	 * Sets the SLF4J {@link Logger} to receive internal whisper events.
+	 * Loads the default natives bundled with the library with a {@link Logger} instance to listen to important library loading events / problems.
 	 * 
-	 * @param logger {@link Logger} SLF4J instance
+	 * <p>
+	 * You can alternatively load your own natives (such as the faster Vulkan natives) using {@link LibraryUtils}.
+	 * </p>
+	 * 
+	 * <p>
+	 * After this method finishes successfully, consider setting {@link WhisperJNI#setLogger(Logger)} to listen to whisper.cpp events.
+	 * </p>
+	 *
+	 * @param logger SLF4J {@link Logger} to log library loading events
+	 * @throws IOException if something goes wrong loading the built-in natives
 	 */
-	public void setWhisperLogger(Logger logger)
+	public void loadLibrary(Logger logger) throws IOException
 	{
-		setLogger(logger);
+		try
+		{
+			// the leading / is needed (same with extracting the ggml model in LibraryUtils)
+			Path tempLib = LibraryUtils.extractFolderToTemp(logger, WhisperJNI.class.getResource("/" + LibraryUtils.getPlatform() + "-" + LibraryUtils.getArchitecture()).toURI());
+			LibraryUtils.loadInOrder(logger, tempLib);
+		} catch(URISyntaxException e)
+		{
+			throw new IOException(e);
+		}
+	}
+	
+	/**
+	 * Loads the default natives bundled with the library.
+	 * 
+	 * <p>
+	 * You can alternatively load your own natives (such as the faster Vulkan natives) using {@link LibraryUtils}.
+	 * </p>
+	 *
+	 * @throws IOException if something goes wrong loading the built-in natives
+	 */
+	public void loadLibrary() throws IOException
+	{
+		loadLibrary(LoggerFactory.getLogger(WhisperJNI.class));
 	}
 	
 	/**
@@ -475,95 +514,12 @@ public class WhisperJNI {
 	}
 	
 	/**
-	 * Extracts the bundled <code>ggml-silero-v5.1.2</code> model to a directory on your machine.
-	 * 
-	 * <p>
-	 * After exporting, you can use that path to fill {@link WhisperFullParams#vad_model_path}.
-	 * </p>
-	 * 
-	 * @param logger      SLF4J {@link Logger}
-	 * @param destination path to store the model
-	 * @throws IOException if something goes wrong (like the path being malformed)
-	 */
-	public static void exportVADModel(Logger logger, Path destination) throws IOException
-	{
-		logger.info("Looking for VAD model");
-		Path path = LibraryUtils.getInternalResource(logger, "ggml-silero-v5.1.2.bin");
-		
-		logger.debug("Copying {} to {}", path, destination);
-		Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
-	}
-	
-	/**
-	 * Register the native library, should be called at first.
-	 * 
-	 * <p>
-	 * If you want to use Vulkan natives instead, manually call {@link LibraryUtils#loadVulkan(Logger)}.
-	 * </p>
-	 * 
-	 * @throws IOException when unable to load the native library
-	 */
-	public static void loadLibrary() throws IOException
-	{
-		loadLibrary(LoggerFactory.getLogger(WhisperJNI.class));
-	}
-	
-	/**
-	 * Register the native library, should be called at first.
-	 *
-	 * @param logger SLF4J {@link Logger}.
-	 * @throws IOException when unable to load the native library.
-	 */
-	public static void loadLibrary(Logger logger) throws IOException
-	{
-		if(libraryLoaded)
-		{
-			return;
-		}
-		
-		LibraryUtils.loadLibrary(logger);
-		libraryLoaded = true;
-	}
-	
-	/**
-	 * Use to determine if this system can custom-built Vulkan libs. Must be on Windows with a 64-bit processor, and <b>most importantly</b>
-	 * <code>vulkan-1.dll</code> at <code>/System32/vulkan-1.dll</code>.
-	 * 
-	 * @return true if this system can use the Vulkan natives, false otherwise
-	 */
-	public static boolean canUseVulkan()
-	{
-		return LibraryUtils.isWindows() && LibraryUtils.getArchitecture().equals("x64") && LibraryUtils.getVulkanDLL() != null;
-	}
-	
-	/**
-	 * Loads Vulkan natives with a default logger. Use {@link #canUseVulkan()} before calling this method.
-	 * 
-	 * @throws IOException if something went wrong loading Vulkan natives
-	 */
-	public static void loadVulkan() throws IOException
-	{
-		LibraryUtils.loadVulkan(LoggerFactory.getLogger(WhisperJNI.class));
-	}
-	
-	/**
-	 * Loads Vulkan natives. Use {@link #canUseVulkan()} before calling this method.
-	 * 
-	 * @param logger SLF4J {@link Logger}
-	 * @throws IOException if something went wrong loading Vulkan natives
-	 */
-	public static void loadVulkan(Logger logger) throws IOException
-	{
-		LibraryUtils.loadVulkan(logger);
-	}
-	
-	/**
 	 * In order to avoid sharing pointers between the c++ and java, we use this util base class which holds a random integer id generated in the whisper.cpp
 	 * wrapper.
 	 *
 	 * @author Miguel Alvarez Díez - Initial contribution
 	 */
-	protected static abstract class WhisperJNIPointer implements AutoCloseable {
+	static abstract class WhisperJNIPointer implements AutoCloseable {
 		
 		/**
 		 * Native pointer reference identifier.
@@ -576,7 +532,7 @@ public class WhisperJNI {
 		 *
 		 * @param pointer a {@link WhisperJNIPointer} instance representing a pointer.
 		 */
-		protected static void assertAvailable(WhisperJNIPointer pointer)
+		static void assertAvailable(WhisperJNIPointer pointer)
 		{
 			if(pointer.isReleased())
 			{
@@ -589,7 +545,7 @@ public class WhisperJNI {
 		 *
 		 * @param ref a random integer id generated by the native wrapper
 		 */
-		protected WhisperJNIPointer(int ref)
+		WhisperJNIPointer(int ref)
 		{
 			this.ref = ref;
 		}
@@ -599,7 +555,7 @@ public class WhisperJNI {
 		 *
 		 * @return a boolean indicating if the native data was already released
 		 */
-		protected boolean isReleased()
+		boolean isReleased()
 		{
 			return released;
 		}
@@ -607,7 +563,7 @@ public class WhisperJNI {
 		/**
 		 * Mark the point as released
 		 */
-		protected void release()
+		void release()
 		{
 			released = true;
 		}

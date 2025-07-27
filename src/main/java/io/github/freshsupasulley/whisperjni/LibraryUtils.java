@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -21,13 +22,13 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 
 /**
- * Adapted from <a href="https://github.com/henkelmax/rnnoise4j/blob/master/src/main/java/de/maxhenkel/rnnoise4j/LibraryLoader.java">RNNoise4J</a>.
+ * Used for advanced library loading utils.
  * 
  * <p>
- * Clients should not need to use this class.
+ * Adapted from <a href="https://github.com/henkelmax/rnnoise4j/blob/master/src/main/java/de/maxhenkel/rnnoise4j/LibraryLoader.java">RNNoise4J</a>.
  * </p>
  */
-class LibraryUtils {
+public class LibraryUtils {
 	
 	/** OS name */
 	public static final String OS_NAME = System.getProperty("os.name").toLowerCase();
@@ -48,7 +49,7 @@ class LibraryUtils {
 	{
 	}
 	
-	public static String getArchitecture()
+	static String getArchitecture()
 	{
 		switch(OS_ARCH)
 		{
@@ -70,6 +71,12 @@ class LibraryUtils {
 		}
 	}
 	
+	/**
+	 * Returns the operating system name of this machine.
+	 * 
+	 * @return OS of this machine as a string
+	 * @throws IOException if this OS isn't supported
+	 */
 	public static String getPlatform() throws IOException
 	{
 		if(isWindows())
@@ -90,19 +97,69 @@ class LibraryUtils {
 		}
 	}
 	
+	/**
+	 * Determines if this OS is Windows.
+	 * 
+	 * @return true if Windows
+	 */
 	public static boolean isWindows()
 	{
 		return OS_NAME.contains("win");
 	}
 	
-	private static boolean isMac()
+	/**
+	 * Determines if this OS is Mac.
+	 * 
+	 * @return true if Windows
+	 */
+	public static boolean isMac()
 	{
 		return OS_NAME.contains("mac");
 	}
 	
-	private static boolean isLinux()
+	/**
+	 * Determines if this OS is Linux.
+	 * 
+	 * @return true if Linux
+	 */
+	public static boolean isLinux()
 	{
 		return OS_NAME.contains("nux");
+	}
+	
+	/**
+	 * Extracts the bundled <code>ggml-silero-v5.1.2</code> model to a directory on your machine.
+	 * 
+	 * <p>
+	 * Example usage:
+	 * </p>
+	 * 
+	 * <pre>
+	 * {@code
+	 * Path tempVAD = Files.createTempFile("tempVAD", ".bin");
+	 * LibraryUtils.exportVADModel(tempVAD);
+	 * }
+	 * </pre>
+	 * 
+	 * <p>
+	 * After exporting, you can use the path to fill {@link WhisperFullParams#vad_model_path}.
+	 * </p>
+	 * 
+	 * @param logger      SLF4J {@link Logger}
+	 * @param destination path to store the model
+	 * @throws IOException if something goes wrong (like the path being malformed)
+	 */
+	public static void exportVADModel(Path destination) throws IOException
+	{
+		// Shouldn't ever throw an error, but wrap it just in case
+		try
+		{
+			Path path = LibraryUtils.getPathToResource(LibraryUtils.class.getResource("/ggml-silero-v5.1.2.bin").toURI());
+			Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
+		} catch(URISyntaxException e)
+		{
+			throw new IOException(e);
+		}
 	}
 	
 	/**
@@ -112,10 +169,24 @@ class LibraryUtils {
 	 */
 	public static Path getVulkanDLL()
 	{
-		// do I bother checking SysWOW64?? I thought this was x64 only
-		List<Path> commonPaths = List.of(Path.of(System.getenv("SystemRoot"), "System32", "vulkan-1.dll"), Path.of(System.getenv("SystemRoot"), "SysWOW64", "vulkan-1.dll"));
+		// Simplifications can be made if we only consider x64 systems
+		List<Path> possiblePaths = new ArrayList<Path>();
 		
-		for(Path path : commonPaths)
+		if(isWindows())
+		{
+			String systemRoot = System.getenv("SystemRoot");
+			possiblePaths.add(Path.of(systemRoot, "System32", "vulkan-1.dll"));
+			possiblePaths.add(Path.of(systemRoot, "SysWOW64", "vulkan-1.dll"));
+		}
+		else if(isLinux())
+		{
+			possiblePaths.add(Path.of("/usr/lib/libvulkan.so.1"));
+			possiblePaths.add(Path.of("/usr/lib/x86_64-linux-gnu/libvulkan.so.1"));
+			possiblePaths.add(Path.of("/usr/local/lib/libvulkan.so.1"));
+		}
+		// ^ Vulkan on Mac isn't a thing + metal is fast enough already so we're not considering it
+		
+		for(Path path : possiblePaths)
 		{
 			if(Files.exists(path))
 			{
@@ -127,30 +198,39 @@ class LibraryUtils {
 	}
 	
 	/**
-	 * Loads the native library, should be called at first. This must be called before whisper native methods are invoked.
+	 * Determines if this system has the Vulkan DLL installed and can therefore attempt to load the Vulkan natives for whisper.cpp.
 	 * 
 	 * <p>
-	 * You can alternatively call {@link #loadVulkan()} if on the right machine.
+	 * Only relevant on Windows and Linux systems, as Mac doesn't support Vulkan natively (and Metal is quite fast already).
 	 * </p>
 	 * 
-	 * @param logger SLF4J {@link Logger}
-	 * @throws IOException when unable to load the native library
+	 * @return true if this system can use the Vulkan natives, false otherwise
 	 */
-	public static void loadLibrary(Logger logger) throws IOException
+	public static boolean canUseVulkan()
 	{
-		logger.info("Loading natives for whisper-jni");
-		Path tempLib = extractFolderToTemp(logger, getPlatform() + "-" + getArchitecture());
-		loadInOrder(logger, tempLib);
+		return LibraryUtils.getVulkanDLL() != null;
 	}
 	
 	/**
-	 * Loads Vulkan natives. Use {@link #canUseVulkan()} before calling this method.
+	 * Loads the custom Vulkan natives. Use {@link WhisperJNI#canUseVulkan()} before calling this method.
 	 * 
-	 * @param logger SLF4J {@link Logger}
+	 * <p>
+	 * If you're loading the natives from a fixed location on your hard disk, providing the path to the natives folder statically will work fine. However, if you're
+	 * bundling your natives into a jar and need to extract and load them at runtime, you should use {@link #extractFolderToTemp(Logger, URI)} first and use the
+	 * result as the native directory for this method.
+	 * </p>
+	 * 
+	 * <p>
+	 * <B>NOTE:</b> Natives are built for particular platforms, so ensure your logic only loads the correct ones. You may use the getters in this class for your
+	 * conditional logic.
+	 * </p>
+	 * 
+	 * @param logger     SLF4J {@link Logger}
+	 * @param nativesDir path to the directory containing all natives to load
 	 */
-	public static void loadVulkan(Logger logger)
+	public static void loadVulkan(Logger logger, Path nativesDir)
 	{
-		if(!WhisperJNI.canUseVulkan())
+		if(!canUseVulkan())
 			throw new IllegalStateException("This system can't use Vulkan natives");
 		
 		logger.info("Loading Vulkan natives for whisper-jni");
@@ -161,28 +241,101 @@ class LibraryUtils {
 			logger.info("Loading Vulkan DLL at {}", vulkanPath);
 			System.load(vulkanPath);
 			
-			// Now load our dependencies in this specific order
-			Path tempDir = extractFolderToTemp(logger, "windows-x64-vulkan");
-			loadInOrder(logger, tempDir);
-			// System.load(tempDir.resolve("ggml-base.dll").toAbsolutePath().toString());
-			// System.load(tempDir.resolve("ggml-cpu.dll").toAbsolutePath().toString());
-			// System.load(tempDir.resolve("ggml-vulkan.dll").toAbsolutePath().toString());
-			// System.load(tempDir.resolve("ggml.dll").toAbsolutePath().toString());
-			// System.load(tempDir.resolve("whisper.dll").toAbsolutePath().toString());
-			// Statically built now yippie!!
-			// String whisperJNIPath = tempDir.resolve("whisper-jni.dll").toAbsolutePath().toString();
-			// logger.info("Loading Whisper JNI at {}", whisperJNIPath);
-			// System.load(whisperJNIPath);
+			// Now load our Vulkan dependencies
+			loadInOrder(logger, nativesDir);
 		} catch(Exception e)
 		{
 			logger.error("Failed to load Vulkan natives", e);
 		}
 	}
 	
-	private static void loadInOrder(Logger logger, Path tempDir) throws IOException
+	/**
+	 * Returns a {@link Path} object the internal resource specified by the URI.
+	 * 
+	 * @param uri URI to internal resource
+	 * @return {@link Path} object
+	 * @throws IOException if something goes wrong
+	 */
+	public static Path getPathToResource(URI uri) throws IOException
+	{
+		FileSystem fs = null;
+		
+		if("jar".equals(uri.getScheme()))
+		{
+			try
+			{
+				fs = FileSystems.newFileSystem(uri, Map.of());
+			} catch(FileSystemAlreadyExistsException e)
+			{
+				fs = FileSystems.getFileSystem(uri); // reuse the one that’s open
+			}
+			
+			return fs.getPath(uri.getPath());
+		}
+		
+		Path originDir = Paths.get(uri);
+		return originDir;
+	}
+	
+	/**
+	 * Helper method that extracts internal resources to a temporary directory.
+	 * 
+	 * @param logger SLF4J {@link Logger}
+	 * @param uri    internal resource
+	 * @return path to newly created temporary directory
+	 * @throws IOException if something goes wrong
+	 */
+	public static Path extractFolderToTemp(Logger logger, URI uri) throws IOException
+	{
+		logger.info("Extracting libs from {} (OS: {}, architecture: {})", uri, OS_NAME, OS_ARCH);
+		
+		Path originDir = getPathToResource(uri);
+		
+		Path tmpDir = Files.createTempDirectory("whisperjni_");
+		logger.info("Copying natives to temporary dir {}", tmpDir);
+		
+		Files.walk(originDir).forEach(p ->
+		{
+			try
+			{
+				Path dest = tmpDir.resolve(originDir.relativize(p).toString());
+				
+				// Should never happen but because Files.walk traverses depth-first this would properly copy everything by making the parent folders first
+				if(Files.isDirectory(p))
+				{
+					Files.createDirectories(dest);
+				}
+				else
+				{
+					Files.createDirectories(dest.getParent()); // probably unnecessary
+					logger.debug("Copying {} to {}", p, dest);
+					Files.copy(p, dest, StandardCopyOption.REPLACE_EXISTING);
+				}
+			} catch(IOException ex)
+			{
+				throw new UncheckedIOException(ex);
+			}
+		});
+		
+		logger.info("Finished extracting natives");
+		return tmpDir;
+	}
+	
+	/**
+	 * Loads all natives defined in the provided directory.
+	 * 
+	 * <p>
+	 * If loading resources internally (from a jar), you should first extract them to a temp directory using {@link #extractFolderToTemp(Logger, URI)}.
+	 * </p>
+	 * 
+	 * @param logger     SLF4J {@link Logger} instance
+	 * @param nativesDir path to the directory containing the natives to load
+	 * @throws IOException if something goes wrong
+	 */
+	public static void loadInOrder(Logger logger, Path nativesDir) throws IOException
 	{
 		// Now load everything in the correct order
-		List<String> natives = Stream.of(tempDir.toFile().listFiles()).sorted(Comparator.comparing(file ->
+		List<String> natives = Stream.of(nativesDir.toFile().listFiles()).sorted(Comparator.comparing(file ->
 		{
 			for(int i = 0; i < loadOrder.size(); i++)
 			{
@@ -221,75 +374,5 @@ class LibraryUtils {
 			
 			logger.info("Done loading natives");
 		}
-	}
-	
-	private static Path extractFolderToTemp(Logger logger, String folderName) throws IOException
-	{
-		logger.info("Extracting libs from {} (OS: {}, arch: {})", folderName, OS_NAME, OS_ARCH);
-		
-		Path originDir = getInternalResource(logger, folderName);
-		
-		Path tmpDir = Files.createTempDirectory("whisperjni_");
-		logger.info("Copying natives to temporary dir {}", tmpDir);
-		
-		Files.walk(originDir).forEach(p ->
-		{
-			try
-			{
-				Path dest = tmpDir.resolve(originDir.relativize(p).toString());
-				
-				// Should never happen but because Files.walk traverses depth-first this would properly copy everything by making the parent folders first
-				if(Files.isDirectory(p))
-				{
-					Files.createDirectories(dest);
-				}
-				else
-				{
-					Files.createDirectories(dest.getParent()); // probably unnecessary
-					logger.debug("Copying {} to {}", p, dest);
-					Files.copy(p, dest, StandardCopyOption.REPLACE_EXISTING);
-				}
-			} catch(IOException ex)
-			{
-				throw new UncheckedIOException(ex);
-			}
-		});
-		
-		logger.info("Finished extracting natives");
-		return tmpDir;
-	}
-	
-	public static Path getInternalResource(Logger logger, String resourceName) throws IOException
-	{
-		URI uri;
-		
-		try
-		{
-			uri = LibraryUtils.class.getResource("/" + resourceName).toURI();
-		} catch(URISyntaxException | NullPointerException e)
-		{
-			throw new IOException("Resource '" + resourceName + "' not found on classpath", e);
-		}
-		
-		logger.info("URI: {}", uri);
-		FileSystem fs = null;
-		
-		if("jar".equals(uri.getScheme()))
-		{
-			try
-			{
-				fs = FileSystems.newFileSystem(uri, Map.of());
-			} catch(FileSystemAlreadyExistsException e)
-			{
-				fs = FileSystems.getFileSystem(uri); // reuse the one that’s open
-			}
-			
-			logger.debug("Resource is inside JAR: {}", uri);
-			return fs.getPath("/" + resourceName);
-		}
-		
-		Path originDir = Paths.get(uri);
-		logger.debug("Resource is a directory on disk: {}", originDir);
-		return originDir;
 	}
 }
