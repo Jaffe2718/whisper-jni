@@ -90,12 +90,18 @@ jobs:
           java-version: 22
           distribution: 'temurin'
       # Also install Vulkan if we're building for it
-      - name: Install Vulkan SDK
-        uses: jakoch/install-vulkan-sdk-action@v1
-        if: matrix.vulkan == 'ON'
+      - name: Prepare Vulkan SDK
+        uses: humbletim/setup-vulkan-sdk@v1.2.1
         with:
-          vulkan_version: 1.4.309.0
-          install_runtime: true
+          vulkan-query-version: 1.4.304.1
+          vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang
+          vulkan-use-cache: true
+      # - name: Install Vulkan SDK
+      #   uses: jakoch/install-vulkan-sdk-action@v1
+      #   if: matrix.vulkan == 'ON'
+      #   with:
+      #     vulkan_version: 1.4.309.0
+      #     install_runtime: true
           # Does using cache fuck up installing the runtime??
           # ^ yes, it seems so
           # cache: true
