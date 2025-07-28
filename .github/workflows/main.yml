@@ -46,14 +46,12 @@ jobs:
           java-version: 22
           distribution: 'temurin'
       # Also install Vulkan if we're building for it
-      # lets try a different action than the windows one
       - name: Install Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.2.1
+        uses: jakoch/install-vulkan-sdk-action@v1
+        if: matrix.vulkan == 'ON'
         with:
-          # I wonder if the versions matter
-          vulkan-query-version: latest
-          vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang
-          vulkan-use-cache: true
+          vulkan_version: 1.4.309.0
+          install_runtime: true
       - name: Setup project dir
         run: |
           git submodule update --init
