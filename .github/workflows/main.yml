@@ -192,6 +192,8 @@ jobs:
       - name: Build binary
         run: |
           export DYLD_LIBRARY_PATH=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/
+          # Just in case
+          chmod +x ./build_mac.sh
           ./build_mac.sh ${{ matrix.arch }}
         # Apparently gradlew isn't executable by default
       - name: Test
