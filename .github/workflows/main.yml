@@ -51,6 +51,14 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y vulkan-tools glslang-tools
+      - name: Install shaderc
+        if: matrix.vulkan == 'ON'
+        run: |
+          git clone https://github.com/google/shaderc.git
+          cd shaderc
+          git submodule update --init
+          python build.py   # This builds shaderc and, with it, glslc
+          sudo mv bin/glslc /usr/local/bin/  # Move glslc to a directory in PATH
       # Differs from the other Vulkan action (jakoch/install-vulkan-sdk-action@v1) because this lets us install Glslang too
       # I have no idea why this is the case but atp I am embodying the "if it ain't broke don't fix it" mentality
       - name: Prepare Vulkan SDK
