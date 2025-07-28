@@ -74,14 +74,14 @@ public class WhisperJNITest {
 		{
 			// Move build dir into where WhisperJNI expects the natives to be
 			Path destinationDir = Path.of("src", "main", "resources", LibraryUtils.getOS() + "-" + LibraryUtils.getArchitecture());
-			logger.info("Copying test natives into expected dir: {}", destinationDir);
+			logger.info("Copying test natives into expected dir: {}", destinationDir.toAbsolutePath());
 			
 			try(DirectoryStream<Path> stream = Files.newDirectoryStream(whisperJNIBuild))
 			{
 				for(Path entry : stream)
 				{
 					Path dest = destinationDir.resolve(entry.getFileName());
-					logger.debug("Copying {} to {}", entry, dest);
+					logger.info("Copying {} to {}", entry, dest);
 					Files.copy(entry, dest, StandardCopyOption.REPLACE_EXISTING);
 				}
 			}
