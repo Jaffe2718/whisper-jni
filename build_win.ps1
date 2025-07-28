@@ -9,7 +9,7 @@ if ($vulkanEnabled -eq "ON") {
 	Write-Host "Building with Vulkan"
 }
 
-cmake -B build -DCMAKE_BUILD_TYPE=Release "-DCMAKE_INSTALL_PREFIX=$TMP_DIR" -DBUILD_SHARED_LIBS=0 -DGGML_STATIC=0 "-DGGML_VULKAN=$vulkanEnabled"
+cmake -B build -DCMAKE_BUILD_TYPE=Release "-DCMAKE_INSTALL_PREFIX=$TMP_DIR" -DGGML_STATIC=1 "-DGGML_VULKAN=$vulkanEnabled"
 cmake --build build --config Release
 cmake --install build --config Release
 
