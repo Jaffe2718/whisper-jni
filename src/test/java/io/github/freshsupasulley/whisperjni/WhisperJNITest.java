@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.file.CopyOption;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -30,7 +30,7 @@ public class WhisperJNITest {
 	
 	private static Path testModelPath = Path.of("ggml-tiny.bin");
 	private static Path samplePath = Path.of("src/main/native/whisper/samples/jfk.wav");
-//	private static Path sample2Path = Path.of("src/test/resources/progress.wav");
+	// private static Path sample2Path = Path.of("src/test/resources/progress.wav");
 	private static Path sampleAssistantGrammar = Path.of("src/main/native/whisper/grammars/assistant.gbnf");
 	private static Path sampleChessGrammar = Path.of("src/main/native/whisper/grammars/chess.gbnf");
 	private static Path sampleColorsGrammar = Path.of("src/main/native/whisper/grammars/colors.gbnf");
@@ -63,17 +63,26 @@ public class WhisperJNITest {
 		whisper = new WhisperJNI();
 		
 		// Check if we have Vulkan natives
-		Path testVulkanNatives = Path.of("whisperjni-build"); // for CI/CD
+		Path whisperJNIBuild = Path.of("whisperjni-build"); // for CI/CD
 		
 		// For CI/CD purposes, if you can use Vulkan, then you best believe the natives better be built for Vulkan too
-		if(LibraryUtils.canUseVulkan() && Files.isDirectory(testVulkanNatives))
+		if(LibraryUtils.canUseVulkan() && Files.isDirectory(whisperJNIBuild))
 		{
-			LibraryUtils.loadVulkan(logger, testVulkanNatives);
+			LibraryUtils.loadVulkan(logger, whisperJNIBuild);
 		}
 		else
 		{
 			// Move build dir into where WhisperJNI expects the natives to be
-			Files.copy(testVulkanNatives, Path.of("src", "main", "resources", LibraryUtils.getOS() + "-" + LibraryUtils.getArchitecture()), StandardCopyOption.REPLACE_EXISTING);
+			Path destinationDir = Path.of("src", "main", "resources", LibraryUtils.getOS() + "-" + LibraryUtils.getArchitecture());
+			
+			try(DirectoryStream<Path> stream = Files.newDirectoryStream(whisperJNIBuild))
+			{
+				for(Path entry : stream)
+				{
+					Files.copy(entry, destinationDir.resolve(entry.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+				}
+			}
+			
 			whisper.loadLibrary(logger);
 			WhisperJNI.setLogger(logger);
 		}

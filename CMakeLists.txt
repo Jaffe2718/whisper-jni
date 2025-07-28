@@ -99,6 +99,8 @@ if((NOT MSVC) AND (NOT APPLE))
 endif()
 
 if(GGML_VULKAN)
+  message(STATUS "GGML_VULKAN is enabled")
+  
   find_path(VULKAN_INCLUDE_DIR vulkan/vulkan.h PATHS "$ENV{VULKAN_SDK}/Include" REQUIRED)
   find_library(VULKAN_LIBRARY vulkan-1 PATHS "$ENV{VULKAN_SDK}/Lib" REQUIRED)
   
