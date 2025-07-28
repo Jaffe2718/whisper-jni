@@ -70,7 +70,6 @@ public class WhisperJNITest {
 		{
 			if(LibraryUtils.canUseVulkan())
 			{
-				logger.info("Loading Vulkan natives");
 				LibraryUtils.loadVulkan(logger, whisperJNIBuild);
 			}
 			else
