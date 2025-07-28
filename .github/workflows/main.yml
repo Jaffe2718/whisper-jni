@@ -54,6 +54,15 @@ jobs:
         # arm64 only!
       - uses: docker/setup-qemu-action@v3
         if: matrix.platform == 'arm64'
+      # Also install Vulkan if we're building for it
+      # ... does this work when dockerized like this??
+      - name: Install Vulkan SDK
+        uses: jakoch/install-vulkan-sdk-action@v1
+        if: matrix.vulkan == 'ON'
+        with:
+          vulkan_version: 1.4.309.0
+          install_runtime: true
+          cache: true
       - name: Setup project dir
         run: |
           mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin

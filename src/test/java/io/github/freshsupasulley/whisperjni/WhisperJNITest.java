@@ -75,6 +75,7 @@ public class WhisperJNITest {
 			}
 			else
 			{
+				logger.info("Loading standard natives");
 				LibraryUtils.loadInOrder(logger, whisperJNIBuild);
 				whisper.loadLibrary(logger);
 			}
