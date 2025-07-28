@@ -101,20 +101,18 @@ endif()
 if(GGML_VULKAN)
   message(STATUS "GGML_VULKAN is enabled")
   message(STATUS "Vulkan SDK path: $ENV{VULKAN_SDK}")
-  message(STATUS "Vulkan include dir: $ENV{VULKAN_INCLUDE_DIR}")
-  message(STATUS "Vulkan lib dir: $ENV{VULKAN_LIBRARY}")
   
   # This blew my fucking mind. Apparently the capital matters
   # (linux has lowercase include, Windows uppercase)
   if(WIN32)
-    set(VULKAN_HEADER_PATH "${VULKAN_SDK_PATH}/Include/vulkan")
+    set(VULKAN_INCLUDE_PATH "${VULKAN_SDK_PATH}/Include")
     set(VULKAN_LIB_PATH "${VULKAN_SDK_PATH}/Lib")
   else()
-    set(VULKAN_HEADER_PATH "${VULKAN_SDK_PATH}/include/vulkan")
+    set(VULKAN_INCLUDE_PATH "${VULKAN_SDK_PATH}/include")
     set(VULKAN_LIB_PATH "${VULKAN_SDK_PATH}/lib")
   endif()
 
-  find_path(VULKAN_INCLUDE_DIR vulkan/vulkan.h PATHS "${VULKAN_HEADER_PATH}" REQUIRED)
+  find_path(VULKAN_INCLUDE_DIR vulkan/vulkan.h PATHS "${VULKAN_INCLUDE_PATH}" REQUIRED)
   find_library(VULKAN_LIBRARY vulkan-1 PATHS "${VULKAN_LIB_PATH}" REQUIRED)
   
   message(STATUS "Found Vulkan include: ${VULKAN_INCLUDE_DIR}")
