@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
     # BEGIN NEW SHIT
     gnupg \
     curl \
-    lsb-release
+    lsb-release \
     && rm -rf /var/lib/apt/lists/*
 
 # Add Vulkan SDK repo apparently
