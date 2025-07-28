@@ -6,7 +6,33 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Install additional dependencies
 USER root
-RUN apt-get update && apt-get install -y git build-essential cmake
+# Install basic dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    build-essential \
+    cmake \
+    # BEGIN NEW SHIT
+    vulkan-utils \
+    libvulkan-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# RUN apt-get update && apt-get install -y git build-essential cmake
+ENV VULKAN_ARG OFF
+
+# Set up Vulkan SDK if required
+RUN if [ "$VULKAN_ARG" = "ON" ]; then \
+    # Replace with the actual Vulkan SDK download URL and version
+    VULKAN_SDK_VERSION="1.4.309.0" && \
+    wget https://vulkan.lunarg.com/sdk/home#sdk/download/1.4.309.0/linux -O vulkan-sdk.tar.gz && \
+    tar -xvf vulkan-sdk.tar.gz && \
+    mv vulkan-sdk-linux-x.x.x.x /opt/vulkan-sdk && \
+    rm vulkan-sdk.tar.gz; \
+    fi
+
+# Set Vulkan environment variables if installed
+ENV VULKAN_SDK /opt/vulkan-sdk
+ENV PATH $VULKAN_SDK/bin:$PATH
+ENV LD_LIBRARY_PATH $VULKAN_SDK/lib:$LD_LIBRARY_PATH
 
 # Copy necessary project files
 WORKDIR /app
