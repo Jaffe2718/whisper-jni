@@ -11,7 +11,7 @@ build_lib() {
   # Define Vulkan as an environment variable
   export VULKAN_ARG=${VULKAN:-OFF} # set through CI/CD
 
-  cmake -B build $CMAKE_ARGS -DCMAKE_C_FLAGS="$CMAKE_CFLAGS" -DCMAKE_CXX_FLAGS="-stdlib=libc++ -std=c++20" -DCMAKE_INSTALL_PREFIX=$TMP_DIR -DGGML_VULKAN=${VULKAN_ARG}
+  cmake -B build $CMAKE_ARGS -DCMAKE_C_FLAGS="$CMAKE_CFLAGS" -DCMAKE_CXX_FLAGS="-std=c++20" -DCMAKE_INSTALL_PREFIX=$TMP_DIR -DGGML_VULKAN=${VULKAN_ARG}
   cmake --build build --config Release
   cmake --install build
   mkdir -p "$TARGET_DIR"
