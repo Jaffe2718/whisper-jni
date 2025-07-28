@@ -12,12 +12,25 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
     # BEGIN NEW SHIT
+    gnupg \
+    curl \
+    lsb-release
+    && rm -rf /var/lib/apt/lists/*
+
+# Add Vulkan SDK repo apparently
+RUN curl -sSL https://packages.lunarg.com/lunarg-signing-key.asc | apt-key add - \
+    && DISTRO=$(lsb_release -c | awk '{print $2}') \
+    && echo "deb https://packages.lunarg.com/vulkan/1.4.309.0/debian/$DISTRO/amd64 /" > /etc/apt/sources.list.d/lunarg-vulkan.list \
+    && apt-get update
+
+# Install Vulkan tools and dev libraries
+RUN apt-get install -y \
     vulkan-utils \
     libvulkan-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # RUN apt-get update && apt-get install -y git build-essential cmake
-ENV VULKAN_ARG OFF
+ENV VULKAN_ARG=OFF
 
 # Set up Vulkan SDK if required
 RUN if [ "$VULKAN_ARG" = "ON" ]; then \
