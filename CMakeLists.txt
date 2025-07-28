@@ -101,26 +101,21 @@ endif()
 if(GGML_VULKAN)
   message(STATUS "GGML_VULKAN is enabled")
   message(STATUS "Vulkan SDK path: $ENV{VULKAN_SDK}")
+  message(STATUS "Vulkan include dir: $ENV{VULKAN_INCLUDE_DIR}")
+  message(STATUS "Vulkan lib dir: $ENV{VULKAN_LIBRARY}")
   
-  
-  # Construct the path to the Vulkan include directory
-  set(VULKAN_INCLUDE_PATH "$ENV{VULKAN_SDK}/Include")
-  message(STATUS "Trying to find Vulkan include directory at: ${VULKAN_INCLUDE_PATH}")
-
-  # Print expected header file location
-  set(VULKAN_HEADER_FILE "${VULKAN_INCLUDE_PATH}/vulkan/vulkan.h")
-  message(STATUS "Expected Vulkan header file at: ${VULKAN_HEADER_FILE}")
-
-  # Check if the Vulkan header file exists
-  if(EXISTS ${VULKAN_HEADER_FILE})
-    message(STATUS "Vulkan header file found: ${VULKAN_HEADER_FILE}")
+  # This blew my fucking mind. Apparently the capital matters
+  # (linux has lowercase include, Windows uppercase)
+  if(WIN32)
+    set(VULKAN_HEADER_PATH "${VULKAN_SDK_PATH}/Include/vulkan")
+    set(VULKAN_LIB_PATH "${VULKAN_SDK_PATH}/Lib")
   else()
-    message(WARNING "Vulkan header file NOT found: ${VULKAN_HEADER_FILE}")
+    set(VULKAN_HEADER_PATH "${VULKAN_SDK_PATH}/include/vulkan")
+    set(VULKAN_LIB_PATH "${VULKAN_SDK_PATH}/lib")
   endif()
 
-  
-  find_path(VULKAN_INCLUDE_DIR vulkan/vulkan.h PATHS "$ENV{VULKAN_SDK}/Include" REQUIRED)
-  find_library(VULKAN_LIBRARY vulkan-1 PATHS "$ENV{VULKAN_SDK}/Lib" REQUIRED)
+  find_path(VULKAN_INCLUDE_DIR vulkan/vulkan.h PATHS "${VULKAN_HEADER_PATH}" REQUIRED)
+  find_library(VULKAN_LIBRARY vulkan-1 PATHS "${VULKAN_LIB_PATH}" REQUIRED)
   
   message(STATUS "Found Vulkan include: ${VULKAN_INCLUDE_DIR}")
   message(STATUS "Found Vulkan library: ${VULKAN_LIBRARY}")
