@@ -134,7 +134,6 @@ public class LibraryUtils {
 	 * After exporting, you can use the path to fill {@link WhisperFullParams#vad_model_path}.
 	 * </p>
 	 * 
-	 * @param logger      SLF4J {@link Logger}
 	 * @param destination path to store the model
 	 * @throws IOException if something goes wrong (like the path being malformed)
 	 */
@@ -201,7 +200,7 @@ public class LibraryUtils {
 	}
 	
 	/**
-	 * Loads the custom Vulkan natives. Use {@link WhisperJNI#canUseVulkan()} before calling this method.
+	 * Loads the library natives with the Vulkan DLL on this machine. Use {@link #canUseVulkan()} before calling this method.
 	 * 
 	 * <p>
 	 * If you're loading the natives from a fixed location on your hard disk, providing the path to the natives folder statically will work fine. However, if you're
@@ -216,6 +215,7 @@ public class LibraryUtils {
 	 * 
 	 * @param logger     SLF4J {@link Logger}
 	 * @param nativesDir path to the directory containing all natives to load
+	 * @throws IllegalStateException if this system can't use Vulkan natives
 	 */
 	public static void loadVulkan(Logger logger, Path nativesDir)
 	{

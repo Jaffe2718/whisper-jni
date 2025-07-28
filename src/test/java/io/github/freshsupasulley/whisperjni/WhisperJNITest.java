@@ -66,29 +66,27 @@ public class WhisperJNITest {
 		Path whisperJNIBuild = Path.of("whisperjni-build"); // for CI/CD
 		
 		// For CI/CD purposes, if you can use Vulkan, then you best believe the natives better be built for Vulkan too
-		if(LibraryUtils.canUseVulkan() && Files.isDirectory(whisperJNIBuild))
+		if(Files.isDirectory(whisperJNIBuild))
 		{
-			LibraryUtils.loadVulkan(logger, whisperJNIBuild);
+			if(LibraryUtils.canUseVulkan())
+			{
+				logger.info("Loading Vulkan natives");
+				LibraryUtils.loadVulkan(logger, whisperJNIBuild);
+			}
+			else
+			{
+				LibraryUtils.loadInOrder(logger, whisperJNIBuild);
+				whisper.loadLibrary(logger);
+			}
 		}
 		else
 		{
-			// Move build dir into where WhisperJNI expects the natives to be
-			Path destinationDir = Path.of("src", "main", "resources", LibraryUtils.getOS() + "-" + LibraryUtils.getArchitecture());
-			logger.info("Copying test natives into expected dir: {}", destinationDir.toAbsolutePath());
-			
-			try(DirectoryStream<Path> stream = Files.newDirectoryStream(whisperJNIBuild))
-			{
-				for(Path entry : stream)
-				{
-					Path dest = destinationDir.resolve(entry.getFileName());
-					logger.info("Copying {} to {}", entry, dest);
-					Files.copy(entry, dest, StandardCopyOption.REPLACE_EXISTING);
-				}
-			}
-			
+			logger.info("Build dir not found, assuming natives are in the correct location");
 			whisper.loadLibrary(logger);
-			WhisperJNI.setLogger(logger);
 		}
+		
+		// Set cpp side logger
+		WhisperJNI.setLogger(logger);
 	}
 	
 	@Test
