@@ -100,6 +100,24 @@ endif()
 
 if(GGML_VULKAN)
   message(STATUS "GGML_VULKAN is enabled")
+  message(STATUS "Vulkan SDK path: $ENV{VULKAN_SDK}")
+  
+  
+  # Construct the path to the Vulkan include directory
+  set(VULKAN_INCLUDE_PATH "$ENV{VULKAN_SDK}/Include")
+  message(STATUS "Trying to find Vulkan include directory at: ${VULKAN_INCLUDE_PATH}")
+
+  # Print expected header file location
+  set(VULKAN_HEADER_FILE "${VULKAN_INCLUDE_PATH}/vulkan/vulkan.h")
+  message(STATUS "Expected Vulkan header file at: ${VULKAN_HEADER_FILE}")
+
+  # Check if the Vulkan header file exists
+  if(EXISTS ${VULKAN_HEADER_FILE})
+    message(STATUS "Vulkan header file found: ${VULKAN_HEADER_FILE}")
+  else()
+    message(WARNING "Vulkan header file NOT found: ${VULKAN_HEADER_FILE}")
+  endif()
+
   
   find_path(VULKAN_INCLUDE_DIR vulkan/vulkan.h PATHS "$ENV{VULKAN_SDK}/Include" REQUIRED)
   find_library(VULKAN_LIBRARY vulkan-1 PATHS "$ENV{VULKAN_SDK}/Lib" REQUIRED)
