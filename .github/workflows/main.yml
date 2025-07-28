@@ -57,6 +57,8 @@ jobs:
           mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
           mv ./silero-ggml-model/ggml-silero-v5.1.2.bin ./src/main/resources
           mkdir -p test-results
+      - name: Check tree
+        run: ls -R
       - name: Build
         env:
           VULKAN: ${{ matrix.vulkan }}
@@ -119,44 +121,6 @@ jobs:
         with:
           name: windows-natives-${{ matrix.vulkan }}
           path: whisperjni-build/*.dll
-#
-#  build-windows-vulkan:
-#    needs: [download-models]
-#    runs-on: windows-latest
-#    steps:
-#      - uses: actions/checkout@v4
-#      - uses: actions/download-artifact@v4
-#      - uses: actions/setup-java@v4
-#        with:
-#          java-version: 22
-#          distribution: 'temurin'
-#      # Also install Vulkan
-#      - name: Install Vulkan SDK
-#        uses: jakoch/install-vulkan-sdk-action@v1
-#        with:
-#          vulkan_version: 1.4.309.0
-#          install_runtime: true
-#          cache: true
-#      - name: Setup project dir
-#        run: |
-#          git submodule update --init
-#          mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
-#          mv ./silero-ggml-model/ggml-silero-v5.1.2.bin ./src/main/resources
-#      - name: Build
-#        run: .\build_win_vulkan.ps1
-#        shell: powershell
-#      - name: Test
-#        run: ./gradlew test
-#      - name: Publish test report
-#        uses: mikepenz/action-junit-report@v5
-#        if: success() || failure()
-#        with:
-#          report_paths: '**/build/test-results/test/test-*.xml'
-#      - name: Upload Vulkan DLL artifact
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: whisper-jni-vulkan
-#          path: src/main/resources/windows-x64-vulkan/*.dll
 
   build-mac:
     needs: [download-models]
