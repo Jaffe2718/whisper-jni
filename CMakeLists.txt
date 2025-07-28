@@ -102,27 +102,25 @@ if(GGML_VULKAN)
   message(STATUS "GGML_VULKAN is enabled")
   message(STATUS "Vulkan SDK path: $ENV{VULKAN_SDK}")
   
-  # This blew my fucking mind. Apparently the capital matters
-  # (linux has lowercase include, Windows uppercase)
-  if(WIN32)
-    set(VULKAN_INCLUDE_PATH "$ENV{VULKAN_SDK}/Include")
-    set(VULKAN_LIB_PATH "$ENV{VULKAN_SDK}/Lib")
-  else()
-    set(VULKAN_INCLUDE_PATH "$ENV{VULKAN_SDK}/include")
-    set(VULKAN_LIB_PATH "$ENV{VULKAN_SDK}/lib")
-  endif()
+  # Find the Vulkan package
+  find_package(Vulkan REQUIRED)
+  
+  # Check that Vulkan was found
+  if(Vulkan_FOUND)
+    message(STATUS "Found Vulkan SDK at: ${Vulkan_INCLUDE_DIRS}")
+    message(STATUS "Found Vulkan library: ${Vulkan_LIBRARIES}")
 
-  find_path(VULKAN_INCLUDE_DIR vulkan/vulkan.h PATHS "${VULKAN_INCLUDE_PATH}" REQUIRED)
-  find_library(VULKAN_LIBRARY vulkan-1 PATHS "${VULKAN_LIB_PATH}" REQUIRED)
-  
-  message(STATUS "Found Vulkan include: ${VULKAN_INCLUDE_DIR}")
-  message(STATUS "Found Vulkan library: ${VULKAN_LIBRARY}")
-  
-  target_include_directories(whisper-jni PRIVATE ${VULKAN_INCLUDE_DIR})
-  target_link_libraries(whisper-jni PRIVATE whisper ggml ggml-base ggml-cpu
-    ${VULKAN_LIBRARY}
-    "${WHISPER_DIR}/lib/ggml-vulkan.lib"
-  )
+    # Link Vulkan to your target
+    target_link_libraries(whisper-jni PRIVATE whisper ggml ggml-base ggml-cpu Vulkan::Vulkan)
+
+    # You can also link any other additional libraries here if necessary
+    target_link_libraries(whisper-jni PRIVATE "${WHISPER_DIR}/lib/ggml-vulkan.lib")
+
+    # Optionally include Vulkan directories if needed
+    target_include_directories(whisper-jni PRIVATE ${Vulkan_INCLUDE_DIRS})
+  else()
+    message(FATAL_ERROR "Vulkan SDK not found. Please ensure it is installed correctly.")
+  endif()
 else()
 	target_link_libraries(whisper-jni whisper ggml ggml-base ggml-cpu)
 endif()
