@@ -11,7 +11,7 @@ if ($vulkanEnabled -eq "ON") {
 
 cmake -B build -DCMAKE_BUILD_TYPE=Release "-DCMAKE_INSTALL_PREFIX=$TMP_DIR" -DGGML_STATIC=1 "-DGGML_VULKAN=$vulkanEnabled"
 cmake --build build --config Release
-cmake --install build --config Release
+cmake --install build
 
 # Move all DLLs from build dir to prod dir
 Move-Item -Path "$TMP_DIR\*.dll" -Destination $TARGET_DIR -Force
