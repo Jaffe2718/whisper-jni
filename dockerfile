@@ -18,9 +18,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Add Vulkan SDK repo apparently
-RUN curl -sSL https://packages.lunarg.com/lunarg-signing-key.asc | apt-key add - \
+RUN curl -sSL https://packages.lunarg.com/lunarg-signing-key.asc | gpg --dearmor -o /usr/share/keyrings/lunarg-archive-keyring.gpg \
     && DISTRO=$(lsb_release -c | awk '{print $2}') \
-    && echo "deb https://packages.lunarg.com/vulkan/1.4.309.0/debian/$DISTRO/amd64 /" > /etc/apt/sources.list.d/lunarg-vulkan.list \
+    && echo "deb [signed-by=/usr/share/keyrings/lunarg-archive-keyring.gpg] https://packages.lunarg.com/vulkan/1.4.309.0/debian/$DISTRO/amd64 /" > /etc/apt/sources.list.d/lunarg-vulkan.list \
     && apt-get update
 
 # Install Vulkan tools and dev libraries
