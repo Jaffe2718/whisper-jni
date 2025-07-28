@@ -7,7 +7,7 @@ build_lib() {
   mkdir -p $TMP_DIR $TARGET_DIR
 
   # Define Vulkan as an environment variable
-  export VULKAN_ARG=${VULKAN_ARG:-OFF} # set through CI/CD
+  export VULKAN_ARG=${VULKAN:-OFF} # set through CI/CD
 
   cmake -B build $CMAKE_ARGS -DCMAKE_C_FLAGS="$CMAKE_CFLAGS" -DCMAKE_INSTALL_PREFIX=$TMP_DIR -DGGML_VULKAN=${VULKAN_ARG}
   cmake --build build --config Release

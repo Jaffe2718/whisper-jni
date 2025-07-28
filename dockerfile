@@ -1,5 +1,5 @@
 # Don't think this matters
-FROM gradle:8.12.1-jdk21 AS builder
+FROM docker.io/library/gradle:8.12.1-jdk21 AS builder
 
 # Disable interactive prompts for apt-get
 ENV DEBIAN_FRONTEND=noninteractive
