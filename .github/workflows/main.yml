@@ -51,7 +51,8 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y vulkan-tools glslang-tools
-          sudo apt-get install -y libvulkan1 mesa-vulkan-drivers vulkan-utils
+          sudo apt-get install -y libvulkan1 mesa-vulkan-drivers
+          sudo vulkaninfo
       - name: Build shaderc
         if: matrix.vulkan == 'ON'
         run: |
