@@ -114,9 +114,10 @@ if(GGML_VULKAN)
     target_link_libraries(whisper-jni PRIVATE whisper ggml ggml-base ggml-cpu Vulkan::Vulkan)
 
     # You can also link any other additional libraries here if necessary
-    target_link_libraries(whisper-jni PRIVATE "${WHISPER_DIR}/lib/ggml-vulkan.lib")
+    # target_link_libraries(whisper-jni PRIVATE "${WHISPER_DIR}/lib/ggml-vulkan.lib")
 
     # Optionally include Vulkan directories if needed
+    # ... is this required? probably
     target_include_directories(whisper-jni PRIVATE ${Vulkan_INCLUDE_DIRS})
   else()
     message(FATAL_ERROR "Vulkan SDK not found. Please ensure it is installed correctly.")

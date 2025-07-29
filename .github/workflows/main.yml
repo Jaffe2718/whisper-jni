@@ -78,6 +78,7 @@ jobs:
           sudo mv glslc/glslc /usr/local/bin/
       # Differs from the other Vulkan action (jakoch/install-vulkan-sdk-action@v1) because this lets us install Glslang too
       # I have no idea why this is the case but atp I am embodying the "if it ain't broke don't fix it" mentality
+      # ^ was I wrong? Can we go back to the OG?
       - name: Prepare Vulkan SDK
         uses: humbletim/setup-vulkan-sdk@v1.2.1
         if: matrix.vulkan == 'ON'
