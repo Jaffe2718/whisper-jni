@@ -11,7 +11,8 @@ for native_folder in natives/*/; do
     fi
 
     # Rename folder here anyways
-    mv "$native_folder" "natives/${native_folder_name}"
+    echo "$native_folder to $native_folder_name"
+    mv "$native_folder" "natives/${native_folder_name}/"
 done
 
 echo "Flooding resources with default CPU natives"
