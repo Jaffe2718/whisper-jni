@@ -4,10 +4,9 @@ A JNI wrapper for [whisper.cpp](https://github.com/ggerganov/whisper.cpp), allow
 
 ## Platform support
 
-This library aims to support Windows x64, Mac (both AMD x64 and ARM), and Linux (both AMD x64 and ARM).
+This library aims to support Windows x64, Mac (both AMD x64 and arm64), and Linux (both AMD x64 and arm64).
 
-The native binaries for those platforms are included in the distributed jar.
-Please open an issue if you found it don't work on any of the supported platforms.
+Default native binaries for those platforms are included in the distributed jar. They only utilize the CPU. For much faster transcription results by utilizing the GPU, you can download the Vulkan natives from the releases and load them using `LibraryUtils` (example below).
 
 ## Installation
 
@@ -16,22 +15,26 @@ The package is distributed through [Maven Central](https://central.sonatype.com/
 ## Basic Example
 
 ```java
-        ...
-        WhisperJNI.loadLibrary(); // load platform binaries
-        var whisper = new WhisperJNI();
-        float[] samples = readJFKFileSamples();
-        var ctx = whisper.init(Path.of(System.getProperty("user.home"), 'ggml-tiny.bin'));
-        var params = new WhisperFullParams();
-        int result = whisper.full(ctx, params, samples, samples.length);
-        if(result != 0) {
-            throw new RuntimeException("Transcription failed with code " + result);
-        }
-        int numSegments = whisper.fullNSegments(ctx);
-        assertEquals(1, numSegments);
-        String text = whisper.fullGetSegmentText(ctx,0);
-        assertEquals(" And so my fellow Americans ask not what your country can do for you ask what you can do for your country.", text);
-        ctx.close(); // free native memory, should be called when we don't need the context anymore.
-        ...
+var whisper = new WhisperJNI();
+whisper.loadLibrary(); // loads the built-in CPU natives
+// Alternatively, you can load Vulkan natives yourself
+// First check if your machine can use the Vulkan natives!
+// if(LibraryUtils.canUseVulkan()) {
+//     LibraryUtils.loadVulkan(myLogger, Path.of("windows-x64-vulkan"));
+// }
+
+float[] samples = readJFKFileSamples();
+var ctx = whisper.init(Path.of('ggml-tiny.bin'));
+var params = new WhisperFullParams();
+int result = whisper.full(ctx, params, samples, samples.length);
+if(result != 0) {
+    throw new RuntimeException("Transcription failed with code " + result);
+}
+int numSegments = whisper.fullNSegments(ctx);
+assertEquals(1, numSegments);
+String text = whisper.fullGetSegmentText(ctx,0);
+assertEquals(" And so my fellow Americans ask not what your country can do for you ask what you can do for your country.", text);
+ctx.close(); // free native memory, should be called when we don't need the context anymore
 ```
 
 ## Grammar usage
@@ -51,25 +54,12 @@ so you can use the [gbnf grammar](https://github.com/ggerganov/whisper.cpp/blob/
         }
         ...
 ```
-## Building and testing the project.
+## Building / Testing
 
-You need Java and Cpp setup.
-
-After cloning the project you need to init the whisper.cpp submodule by running:
-
-```sh
-git submodule update --init
-```
-
-Then you need to download the model used in the tests using the script 'download-test-model.sh' or 'download-test-model.ps1', the ggml-tiny model.
-
-Run the appropriate build script for your platform (build_debian.sh, build_macos.sh or build_win.ps1), it will place the native library file on the resources directory.
-
-Finally, you can run the project tests to confirm it works:
-
-```sh
-./gradlew test
-```
+1. Submodule whisper.cpp by running `git submodule update --init`.
+2. Download the test models using the scripts 'download-test-model' and 'download-vad-model'. Then move `silero-v5.1.2.bin` to *src/main/resources*!
+3. Run the appropriate build script for your platform (`build_linux.sh`, `build_mac.sh` or `build_windows.ps1`). It will build the library to */whisperjni-build*, which the test script will load from (you can alternatively move it to its respective folder in *src/main/resources*.
+4. Test the project with `./gradlew test`
 
 ## Extending the native api
 
