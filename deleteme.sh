@@ -28,7 +28,7 @@ for resource_folder in src/main/resources/*/; do
         if [[ $(basename "$native_folder") == "$folder_name" ]]; then
             echo "Copying from $native_folder to $resource_folder"
             # Copy contents from the renamed native folder into the resource folder
-            cp -r "$native_folder"* "$resource_folder/"
+            cp -r "$native_folder". "$resource_folder"
         fi
     done
 done
