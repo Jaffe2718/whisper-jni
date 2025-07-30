@@ -15,7 +15,6 @@ jobs:
         mkdir models
         mv ggml-tiny.bin models/
         mv ggml-silero-v5.1.2.bin models/
-        ls -R models
     - uses: actions/upload-artifact@v4
       with:
         name: test-models
@@ -86,6 +85,7 @@ jobs:
           vulkan-use-cache: true
       - name: Setup project dir
         run: |
+          ls -R
           mv test-models/* .
           git submodule update --init
           mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
