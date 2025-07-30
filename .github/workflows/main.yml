@@ -38,6 +38,7 @@ jobs:
         with:
           name: test-models
       - run: |
+          ls -R
           mv test-models/* .
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
