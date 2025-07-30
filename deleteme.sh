@@ -1,7 +1,8 @@
 echo "Renaming native folders to prod names"
 for native_folder in natives/*/; do
     # Get the base name of the native folder
-    native_folder_name=$(basename "$native_folder")
+    original_name=$(basename "$native_folder")
+    native_folder_name="$original_name"
 
     # Rename the native folder based on the suffix
     if [[ "$native_folder_name" == *"-ON" ]]; then
@@ -12,7 +13,7 @@ for native_folder in natives/*/; do
 
     # Rename folder here anyways
     echo "$native_folder to $native_folder_name"
-    mv "$native_folder" "natives/${native_folder_name}/"
+    mv "$original_name" "natives/${native_folder_name}/"
 done
 
 echo "Flooding resources with default CPU natives"
