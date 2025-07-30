@@ -46,7 +46,6 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: test-models
-          pattern: "*-models" # just to test
       - uses: actions/setup-java@v4
         with:
           java-version: 22
