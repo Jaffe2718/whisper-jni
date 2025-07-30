@@ -212,10 +212,8 @@ jobs:
     needs: [download-models, build-linux, build-windows, build-mac]
     steps:
     - uses: actions/checkout@v4
-      # Pull in all of the built natives
+      # Pull in EVERYTHING this time (models and built natives)
     - uses: actions/download-artifact@v4
-      with:
-        path: natives
     - uses: actions/setup-java@v4
       with:
         java-version: 22

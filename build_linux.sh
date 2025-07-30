@@ -1,6 +1,4 @@
 #!/bin/bash
-ls -R "$VULKAN_SDK"
-
 set -xe
 build_lib() {
   TMP_DIR=tmp-build
