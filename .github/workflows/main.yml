@@ -40,7 +40,6 @@ jobs:
       - uses: actions/checkout@v4
       - run: |
           ls -R
-          mv test-models/* .
       - uses: actions/setup-java@v4
         with:
           java-version: 22
@@ -90,6 +89,7 @@ jobs:
           vulkan-use-cache: true
       - name: Setup project dir
         run: |
+          mv test-models/* .
           git submodule update --init
           mv ./tiny-ggml-model/ggml-tiny.bin ./ggml-tiny.bin
           mv ./silero-ggml-model/ggml-silero-v5.1.2.bin ./src/main/resources
