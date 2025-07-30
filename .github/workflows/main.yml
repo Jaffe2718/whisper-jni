@@ -15,6 +15,7 @@ jobs:
         mkdir models
         mv ggml-tiny.bin models/
         mv ggml-silero-v5.1.2.bin models/
+        ls -R models
     - uses: actions/upload-artifact@v4
       with:
         name: test-models
