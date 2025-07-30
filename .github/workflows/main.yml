@@ -89,7 +89,6 @@ jobs:
       - name: Setup project dir
         run: |
           git submodule update --init
-          mv ./ggml-tiny.bin ./ggml-tiny.bin
           mv ./ggml-silero-v5.1.2.bin ./src/main/resources
       - name: Build
         env:
@@ -136,7 +135,6 @@ jobs:
       - name: Setup project dir
         run: |
           git submodule update --init
-          mv ./ggml-tiny.bin ./ggml-tiny.bin
           mv ./ggml-silero-v5.1.2.bin ./src/main/resources
       - name: Build
         shell: powershell
@@ -179,7 +177,6 @@ jobs:
       - name: Setup project dir
         run: |
           git submodule update --init
-          mv ./ggml-tiny.bin ./ggml-tiny.bin
           mv ./ggml-silero-v5.1.2.bin ./src/main/resources
       - name: Build binary
         run: |
@@ -257,7 +254,6 @@ jobs:
     - name: Setup project dir
       run: |
         git submodule update --init
-        mv ./ggml-tiny.bin ./ggml-tiny.bin
         mv ./ggml-silero-v5.1.2.bin ./src/main/resources
     - name: Build
       run: ./gradlew clean build publish --stacktrace
