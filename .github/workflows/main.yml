@@ -19,7 +19,7 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: test-models
-        path: models
+        path: models/*.bin
         retention-days: 2
 
   build-linux:
@@ -36,11 +36,7 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/download-artifact@v4
-        with:
-          name: test-models
       - uses: actions/checkout@v4
-      - run: |
-          ls -R
       - uses: actions/setup-java@v4
         with:
           java-version: 22
