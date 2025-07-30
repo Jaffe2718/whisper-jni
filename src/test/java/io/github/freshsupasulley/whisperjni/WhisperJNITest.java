@@ -68,6 +68,7 @@ public class WhisperJNITest {
 		// For CI/CD purposes, if you can use Vulkan, then you best believe the natives better be built for Vulkan too
 		if(Files.isDirectory(whisperJNIBuild))
 		{
+			logger.info("Loaidng from build dir");
 			if(LibraryUtils.canUseVulkan())
 			{
 				LibraryUtils.loadVulkan(logger, whisperJNIBuild);
@@ -76,7 +77,6 @@ public class WhisperJNITest {
 			{
 				logger.info("Loading standard natives");
 				LibraryUtils.loadInOrder(logger, whisperJNIBuild);
-				whisper.loadLibrary(logger);
 			}
 		}
 		else
