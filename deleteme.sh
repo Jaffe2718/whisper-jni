@@ -12,6 +12,7 @@ for native_folder in natives/*/; do
     fi
 
     # Rename folder here anyways
+    echo "$original_name and $native_folder_name"
     mv "natives/${original_name}" "natives/${native_folder_name}"
 done
 
