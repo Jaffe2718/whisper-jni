@@ -15,7 +15,6 @@ for native_folder in natives/*/; do
 done
 
 echo "Flooding resources with default CPU natives"
-# Loop through each subfolder in the resources directory
 for resource_folder in src/main/resources/*/; do
     # Get the base folder name (instead of full path)
     folder_name=$(basename "$resource_folder")
