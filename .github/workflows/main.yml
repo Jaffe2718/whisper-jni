@@ -46,6 +46,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: test-models
+          pattern: "*-models" # just to test
       - uses: actions/setup-java@v4
         with:
           java-version: 22
@@ -111,7 +112,7 @@ jobs:
       - name: Upload natives
         uses: actions/upload-artifact@v4
         with:
-          name: linux-${{ matrix.arch }}-${{ matrix.vulkan }}
+          name: linux-${{ matrix.arch }}-${{ matrix.vulkan }}-natives
           path: whisperjni-build/*
 
   build-windows:
@@ -158,7 +159,7 @@ jobs:
       - name: Upload natives
         uses: actions/upload-artifact@v4
         with:
-          name: windows-x64-${{ matrix.vulkan }}
+          name: windows-x64-${{ matrix.vulkan }}-natives
           path: whisperjni-build/*.dll
 
   build-mac:
@@ -204,7 +205,7 @@ jobs:
       - name: Artifact macos x64
         uses: actions/upload-artifact@v4
         with:
-          name: mac-${{ matrix.arch }}
+          name: mac-${{ matrix.arch }}-natives
           path: whisperjni-build/*.dylib
 
   publish:
@@ -217,6 +218,7 @@ jobs:
         # Put everything into /natives
         # This ALSO puts in the test-models, which is omitted downstream
         path: natives
+        pattern: "*-natives"
     - uses: actions/setup-java@v4
       with:
         java-version: 22
@@ -237,7 +239,6 @@ jobs:
             elif [[ "$native_folder_name" == *"-OFF" ]]; then
                 native_folder_name="${native_folder_name/-OFF/}"
             else
-                # This conveniently also ignores the test-models
                 echo "Not renaming $original_name"
                 continue
             fi
