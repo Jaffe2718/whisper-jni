@@ -26,12 +26,11 @@ for resource_folder in src/main/resources/*/; do
 
     # Find the matching built natives folder
     for native_folder in natives/*/; do
-        native_folder_name=$(basename "$native_folder")
         # Only copy if this native folder EXACTLY matches (meaning Vulkan natives don't get passed, only CPU)
-        if [[ "$native_folder_name" == "$folder_name" ]]; then
-            echo "Copying from $native_folder_name to $resource_folder"
+        if [[ $(basename "$native_folder") == "$folder_name" ]]; then
+            echo "Copying from $native_folder to $resource_folder"
             # Copy contents from the renamed native folder into the resource folder
-            cp -r "natives/${native_folder_name}/"* "$resource_folder/"
+            cp -r "$nativeFolder"/* "$resource_folder/"
         fi
     done
 done
