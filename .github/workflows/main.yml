@@ -212,7 +212,7 @@ jobs:
     needs: [download-models, build-linux, build-windows, build-mac]
     steps:
     - uses: actions/checkout@v4
-      # Pull in EVERYTHING this time (models and built natives)
+      # This also pulls in the test-models but idk how to omit it cleanly (whatever)
     - uses: actions/download-artifact@v4
     - uses: actions/setup-java@v4
       with:
@@ -256,21 +256,9 @@ jobs:
                 fi
             done
         done
-    - name: Setup project dir
-      run: |
-        # UNIQUE TO THIS BUILD
-        # We need to unpack ./test-models and dump the contents to .
-        mv test-models/* ./
-        # Continue with standard project setup
-        git submodule update --init
-        mv ./ggml-silero-v5.1.2.bin ./src/main/resources
     - name: Build
-      run: ./gradlew clean build publish --stacktrace
-    - name: Publish test report
-      uses: mikepenz/action-junit-report@v5
-      if: success() || failure()
-      with:
-        report_paths: '**/build/test-results/**/*.xml'
+      # We already built and tested for this platform so we're not testing again
+      run: ./gradlew clean build publish --stacktrace -x test
     - name: Publish to maven central
       run: ./gradlew jreleaserDeploy --stacktrace
       env:
