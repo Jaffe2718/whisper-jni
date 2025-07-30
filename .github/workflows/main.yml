@@ -212,8 +212,11 @@ jobs:
     needs: [download-models, build-linux, build-windows, build-mac]
     steps:
     - uses: actions/checkout@v4
-      # This also pulls in the test-models but idk how to omit it cleanly (whatever)
     - uses: actions/download-artifact@v4
+      with:
+        # Put everything into /natives
+        # This ALSO puts in the test-models, which is omitted downstream
+        path: natives
     - uses: actions/setup-java@v4
       with:
         java-version: 22
@@ -234,6 +237,7 @@ jobs:
             elif [[ "$native_folder_name" == *"-OFF" ]]; then
                 native_folder_name="${native_folder_name/-OFF/}"
             else
+                # This conveniently also ignores the test-models
                 echo "Not renaming $original_name"
                 continue
             fi
