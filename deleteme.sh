@@ -10,10 +10,10 @@ for native_folder in natives/*/; do
     elif [[ "$native_folder_name" == *"-OFF" ]]; then
         native_folder_name="${native_folder_name/-OFF/}"
     else
-        echo "Not renaming $native_folder"
+        echo "Not renaming $original_name"
         continue
     fi
-    
+
     mv "natives/${original_name}" "natives/${native_folder_name}"
 done
 
@@ -28,7 +28,7 @@ for resource_folder in src/main/resources/*/; do
         if [[ $(basename "$native_folder") == "$folder_name" ]]; then
             echo "Copying from $native_folder to $resource_folder"
             # Copy contents from the renamed native folder into the resource folder
-            cp -r "$native_folder"* "$resource_folder/"
+            cp -r "$native_folder"* "$resource_folder"
         fi
     done
 done
