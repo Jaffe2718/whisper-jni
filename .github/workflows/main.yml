@@ -29,9 +29,16 @@ jobs:
         include:
           - platform: ubuntu-24.04-arm
             arch: arm64
+            vulkan: ON
+          - platform: ubuntu-24.04-arm
+            arch: arm64
+            vulkan: OFF
           - platform: ubuntu-latest
             arch: x64
-        vulkan: [ON, OFF]
+            vulkan: ON
+          - platform: ubuntu-latest
+            arch: x64
+            vulkan: OFF
     runs-on: ${{ matrix.platform }}
     steps:
       # Checkout HAS to come before downloading artifacts, learned that the hard way
