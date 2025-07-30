@@ -12,6 +12,7 @@ jobs:
         ./download-test-model.sh
         ./download-vad-model.sh
         # Move models together for simpler download
+        mkdir models
         mv ggml-tiny.bin models/
         mv ggml-silero-v5.1.2.bin models/
     - uses: actions/upload-artifact@v4
