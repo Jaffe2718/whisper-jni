@@ -1,23 +1,24 @@
+echo "Renaming native folders to prod names"
+for native_folder in natives/*/; do
+    # Get the base name of the native folder
+    native_folder_name=$(basename "$native_folder")
+
+    # Rename the native folder based on the suffix
+    if [[ "$native_folder_name" == *"-ON" ]]; then
+        native_folder_name="${native_folder_name/-ON/-vulkan}"
+    elif [[ "$native_folder_name" == *"-OFF" ]]; then
+        native_folder_name="${native_folder_name/-OFF/}"
+    fi
+
+    # Rename folder here anyways
+    mv "$native_folder" "natives/${native_folder_name}"
+done
+
+echo "Flooding resources with default CPU natives"
 # Loop through each subfolder in the resources directory
 for resource_folder in src/main/resources/*/; do
     # Get the base folder name (instead of full path)
     folder_name=$(basename "$resource_folder")
-
-    # First rename the native folders to prod names
-    for native_folder in natives/*/; do
-        # Get the base name of the native folder
-        native_folder_name=$(basename "$native_folder")
-
-        # Rename the native folder based on the suffix
-        if [[ "$native_folder_name" == *"-ON" ]]; then
-            native_folder_name="${native_folder_name/-ON/-vulkan}"
-        elif [[ "$native_folder_name" == *"-OFF" ]]; then
-            native_folder_name="${native_folder_name/-OFF/}"
-        fi
-
-        # Rename folder here anyways
-        mv "$native_folder" "natives/${native_folder_name}"
-    done
 
     # Find the matching built natives folder
     for native_folder in natives/*/; do
