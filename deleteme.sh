@@ -9,6 +9,9 @@ for native_folder in natives/*/; do
         native_folder_name="${native_folder_name/-ON/-vulkan}"
     elif [[ "$native_folder_name" == *"-OFF" ]]; then
         native_folder_name="${native_folder_name/-OFF/}"
+    else
+        echo "Not renaming $native_folder"
+        continue
     fi
 
     # Rename folder here anyways
