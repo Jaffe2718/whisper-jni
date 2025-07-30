@@ -55,7 +55,7 @@ public class LibraryUtils {
 		{
 			case "i386", "i486", "i586", "i686", "x86", "x86_32" -> "x86";
 			case "amd64", "x86_64", "x86-64" -> "x64";
-			case "aarch64" -> "aarch64";
+			case "aarch64", -> "arm64";
 			default -> OS_ARCH;
 		};
 	}

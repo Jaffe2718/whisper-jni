@@ -2,14 +2,12 @@ set -xe
 
 AARCH=${1:-$(uname -m)}
 case "$AARCH" in
-  x86_64|amd64)
+  x86_64|amd64|x64)
     AARCH=x86_64
-    AARCH_NAME=x64
     TARGET_VERSION=11.0
     ;;
   arm64|aarch64)
     AARCH=arm64
-    AARCH_NAME=aarch64
     TARGET_VERSION=11.0
     ;;
   *)

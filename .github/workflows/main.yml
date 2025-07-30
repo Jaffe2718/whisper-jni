@@ -27,20 +27,16 @@ jobs:
     needs: [download-models]
     strategy:
       matrix:
-        # Define combinations of architecture and platform
+        # arch is used the artifact name
         include:
-          - platform: ubuntu-latest
-            vulkan: OFF
-          - platform: ubuntu-latest
-            vulkan: ON
           - platform: ubuntu-24.04-arm
-            vulkan: OFF
-          - platform: ubuntu-24.04-arm
-            vulkan: ON
+            arch: arm64
+          - platform: ubuntu-latest
+            arch: x64
+        vulkan: [ON, OFF]
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
       - uses: actions/setup-java@v4
         with:
           java-version: 22
@@ -108,7 +104,7 @@ jobs:
       - name: Upload natives
         uses: actions/upload-artifact@v4
         with:
-          name: linux-natives-${{ matrix.platform }}-${{ matrix.vulkan }}
+          name: linux-${{ matrix.arch }}-${{ matrix.vulkan }}
           path: whisperjni-build/*
 
   build-windows:
@@ -119,7 +115,6 @@ jobs:
         vulkan: [OFF, ON]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
       - uses: actions/setup-java@v4
         with:
           java-version: 22
@@ -154,7 +149,7 @@ jobs:
       - name: Upload natives
         uses: actions/upload-artifact@v4
         with:
-          name: windows-natives-${{ matrix.vulkan }}
+          name: windows-x64-${{ matrix.vulkan }}
           path: whisperjni-build/*.dll
 
   build-mac:
@@ -162,15 +157,14 @@ jobs:
     strategy:
       matrix:
         include:
-        - arch: x86_64
+        - arch: x64
           version: macos-13
-        - arch: aarch64
+        - arch: arm64
           version: macos-14
     # Can't we just build on macos-14 for both?? Need to test
     runs-on: ${{ matrix.version }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
       - uses: actions/setup-java@v4
         with:
           java-version: 22
@@ -199,15 +193,18 @@ jobs:
       - name: Artifact macos x64
         uses: actions/upload-artifact@v4
         with:
-          name: mac-natives-${{ matrix.arch }}
+          name: mac-${{ matrix.arch }}
           path: whisperjni-build/*.dylib
 
   publish:
     runs-on: ubuntu-latest
     needs: [download-models, build-linux, build-windows, build-mac]
     steps:
-    - uses: actions/checkout@v4
+      # Pull in all of the built natives
     - uses: actions/download-artifact@v4
+      with:
+        path: natives
+    - uses: actions/checkout@v4
     - uses: actions/setup-java@v4
       with:
         java-version: 22
@@ -216,15 +213,34 @@ jobs:
       run: ls -R
     - name: Move natives
       run: |
-        find ./src/main/resources -name ".gitkeep" -type f -delete
-        # mv ./linux-natives-amd64-ON/*.so ./src/main/resources/linux-x64-vulkan/
-        # mv ./linux-natives-arm64-ON/*.so ./src/main/resources/linux-aarch64-vulkan/
-        mv ./linux-natives-amd64-OFF/*.so ./src/main/resources/linux-x64/
-        mv ./linux-natives-arm64-OFF/*.so ./src/main/resources/linux-aarch64/
-        mv ./windows-natives/*.dll ./src/main/resources/windows-x64/
-        # mv ./whisper-jni-vulkan/*.dll ./src/main/resources/windows-x64-vulkan/
-        mv ./mac-natives-x64/*.dylib ./src/main/resources/mac-x64/
-        mv ./mac-natives-aarch64/*.dylib ./src/main/resources/mac-aarch64/
+        # Loop through each subfolder in the resources directory
+        for resource_folder in src/main/resources/*/; do
+          # Get the base folder name (instead of full path)
+          folder_name=$(basename "$resource_folder")
+
+          # Find the matching built natives folder
+          for native_folder in natives/*/; do
+            # Get the base name of the native folder
+            native_folder_name=$(basename "$native_folder")
+
+            # Rename the native folder based on the suffix
+            if [[ "$native_folder_name" == *"-ON" ]]; then
+              native_folder_name="${native_folder_name/-ON/-vulkan}"
+            elif [[ "$native_folder_name" == *"-OFF" ]]; then
+              native_folder_name="${native_folder_name/-OFF/}"
+            fi
+
+            # Rename folder here anyways
+            mv "$native_folder" "natives/${native_folder_name}"
+
+            # Only copy if this native folder EXACTLY matches (meaning Vulkan natives don't get passed, only CPU)
+            if [[ "$native_folder_name" == "$folder_name" ]]; then
+              echo "Copying from $native_folder_name to $resource_folder"
+              # Copy contents from the renamed native folder into the resource folder
+              cp -r "natives/${native_folder_name}/"* "$resource_folder/"
+            fi
+          done
+        done
     - name: Setup project dir
       run: |
         git submodule update --init

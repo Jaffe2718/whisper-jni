@@ -26,17 +26,7 @@ build_lib() {
   rm -rf "$TMP_DIR"
 }
 
-# ------------------------- architecture map ------------------------
-RAW_ARCH=$(dpkg --print-architecture)
-
-case "$RAW_ARCH" in
-  amd64) OUT_ARCH="x64" ;;
-  arm64) OUT_ARCH="aarch64" ;;
-  armhf|armv7l) OUT_ARCH="armv7l" ;;
-  *)      OUT_ARCH="$RAW_ARCH" ;;        # fallback: use raw value
-esac
-
-
+# We aren't building for armv7l (at least right now) but functionality is still here
 AARCH=$(dpkg --print-architecture)
 case $AARCH in
   amd64)
