@@ -258,6 +258,10 @@ jobs:
         done
     - name: Setup project dir
       run: |
+        # UNIQUE TO THIS BUILD
+        # We need to unpack ./test-models and dump the contents to .
+        mv test-models/* ./
+        # Continue with standard project setup
         git submodule update --init
         mv ./ggml-silero-v5.1.2.bin ./src/main/resources
     - name: Build
