@@ -200,7 +200,9 @@ jobs:
         run: |
           git submodule update --init
           mv ./ggml-silero-v5.1.2.bin ./src/main/resources
-      - name: Build binary
+      - name: Build
+        env:
+          VULKAN: ${{ matrix.vulkan }}
         run: |
           export DYLD_LIBRARY_PATH=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/
           # Just in case

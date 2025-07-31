@@ -1,7 +1,8 @@
 set -xe
 
 AARCH=${1:-$(uname -m)}
-VULKAN_ARG=${2:-OFF}
+VULKAN_ARG=${VULKAN:-OFF} # fill from CI/CD
+
 case "$AARCH" in
   x86_64|amd64|x64)
     AARCH=x86_64
