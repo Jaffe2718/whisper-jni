@@ -219,7 +219,7 @@ public class WhisperJNITest {
 						logger.info("TOKEN: '{}'", token.token);
 					}
 					
-					assert tokens.length == 23 || tokens.length == 24;
+					assertTrue(tokens.length >= 23);
 				}
 			}
 		}

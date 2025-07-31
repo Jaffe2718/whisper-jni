@@ -168,8 +168,16 @@ jobs:
         include:
         - arch: x64
           version: macos-13
+          vulkan: ON
+        - arch: x64
+          version: macos-13
+          vulkan: OFF
         - arch: arm64
           version: macos-14
+          vulkan: ON
+        - arch: arm64
+          version: macos-14
+          vulkan: OFF
     # Can't we just build on macos-14 for both?? Need to test
     runs-on: ${{ matrix.version }}
     steps:
@@ -181,6 +189,13 @@ jobs:
         with:
           java-version: 22
           distribution: 'temurin'
+      - name: Install Vulkan SDK
+        uses: humbletim/setup-vulkan-sdk@v1.2.1
+        if: matrix.vulkan == 'ON'
+        with:
+          vulkan-query-version: 1.4.304.1
+          vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang, SPIRV-Tools
+          vulkan-use-cache: true
       - name: Setup project dir
         run: |
           git submodule update --init
