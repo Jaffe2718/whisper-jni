@@ -236,7 +236,7 @@ jobs:
             if [[ "$native_folder_name" == *"-ON-natives" ]]; then
                 native_folder_name="${native_folder_name/-ON-natives/-vulkan-natives}"
             elif [[ "$native_folder_name" == *"-OFF-natives" ]]; then
-                native_folder_name="${native_folder_name/-OFF-natives/natives}"
+                native_folder_name="${native_folder_name/-OFF-natives/-natives}"
             else
                 echo "Not renaming $original_name"
                 continue
