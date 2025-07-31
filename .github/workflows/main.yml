@@ -234,9 +234,9 @@ jobs:
 
             # Rename the native folder based on the suffix
             if [[ "$native_folder_name" == *"-ON" ]]; then
-                native_folder_name="${native_folder_name/-ON/-vulkan}"
+                native_folder_name="${native_folder_name/-ON-natives/-vulkan-natives}"
             elif [[ "$native_folder_name" == *"-OFF" ]]; then
-                native_folder_name="${native_folder_name/-OFF/}"
+                native_folder_name="${native_folder_name/-OFF-natives/natives}"
             else
                 echo "Not renaming $original_name"
                 continue
@@ -252,8 +252,10 @@ jobs:
 
             # Find the matching built natives folder
             for native_folder in natives/*/; do
-                # Only copy if this native folder EXACTLY matches (meaning Vulkan natives don't get passed, only CPU)
-                if [[ $(basename "$native_folder") == "$folder_name" ]]; then
+                # Only copy if this native folder EXACTLY matches (excluding -natives)
+                # This is to make sure only the CPU natives are bundled, not Vulkan
+                native_basename=$(basename "$native_folder")
+                if [[ "${native_basename%-natives}" == "$folder_name" ]]; then
                     echo "Copying from $native_folder to $resource_folder"
                     # Copy contents from the renamed native folder into the resource folder
                     cp -r "$native_folder"/. "$resource_folder"
