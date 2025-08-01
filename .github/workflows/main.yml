@@ -203,6 +203,10 @@ jobs:
           glslc --help || true
           brew install glslang
           glslc --help || true
+          ls /opt/homebrew/bin/glslc || true
+          ls /usr/local/bin/glslc || true
+          echo $PATH
+          brew link glslang
       - name: Setup project dir
         run: |
           git submodule update --init
