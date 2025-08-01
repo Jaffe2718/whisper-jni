@@ -54,12 +54,35 @@ jobs:
       - name: Install Vulkan Tools
         if: matrix.vulkan == 'ON'
         run: |
-          # shaderc is on Launchpad
-          sudo add-apt-repository universe
           sudo apt update
-          sudo apt install -y vulkan-tools glslang-tools libshaderc1
+          sudo apt install -y vulkan-tools glslang-tools
           sudo apt-get install -y libvulkan1 mesa-vulkan-drivers
           sudo vulkaninfo
+      - name: Build shaderc
+        if: matrix.vulkan == 'ON'
+        run: |
+          # Set up shaderc source directory and build directory
+          SOURCE_DIR=$PWD/shaderc
+          BUILD_DIR=$PWD/shaderc_build
+
+          # Clone shaderc repository
+          git clone https://github.com/google/shaderc $SOURCE_DIR
+          cd $SOURCE_DIR
+          ./utils/git-sync-deps  # This fetches the dependencies
+
+          # Create a separate build directory
+          mkdir $BUILD_DIR
+          cd $BUILD_DIR
+
+          # Build shaderc using CMake and Ninja
+          cmake -GNinja -DCMAKE_BUILD_TYPE=Release $SOURCE_DIR
+          ninja
+
+          # Optionally run tests
+          # ctest
+
+          # Move glslc to a directory in PATH
+          sudo mv glslc/glslc /usr/local/bin/
       # Differs from the other Vulkan action (jakoch/install-vulkan-sdk-action@v1) because this lets us install Glslang too
       # I have no idea why this is the case but atp I am embodying the "if it ain't broke don't fix it" mentality
       # ^ was I wrong? Can we go back to the OG?
