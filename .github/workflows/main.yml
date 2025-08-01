@@ -200,6 +200,7 @@ jobs:
           ls /usr/local/bin/glslc || true
           echo $PATH
           brew link glslang
+          brew --prefix glslang
       - name: Install Vulkan SDK
         uses: humbletim/setup-vulkan-sdk@v1.2.1
         if: matrix.vulkan == 'ON'
