@@ -194,7 +194,7 @@ jobs:
         # Hopefully this is all we have to do
         run: |
           glslc --help || true
-          brew install glslang
+          brew install shaderc
           glslc --help || true
           ls /opt/homebrew/bin/glslc || true
           ls /usr/local/bin/glslc || true
