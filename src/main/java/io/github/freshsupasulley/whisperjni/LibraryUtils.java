@@ -200,7 +200,7 @@ public class LibraryUtils {
 			possiblePaths.add(Path.of("/usr/local/lib/libvulkan.1.dylib"));
 			possiblePaths.add(Path.of("/opt/homebrew/lib/libvulkan.1.dylib")); // Apple Silicon / brew
 			possiblePaths.add(Path.of("/usr/lib/libvulkan.1.dylib")); // less common
-			// Vulkan SDK will have it too
+			// Vulkan SDK will have it too (CI/CD uses this one)
 			String sdkRoot = System.getenv("VULKAN_SDK");
 			if(sdkRoot != null)
 			{

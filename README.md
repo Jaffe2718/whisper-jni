@@ -4,14 +4,36 @@ A JNI wrapper for [whisper.cpp](https://github.com/ggerganov/whisper.cpp), allow
 
 ## Platform support
 
-This library aims to support Windows x64, Mac (both AMD x64 and arm64), and Linux (both AMD x64 and arm64).
+This library aims to support Windows x64, and AMD x64 / arm64 of Mac and Linux.
 
-Default native binaries for those platforms are included in the distributed jar. They only utilize the CPU. For some platforms, you can utilize your GPU to achieve much faster transcription results by loading custom-built Vulkan natives (see [examples](#examples)).
-> Mac doesn't support Vulkan natively (but thankfully Metal makes transcription quite fast).
+Default CPU binaries for those platforms are included in the distributed jar. You can utilize your GPU to achieve much faster transcription results by loading custom-built Vulkan natives (see [examples](#examples)).
+> To use the Mac Vulkan natives, install [MoltenVK](https://github.com/KhronosGroup/MoltenVK). Note that the default natives for Mac use Metal and can be quite fast already. Vulkan natives make more of a difference on Linux / Windows.
 
 ## Installation
 
-The package is distributed through [Maven Central](https://central.sonatype.com/artifact/io.github.freshsupasulley/whisper-jni).
+The package is distributed through [Maven Central](https://central.sonatype.com/artifact/io.github.freshsupasulley/whisper-jni):
+
+### Gradle
+
+```gradle
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'io.github.freshsupasulley:whisper-jni:+' // gets the latest version
+}
+```
+
+### Maven
+
+```xml
+<dependency>
+    <groupId>io.github.freshsupasulley</groupId>
+    <artifactId>whisper-jni</artifactId>
+    <version>$version</version> <!-- replace with a specific version -->
+</dependency>
+```
 
 ## Examples
 
@@ -34,15 +56,20 @@ ctx.close(); // free native memory, should be called when we don't need the cont
 
 ### Using the Vulkan Natives
 
-You can find these natives in [releases](https://github.com/FreshSupaSulley/whisper-jni/releases).
+You can find the Vulkan natives in [releases](https://github.com/FreshSupaSulley/whisper-jni/releases). You'll need to download and load them using `LibraryUtils`:
 
 ```java
-var whisper = new WhisperJNI();
-// First check if your machine can use the Vulkan natives!
-if(LibraryUtils.canUseVulkan()) {
-    LibraryUtils.loadVulkan(myLogger, Path.of("windows-x64-vulkan"));
+Path vulkanNatives = Path.of("path", "to", "whisperjni-vulkan-natives");
+if(LibraryUtils.findAndLoadVulkanRuntime()) {
+    logger.info("Found the Vulkan runtime! Loading the Vulkan natives");
+    LibraryUtils.loadLibrary(logger, vulkanNatives);
+} else {
+    logger.info("Loading standard natives");
+    LibraryUtils.loadLibrary(logger, vulkanNatives);
 }
 ```
+
+If you depend on whisper-jni and need to extract the Vulkan natives from a folder within the JAR, `LibraryUtils` has helper methods for this to extract and load them to/from a temporary folder. If you need to know which natives to load based on the machine's OS / architecture, there's methods for that too. See the `LibraryUtils` Javadoc!
 
 ## Grammar
 
