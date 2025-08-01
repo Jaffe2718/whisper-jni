@@ -54,6 +54,8 @@ jobs:
       - name: Install Vulkan Tools
         if: matrix.vulkan == 'ON'
         run: |
+          # shaderc is on Launchpad
+          sudo add-apt-repository universe
           sudo apt update
           sudo apt install -y vulkan-tools glslang-tools shaderc
           sudo apt-get install -y libvulkan1 mesa-vulkan-drivers
