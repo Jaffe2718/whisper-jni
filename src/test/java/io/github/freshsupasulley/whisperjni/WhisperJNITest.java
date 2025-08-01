@@ -10,10 +10,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.text.ParseException;
 
 import javax.sound.sampled.AudioInputStream;
@@ -68,15 +66,17 @@ public class WhisperJNITest {
 		// For CI/CD purposes, if you can use Vulkan, then you best believe the natives better be built for Vulkan too
 		if(Files.isDirectory(whisperJNIBuild))
 		{
-			logger.info("Loaidng from build dir");
-			if(LibraryUtils.canUseVulkan())
+			logger.info("Loading from build dir");
+			
+			if(LibraryUtils.findAndLoadVulkanRuntime())
 			{
-				LibraryUtils.loadVulkan(logger, whisperJNIBuild);
+				logger.info("Found the Vulkan runtime! Loading the Vulkan natives");
+				LibraryUtils.loadLibrary(logger, whisperJNIBuild);
 			}
 			else
 			{
 				logger.info("Loading standard natives");
-				LibraryUtils.loadInOrder(logger, whisperJNIBuild);
+				LibraryUtils.loadLibrary(logger, whisperJNIBuild);
 			}
 		}
 		else

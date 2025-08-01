@@ -55,10 +55,11 @@ endif()
 
 add_library(whisper-jni SHARED
   src/main/native/io_github_freshsupasulley_whisperjni_WhisperJNI.cpp
+  # Needed
   src/main/native/whisper/examples/grammar-parser.cpp
 )
 
-# Probably required, but definitely required in whisper (I made changes in its CMakeLists [can I avoid it with a flag? probably not?])
+# This is required to make whisper's release build work (particularly on Windows, unsure about other platforms)
 target_compile_definitions(whisper-jni PRIVATE _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 
 if(NOT DEFINED WHISPER_DIR)
@@ -113,9 +114,6 @@ if(GGML_VULKAN)
     # Link Vulkan to your target
     target_link_libraries(whisper-jni PRIVATE whisper ggml ggml-base ggml-cpu Vulkan::Vulkan)
 
-    # You can also link any other additional libraries here if necessary
-    # target_link_libraries(whisper-jni PRIVATE "${WHISPER_DIR}/lib/ggml-vulkan.lib")
-
     # Optionally include Vulkan directories if needed
     # ... is this required? probably
     target_include_directories(whisper-jni PRIVATE ${Vulkan_INCLUDE_DIRS})
@@ -125,16 +123,6 @@ if(GGML_VULKAN)
 else()
 	target_link_libraries(whisper-jni whisper ggml ggml-base ggml-cpu)
 endif()
-
-# Always link these libs
-# target_link_directories(whisper-jni PUBLIC ${WHISPER_DIR}/lib)
-# target_link_libraries(whisper-jni whisper ggml ggml-base ggml-cpu)
-# target_link_libraries(whisper-jni PRIVATE
-#   "${WHISPER_DIR}/lib/ggml.lib"
-#   "${WHISPER_DIR}/lib/ggml-base.lib"
-#   "${WHISPER_DIR}/lib/ggml-cpu.lib"
-#   "${WHISPER_DIR}/lib/whisper.lib"
-# )
 
 target_link_directories(whisper-jni PUBLIC
   ${WHISPER_DIR}/lib
@@ -146,6 +134,7 @@ target_include_directories(whisper-jni PUBLIC
   ${JNI_INCLUDE_DIRS}
   src/main/native
   ${WHISPER_DIR}/include
+  # For grammar-parser.h. We include this in our cpp code
   ${WHISPER_INSTALL_DIR}/src/whisper-cpp/examples
 )
 

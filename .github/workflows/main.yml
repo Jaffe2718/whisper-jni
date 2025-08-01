@@ -196,6 +196,10 @@ jobs:
           vulkan-query-version: 1.4.304.1
           vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang, SPIRV-Tools
           vulkan-use-cache: true
+      - name: Install shaderc
+        if: matrix.vulkan == 'ON'
+        # Hopefully this is all we have to do
+        run: brew install glslang
       - name: Setup project dir
         run: |
           git submodule update --init

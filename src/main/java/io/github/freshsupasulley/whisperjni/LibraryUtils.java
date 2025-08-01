@@ -42,14 +42,33 @@ public class LibraryUtils {
 	 * Linux's ggml lib is named that insane string and happens to not get picked up in the correct order but somehow it still works
 	 * </p>
 	 */
-	private static final List<String> loadOrder = Arrays.asList("ggml-base", "ggml-cpu", "ggml-vulkan", "ggml", "whisper", "whisper-jni");
+	private static final List<String> loadOrder = Arrays.asList("ggml-base", "ggml-cpu", "ggml-metal", "ggml-vulkan", "ggml", "whisper", "whisper-jni");
 	private static final String[] LIB_NAMES = {".so", ".dylib", ".dll"};
 	
 	private LibraryUtils()
 	{
 	}
 	
-	static String getArchitecture()
+	/**
+	 * Returns a generalized name of this machine's architecture. Can be useful for determining which natives to load.
+	 * 
+	 * <p>
+	 * Here's the options that can be returned:
+	 * </p>
+	 * 
+	 * <ul>
+	 * <li>"x86", 32-bit processor</li>
+	 * <li>"x64", 64-bit processor</li>
+	 * <li>"arm64", 64-bit ARM processor</li>
+	 * </ul>
+	 * 
+	 * <p>
+	 * The raw architecture name is returned if it wasn't matched to a known architecture name.
+	 * </p>
+	 * 
+	 * @return processor architecture name, or the raw name of the system's architecture if not matched
+	 */
+	public static String getArchitecture()
 	{
 		return switch(OS_ARCH)
 		{
@@ -151,11 +170,15 @@ public class LibraryUtils {
 	}
 	
 	/**
-	 * A system with <code>vulkan-1.dll</code> present on their SystemRoot indicates it can use Vulkan.
+	 * Tries to find the Vulkan runtime library on this machine by looking in well known paths according to the operating system.
 	 * 
-	 * @return path to <code>vulkan-1.dll</code>, or <code>null</code> if not found
+	 * <p>
+	 * Unless it's already on the system's loader search path, you need to manually load the Vulkan runtime yourself using {@link System#load(String)}.
+	 * </p>
+	 * 
+	 * @return path to Vulkan runtime library, or <code>null</code> if not found
 	 */
-	public static Path getVulkanDLL()
+	public static Path findVulkanRuntime()
 	{
 		// Simplifications can be made if we only consider x64 systems
 		List<Path> possiblePaths = new ArrayList<Path>();
@@ -172,7 +195,18 @@ public class LibraryUtils {
 			possiblePaths.add(Path.of("/usr/lib/x86_64-linux-gnu/libvulkan.so.1"));
 			possiblePaths.add(Path.of("/usr/local/lib/libvulkan.so.1"));
 		}
-		// ^ Vulkan on Mac isn't a thing + metal is fast enough already so we're not considering it
+		else if(isMac())
+		{
+			possiblePaths.add(Path.of("/usr/local/lib/libvulkan.1.dylib"));
+			possiblePaths.add(Path.of("/opt/homebrew/lib/libvulkan.1.dylib")); // Apple Silicon / brew
+			possiblePaths.add(Path.of("/usr/lib/libvulkan.1.dylib")); // less common
+			// Optionally include the Vulkan SDK default install location (if known)
+			// String sdkRoot = System.getenv("VULKAN_SDK");
+			// if(sdkRoot != null)
+			// {
+			// possiblePaths.add(Path.of(sdkRoot, "lib", "libvulkan.1.dylib"));
+			// }
+		}
 		
 		for(Path path : possiblePaths)
 		{
@@ -186,56 +220,25 @@ public class LibraryUtils {
 	}
 	
 	/**
-	 * Determines if this system has the Vulkan DLL installed and can therefore attempt to load the Vulkan natives for whisper.cpp.
+	 * Tries to find and load the Vulkan runtime library on this machine by looking in well known paths according to the operating system.
 	 * 
 	 * <p>
-	 * Only relevant on Windows and Linux systems, as Mac doesn't support Vulkan natively (and Metal is quite fast already).
+	 * Unless it's already on the system's loader search path, you need to manually load the Vulkan runtime yourself using {@link System#load(String)}.
 	 * </p>
 	 * 
-	 * @return true if this system can use the Vulkan natives, false otherwise
+	 * @return if the runtime was found
 	 */
-	public static boolean canUseVulkan()
+	public static boolean findAndLoadVulkanRuntime()
 	{
-		return LibraryUtils.getVulkanDLL() != null;
-	}
-	
-	/**
-	 * Loads the library natives with the Vulkan DLL on this machine. Use {@link #canUseVulkan()} before calling this method.
-	 * 
-	 * <p>
-	 * If you're loading the natives from a fixed location on your hard disk, providing the path to the natives folder statically will work fine. However, if you're
-	 * bundling your natives into a jar and need to extract and load them at runtime, you should use {@link #extractFolderToTemp(Logger, URI)} first and use the
-	 * result as the native directory for this method.
-	 * </p>
-	 * 
-	 * <p>
-	 * <B>NOTE:</b> Natives are built for particular platforms, so ensure your logic only loads the correct ones. You may use the getters in this class for your
-	 * conditional logic.
-	 * </p>
-	 * 
-	 * @param logger     SLF4J {@link Logger}
-	 * @param nativesDir path to the directory containing all natives to load
-	 * @throws IllegalStateException if this system can't use Vulkan natives
-	 */
-	public static void loadVulkan(Logger logger, Path nativesDir)
-	{
-		if(!canUseVulkan())
-			throw new IllegalStateException("This system can't use Vulkan natives");
+		Path runtime = findVulkanRuntime();
+		boolean found = runtime != null;
 		
-		logger.info("Loading Vulkan natives for whisper-jni");
-		
-		try
+		if(found)
 		{
-			String vulkanPath = getVulkanDLL().toAbsolutePath().toString();
-			logger.info("Loading Vulkan DLL at {}", vulkanPath);
-			System.load(vulkanPath);
-			
-			// Now load our Vulkan dependencies
-			loadInOrder(logger, nativesDir);
-		} catch(Exception e)
-		{
-			logger.error("Failed to load Vulkan natives", e);
+			System.load(runtime.toAbsolutePath().toString());
 		}
+		
+		return found;
 	}
 	
 	/**
@@ -311,17 +314,46 @@ public class LibraryUtils {
 	}
 	
 	/**
-	 * Loads all natives defined in the provided directory.
+	 * Sequentially loads each native in the provided directory according to the Whisper JNI load order.
 	 * 
 	 * <p>
-	 * If loading resources internally (from a jar), you should first extract them to a temp directory using {@link #extractFolderToTemp(Logger, URI)}.
+	 * <B>NOTE:</b> If you are loading Vulkan natives, <b>you are responsible for loading the Vulkan runtime!</b>. You can use {@link #findVulkanRuntime()} to try
+	 * to find a Vulkan runtime. Also ensure you load the natives that match the machine's OS / architecture. This class provides helpful utility methods for that
+	 * logic as well (such as {@link #getOS()} and {@link #getArchitecture()}).
+	 * </p>
+	 * 
+	 * <p>
+	 * Loading Vulkan natives example:
+	 * </p>
+	 * 
+	 * <pre>
+	 * // Ensure you have some kind of logic to match the natives to the machine's OS / arch
+	 * Path vulkanNatives = Path.of("path", "to", "whisperjni-vulkan-natives");
+	 * if(LibraryUtils.findAndLoadVulkanRuntime(true))
+	 * {
+	 * 	logger.info("Found and loaded the Vulkan runtime! Loading the Vulkan natives");
+	 * 	LibraryUtils.loadLibrary(logger, vulkanNatives);
+	 * }
+	 * </pre>
+	 * 
+	 * <p>
+	 * You may need to load the natives from within a JAR instead of from a fixed path on disk. Extracting resources from a JAR is notoriously awkward in Java, but
+	 * this class provides helper methods to extract your bundled natives to a temporary directory to then load afterwards. See
+	 * {@link WhisperJNI#loadLibrary(Logger)} for an example.
+	 * </p>
+	 * 
+	 * <p>
+	 * About the load order: it's an internal assorted array of the expected names of the natives from least-dependent to most-dependent on other natives within the
+	 * same directory. Sorting the natives is required, as you can't load a native that depends one that isn't loaded yet. However, this problem can be avoided by
+	 * adding the natives directory to <code>java.library.path</code> and invoking <code>System.loadLibrary("whisper-jni")</code> to handle the dependency logic
+	 * automatically.
 	 * </p>
 	 * 
 	 * @param logger     SLF4J {@link Logger} instance
 	 * @param nativesDir path to the directory containing the natives to load
 	 * @throws IOException if something goes wrong
 	 */
-	public static void loadInOrder(Logger logger, Path nativesDir) throws IOException
+	public static void loadLibrary(Logger logger, Path nativesDir) throws IOException
 	{
 		// Now load everything in the correct order
 		List<String> natives = Stream.of(nativesDir.toFile().listFiles()).sorted(Comparator.comparing(file ->
