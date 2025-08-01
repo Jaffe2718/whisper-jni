@@ -200,9 +200,9 @@ jobs:
         if: matrix.vulkan == 'ON'
         # Hopefully this is all we have to do
         run: |
-          glslc --help
+          glslc --help || true
           brew install glslang
-          glslc --help
+          glslc --help || true
       - name: Setup project dir
         run: |
           git submodule update --init
