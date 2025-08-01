@@ -189,25 +189,17 @@ jobs:
         with:
           java-version: 22
           distribution: 'temurin'
-      - name: Install shaderc
-        if: matrix.vulkan == 'ON'
-        # Hopefully this is all we have to do
-        run: |
-          glslc --help || true
-          brew install shaderc
-          glslc --help || true
-          ls /opt/homebrew/bin/glslc || true
-          ls /usr/local/bin/glslc || true
-          echo $PATH
-          brew link glslang
-          brew --prefix glslang
       - name: Install Vulkan SDK
         uses: humbletim/setup-vulkan-sdk@v1.2.1
         if: matrix.vulkan == 'ON'
         with:
           vulkan-query-version: latest
-          vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang, SPIRV-Tools
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
           vulkan-use-cache: true
+      - name: Install shaderc
+        if: matrix.vulkan == 'ON'
+        # This envelops glslc
+        run: brew install shaderc
       - name: Setup project dir
         run: |
           git submodule update --init
