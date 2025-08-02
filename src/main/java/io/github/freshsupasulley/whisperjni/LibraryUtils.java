@@ -324,6 +324,8 @@ public class LibraryUtils {
 	 */
 	public static void loadLibrary(Logger logger, Path nativesDir) throws IOException
 	{
+		logger.info("Loading library from {}", nativesDir);
+		
 		// Now load everything in the correct order
 		List<String> natives = Stream.of(nativesDir.toFile().listFiles()).sorted(Comparator.comparing(file ->
 		{
