@@ -4,9 +4,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystemAlreadyExistsException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -15,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -161,9 +157,10 @@ public class LibraryUtils {
 		// Shouldn't ever throw an error, but wrap it just in case
 		try
 		{
-			Path path = LibraryUtils.getPathToResource(LibraryUtils.class.getResource("/ggml-silero-v5.1.2.bin").toURI());
+			// Note to self: getClassLoader() is the preferred way to get resources, as class.getResource will use the package name as the root
+			Path path = Paths.get(LibraryUtils.class.getClassLoader().getResource("ggml-silero-v5.1.2.bin").toURI());
 			Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
-		} catch(URISyntaxException | NullPointerException e) // it can throw a null pointer if the resource wasn't found
+		} catch(URISyntaxException e)
 		{
 			throw new IOException(e);
 		}
@@ -242,34 +239,6 @@ public class LibraryUtils {
 	}
 	
 	/**
-	 * Returns a {@link Path} object the internal resource specified by the URI.
-	 * 
-	 * @param uri URI to internal resource
-	 * @return {@link Path} object
-	 * @throws IOException if something goes wrong
-	 */
-	public static Path getPathToResource(URI uri) throws IOException
-	{
-		FileSystem fs = null;
-		
-		if("jar".equals(uri.getScheme()))
-		{
-			try
-			{
-				fs = FileSystems.newFileSystem(uri, Map.of());
-			} catch(FileSystemAlreadyExistsException e)
-			{
-				fs = FileSystems.getFileSystem(uri); // reuse the one that’s open
-			}
-			
-			return fs.getPath(uri.getPath());
-		}
-		
-		Path originDir = Paths.get(uri);
-		return originDir;
-	}
-	
-	/**
 	 * Helper method that extracts internal resources to a temporary directory.
 	 * 
 	 * @param logger SLF4J {@link Logger}
@@ -281,7 +250,7 @@ public class LibraryUtils {
 	{
 		logger.info("Extracting libs from {} (OS: {}, architecture: {})", uri, OS_NAME, OS_ARCH);
 		
-		Path originDir = getPathToResource(uri);
+		Path originDir = Paths.get(uri);
 		
 		Path tmpDir = Files.createTempDirectory("whisperjni_");
 		logger.info("Copying natives to temporary dir {}", tmpDir);
