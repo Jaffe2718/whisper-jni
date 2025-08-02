@@ -236,17 +236,23 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         # Put everything into /natives
-        # This ALSO puts in the test-models, which is omitted downstream
         path: natives
         pattern: "*-natives"
+    # We still need the silero model
+    - uses: actions/download-artifact@v4
+      with:
+        name: test-models
     - uses: actions/setup-java@v4
       with:
         java-version: 22
         distribution: 'temurin'
     - name: Check tree
       run: ls -R
-    - name: Move natives
+    - name: Prepare artifacts
       run: |
+        echo "Moving VAD model"
+        mv ./ggml-silero-v5.1.2.bin ./src/main/resources
+        # Now prepare the natives
         echo "Renaming native folders to prod names"
         for native_folder in natives/*/; do
             # Get the base name of the native folder

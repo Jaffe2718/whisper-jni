@@ -163,7 +163,7 @@ public class LibraryUtils {
 		{
 			Path path = LibraryUtils.getPathToResource(LibraryUtils.class.getResource("/ggml-silero-v5.1.2.bin").toURI());
 			Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
-		} catch(URISyntaxException e)
+		} catch(URISyntaxException | NullPointerException e) // it can throw a null pointer if the resource wasn't found
 		{
 			throw new IOException(e);
 		}
