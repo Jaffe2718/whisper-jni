@@ -285,8 +285,9 @@ jobs:
                 if [[ "${native_basename%-natives}" == "$folder_name" ]]; then
                     echo "Copying from $native_folder to $resource_folder"
                     # Copy contents from the renamed native folder into the resource folder
-                    # rsync is cleaner for ignoring hidden files (to ensure .gitkeep isn't retained)
-                    rsync -av --exclude='.*' "$native_folder"/ "$resource_folder"/
+                    cp -r "$native_folder"/* "$resource_folder"/
+                    # Remove .gitkeep (and other hidden files but there shouldn't be anymore)
+                    find "$resource_folder" -type f -name '.*' -exec rm -f {} \;
                 fi
             done
         done
