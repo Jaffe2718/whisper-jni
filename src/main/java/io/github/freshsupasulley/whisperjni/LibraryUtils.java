@@ -173,7 +173,7 @@ public class LibraryUtils {
 	 * Tries to find the Vulkan runtime library on this machine by looking in well known paths according to the operating system.
 	 * 
 	 * <p>
-	 * Unless it's already on the system's loader search path, you need to manually load the Vulkan runtime yourself using {@link System#load(String)}.
+	 * Loading the Vulkan runtime library is required before attempting loading the Vulkan natives.
 	 * </p>
 	 * 
 	 * @return path to Vulkan runtime library, or <code>null</code> if not found
@@ -223,7 +223,7 @@ public class LibraryUtils {
 	 * Tries to find and load the Vulkan runtime library on this machine by looking in well known paths according to the operating system.
 	 * 
 	 * <p>
-	 * Unless it's already on the system's loader search path, you need to manually load the Vulkan runtime yourself using {@link System#load(String)}.
+	 * Loading the Vulkan runtime library is required before attempting loading the Vulkan natives.
 	 * </p>
 	 * 
 	 * @return if the runtime was found
