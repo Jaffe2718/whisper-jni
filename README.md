@@ -1,6 +1,6 @@
 # WhisperJNI
 
-A JNI wrapper for [whisper.cpp](https://github.com/ggerganov/whisper.cpp), allows transcribe speech to text in Java. Forked from [whisper-jni by GiviMAD](https://github.com/GiviMAD/whisper-jni).
+A JNI wrapper for [whisper.cpp](https://github.com/ggerganov/whisper.cpp), allows transcribing speech to text in Java 17+. Forked from [whisper-jni by GiviMAD](https://github.com/GiviMAD/whisper-jni).
 
 ## Platform support
 
