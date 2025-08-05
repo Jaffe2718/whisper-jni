@@ -150,14 +150,14 @@ public class LibraryUtils {
 	 * @param destination path to store the model
 	 * @throws IOException if something goes wrong (like the path being malformed)
 	 */
-	public static void exportVADModel(Path destination) throws IOException
+	public static void exportVADModel(Logger logger, Path destination) throws IOException
 	{
 		// Shouldn't ever throw an error, but wrap it just in case
 		try
 		{
 			// Note to self: getClassLoader() is the preferred way to get resources, as class.getResource will use the package name as the root
-			Path path = Paths.get(extractResourceToTemp(logger, "ggml-silero-v5.1.2.bin").toURI());
-			Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
+			extractResource(logger, LibraryUtils.class.getClassLoader().getResource("ggml-silero-v5.1.2.bin").toURI(), destination);
+			logger.info("Extracted to {}", destination);
 		} catch(URISyntaxException e)
 		{
 			throw new IOException(e);
@@ -246,35 +246,40 @@ public class LibraryUtils {
 	 * @param destDir destination directory
 	 * @throws IOException if something goes wrong
 	 */
-	public static void extractResourceToTemp(Logger logger, URI uri, Path destDir) throws IOException
+	public static void extractResource(Logger logger, URI uri, Path destDir) throws IOException
 	{
-		logger.info("Extracting libs from {} (OS: {}, architecture: {}) to {}", uri, OS_NAME, OS_ARCH, destDir);
+		logger.info("Extracting resource from {} to {} (OS: {}, architecture: {})", uri, destDir, OS_NAME, OS_ARCH);
+		Path internalPath;
 		
 		// If we're not inside a JAR, there's nothing to do
-		if(!"jar".equals(uri.getScheme()))
-			return;
-		
-		// Extract the path to the jar file and the internal path inside the jar
-		String[] parts = uri.toString().split("!");
-		URI jarUri = URI.create(parts[0]);
-		
-		FileSystem fs;
-		
-		try
+		if("jar".equals(uri.getScheme()))
 		{
-			logger.debug("Creating new JAR file system");
-			fs = FileSystems.newFileSystem(jarUri, new HashMap<>());
-		} catch(FileSystemAlreadyExistsException e)
+			// Extract the path to the jar file and the internal path inside the jar
+			String[] parts = uri.toString().split("!");
+			URI jarUri = URI.create(parts[0]);
+			
+			FileSystem fs;
+			
+			try
+			{
+				logger.debug("Creating new JAR file system");
+				fs = FileSystems.newFileSystem(jarUri, new HashMap<>());
+			} catch(FileSystemAlreadyExistsException e)
+			{
+				logger.debug("File system already exists, using the existing one");
+				fs = FileSystems.getFileSystem(jarUri);
+			}
+			
+			// Root of fs
+			internalPath = fs.getPath(parts[1]);
+		}
+		else
 		{
-			logger.debug("File system already exists, using the existing one");
-			fs = FileSystems.getFileSystem(jarUri);
+			logger.info("URI not in JAR (scheme: {}), lazily converting URI to path", uri.getScheme());
+			internalPath = Paths.get(uri);
 		}
 		
-		// Root of fs
-		Path internalPath = fs.getPath(parts[1]);
-		
-		logger.debug("Created temp directory at {}", destDir);
-		
+		// Walk through the tree and create all necessary directories
 		Files.walk(internalPath).forEach(path ->
 		{
 			try
@@ -304,10 +309,10 @@ public class LibraryUtils {
 	 * @return path to newly created temporary directory
 	 * @throws IOException if something goes wrong
 	 */
-	public static Path extractResourceToTemp(Logger logger, URI uri) throws IOException
+	public static Path extractResource(Logger logger, URI uri) throws IOException
 	{
 		Path tempDir = Files.createTempDirectory("whisper-jni-temp");
-		extractResourceToTemp(logger, uri);
+		extractResource(logger, uri, tempDir);
 		return tempDir;
 	}
 	

@@ -102,10 +102,11 @@ public class WhisperJNI {
 		try
 		{
 			// the leading / is needed (same with extracting the ggml model in LibraryUtils)
-			Path tempLib = LibraryUtils.extractResourceToTemp(logger, WhisperJNI.class.getResource("/" + LibraryUtils.getOS() + "-" + LibraryUtils.getArchitecture()).toURI());
+			Path tempLib = LibraryUtils.extractResource(logger, WhisperJNI.class.getClassLoader().getResource(LibraryUtils.getOS() + "-" + LibraryUtils.getArchitecture()).toURI());
 			LibraryUtils.loadLibrary(logger, tempLib);
-		} catch(URISyntaxException e)
+		} catch(URISyntaxException | NullPointerException e)
 		{
+			logger.error("Failed to load built-in whisper-jni natives", e);
 			throw new IOException(e);
 		}
 	}

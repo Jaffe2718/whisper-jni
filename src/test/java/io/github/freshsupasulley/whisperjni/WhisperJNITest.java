@@ -55,7 +55,7 @@ public class WhisperJNITest {
 		
 		// Test extracting the VAD model
 		tempVAD = Files.createTempFile("tempVAD", ".bin");
-		LibraryUtils.exportVADModel(tempVAD);
+		LibraryUtils.exportVADModel(logger, tempVAD);
 		
 		// Initialize before loading natives
 		whisper = new WhisperJNI();
