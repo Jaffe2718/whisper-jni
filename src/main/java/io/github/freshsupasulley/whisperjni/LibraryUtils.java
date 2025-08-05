@@ -156,7 +156,7 @@ public class LibraryUtils {
 		try
 		{
 			// Note to self: getClassLoader() is the preferred way to get resources, as class.getResource will use the package name as the root
-			Path path = Paths.get(LibraryUtils.class.getClassLoader().getResource("ggml-silero-v5.1.2.bin").toURI());
+			Path path = Paths.get(extractResourceToTemp(logger, "ggml-silero-v5.1.2.bin").toURI());
 			Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
 		} catch(URISyntaxException e)
 		{
@@ -239,20 +239,20 @@ public class LibraryUtils {
 	}
 	
 	/**
-	 * Helper method that extracts internal resources to a temporary directory.
+	 * Helper method that extracts internal resources to a directory.
 	 *
-	 * @param logger SLF4J {@link Logger}
-	 * @param uri    internal resource
-	 * @return path to newly created temporary directory
+	 * @param logger  SLF4J {@link Logger}
+	 * @param uri     internal resource
+	 * @param destDir destination directory
 	 * @throws IOException if something goes wrong
 	 */
-	public static Path extractFolderToTemp(Logger logger, URI uri) throws IOException
+	public static void extractResourceToTemp(Logger logger, URI uri, Path destDir) throws IOException
 	{
-		logger.info("Extracting libs from {} (OS: {}, architecture: {})", uri, OS_NAME, OS_ARCH);
+		logger.info("Extracting libs from {} (OS: {}, architecture: {}) to {}", uri, OS_NAME, OS_ARCH, destDir);
 		
-		// If we're not inside a JAR
+		// If we're not inside a JAR, there's nothing to do
 		if(!"jar".equals(uri.getScheme()))
-			return Paths.get(uri);
+			return;
 		
 		// Extract the path to the jar file and the internal path inside the jar
 		String[] parts = uri.toString().split("!");
@@ -273,14 +273,13 @@ public class LibraryUtils {
 		// Root of fs
 		Path internalPath = fs.getPath(parts[1]);
 		
-		Path tempDir = Files.createTempDirectory("whisper-jni-temp");
-		logger.debug("Created temp directory at {}", tempDir);
+		logger.debug("Created temp directory at {}", destDir);
 		
 		Files.walk(internalPath).forEach(path ->
 		{
 			try
 			{
-				Path dest = tempDir.resolve(internalPath.relativize(path).toString());
+				Path dest = destDir.resolve(internalPath.relativize(path).toString());
 				
 				if(Files.isDirectory(path))
 				{
@@ -295,7 +294,20 @@ public class LibraryUtils {
 				throw new UncheckedIOException(e);
 			}
 		});
-		
+	}
+	
+	/**
+	 * Helper method that extracts internal resources to a temporary directory.
+	 *
+	 * @param logger SLF4J {@link Logger}
+	 * @param uri    internal resource
+	 * @return path to newly created temporary directory
+	 * @throws IOException if something goes wrong
+	 */
+	public static Path extractResourceToTemp(Logger logger, URI uri) throws IOException
+	{
+		Path tempDir = Files.createTempDirectory("whisper-jni-temp");
+		extractResourceToTemp(logger, uri);
 		return tempDir;
 	}
 	

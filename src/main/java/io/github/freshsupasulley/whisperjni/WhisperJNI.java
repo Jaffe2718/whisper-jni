@@ -102,7 +102,7 @@ public class WhisperJNI {
 		try
 		{
 			// the leading / is needed (same with extracting the ggml model in LibraryUtils)
-			Path tempLib = LibraryUtils.extractFolderToTemp(logger, WhisperJNI.class.getResource("/" + LibraryUtils.getOS() + "-" + LibraryUtils.getArchitecture()).toURI());
+			Path tempLib = LibraryUtils.extractResourceToTemp(logger, WhisperJNI.class.getResource("/" + LibraryUtils.getOS() + "-" + LibraryUtils.getArchitecture()).toURI());
 			LibraryUtils.loadLibrary(logger, tempLib);
 		} catch(URISyntaxException e)
 		{
