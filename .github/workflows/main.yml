@@ -297,7 +297,7 @@ jobs:
     - name: Publish to maven central
       run: ./gradlew jreleaserDeploy --stacktrace
       env:
-        JRELEASER_MAVENCENTRAL_STAGE: PUBLISH # You can alternatively set this to UPLOAD to review it before it goes live
+        JRELEASER_MAVENCENTRAL_STAGE: UPLOAD # why the hell doesn't publish work
         JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.JRELEASER_MAVENCENTRAL_USERNAME }}
         JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.JRELEASER_MAVENCENTRAL_PASSWORD }}
         JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
