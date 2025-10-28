@@ -27,16 +27,16 @@ jobs:
       matrix:
         # arch is used the artifact name
         include:
-          - platform: ubuntu-24.04-arm
+          - platform: ubuntu-22.04-arm
             arch: arm64
             vulkan: ON
-          - platform: ubuntu-24.04-arm
+          - platform: ubuntu-22.04-arm
             arch: arm64
             vulkan: OFF
-          - platform: ubuntu-latest
+          - platform: ubuntu-22.04
             arch: x64
             vulkan: ON
-          - platform: ubuntu-latest
+          - platform: ubuntu-22.04
             arch: x64
             vulkan: OFF
     runs-on: ${{ matrix.platform }}
