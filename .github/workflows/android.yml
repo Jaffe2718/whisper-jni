@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 jobs:
   download-models:
-    runs-on: ubuntu-22.04-arm
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - name: Download tiny ggml model
@@ -20,7 +20,7 @@ jobs:
           retention-days: 2
 
   build_android:
-    runs-on: ubuntu-22.04-arm
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - name: Set up Android NDK
