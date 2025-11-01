@@ -89,6 +89,10 @@ public class LibraryUtils {
 		{
 			return "mac";
 		}
+        else if (isAndroid())
+		{
+			return "android";
+		}
 		else if(isLinux())
 		{
 			return "linux";
@@ -118,7 +122,17 @@ public class LibraryUtils {
 	{
 		return OS_NAME.contains("mac");
 	}
-	
+
+        /**
+	 * Determines if this OS is Android.
+	 *
+	 * @return true if Android
+	 */
+	public static boolean isAndroid()
+	{
+		return OS_NAME.contains("android");
+	}
+
 	/**
 	 * Determines if this OS is Linux.
 	 *
@@ -384,7 +398,7 @@ public class LibraryUtils {
 			
 			logger.warn("File not handled in load order: {}", file);
 			return Integer.MAX_VALUE; // unknown files go last
-		})).map(file -> file.getAbsolutePath()).filter(file -> Stream.of(LIB_NAMES).anyMatch(suffix -> file.matches(".*\\" + suffix + "(\\.\\d+)*$"))).collect(Collectors.toUnmodifiableList());
+		})).map(file -> file.getAbsolutePath()).filter(file -> Stream.of(LIB_NAMES).anyMatch(suffix -> file.matches(".*\\%s(\\.\\d+)*$".formatted(suffix)))).collect(Collectors.toUnmodifiableList());
 		
 		// ^ collecting into a list because the consumer doesn't declare IOException
 		for(String path : natives)

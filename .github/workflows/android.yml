@@ -1,0 +1,39 @@
+name: Build Android
+
+on:
+  workflow_dispatch:
+jobs:
+  download-models:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download tiny ggml model
+        run: |
+          git submodule update --init
+          ./download-vad-model.sh
+          mkdir models
+          mv ggml-silero-v5.1.2.bin models/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-models
+          path: models/*.bin
+          retention-days: 2
+
+  build_android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r25c
+          add-to-path: true
+          cache: true
+      - name: Build Android JAR
+        run: ./build_android.sh
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-jar
+          path: |
+            whisperjni-build/*.jar
