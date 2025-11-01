@@ -24,7 +24,7 @@ compile_native_libraries() {
 
     # Configure CMake parameters
     CMAKE_TOOLCHAIN="${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake"
-    CMAKE_ARGS="-DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-26 -DANDROID_TOOLCHAIN=clang -DGGML_ARCH=arm64-v8a"
+    CMAKE_ARGS="-DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-24 -DANDROID_STL=c++_shared -DANDROID_TOOLCHAIN=clang -DGGML_ARCH=arm64-v8a"
 
     # Clean previous build
     rm -rf build CMakeCache.txt CMakeFiles/
@@ -64,7 +64,7 @@ build_java_jar() {
     ANDROID_RESOURCES_DIR="${RESOURCES_DIR}/android-arm64"
     # clean resources directory
     mkdir -p "$ANDROID_RESOURCES_DIR"
-    cp -f "${BUILD_DIR}/arm64-v8a"/*.so "$ANDROID_RESOURCES_DIR/"
+    cp -f "${BUILD_DIR}/arm64-v8a"/* "$ANDROID_RESOURCES_DIR/"
     cp models/ggml-silero-v5.1.2.bin "$ANDROID_RESOURCES_DIR/"
     # Build JAR using Gradle
     chmod +x gradlew
