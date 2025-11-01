@@ -1,9 +1,8 @@
 #!/bin/bash
-set -e
+set -xe
 
 # Configuration variables
 BUILD_DIR="whisperjni-build/android"
-JNI_SRC_DIR="src/main/native"
 JAR_OUTPUT_DIR="build/libs"
 VAD_MODEL="ggml-silero-v5.1.2.bin"
 RESOURCES_DIR="src/main/resources"
@@ -33,7 +32,7 @@ compile_native_libraries() {
     rm -rf build CMakeCache.txt CMakeFiles/
     
     # Configure CMake
-    cmake -B build -S . \
+    cmake -B build \
         -DCMAKE_TOOLCHAIN_FILE="${CMAKE_TOOLCHAIN}" \
         ${CMAKE_ARGS} \
         -DCMAKE_C_FLAGS=${CMAKE_CFLAGS} \
@@ -81,6 +80,7 @@ build_java_jar() {
 # Main function
 main() {
     echo "Starting Android native library and JAR build process..."
+    if test -e "src/main/native/whisper/examples/grammar-parser.cpp"; then echo "grammar-parser.cpp found"; else echo "grammar-parser.cpp not found"; fi
 
     prepare_environment
     compile_native_libraries
