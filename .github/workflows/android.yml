@@ -18,9 +18,6 @@ jobs:
           name: test-models
           path: models/*.bin
           retention-days: 2
-      - name: Setup project dir
-        run: |
-          git submodule update --init
 
   build_android:
     runs-on: ubuntu-latest
@@ -36,6 +33,7 @@ jobs:
         run: chmod +x ./build_android.sh
       - name: Build Android JAR
         run: |
+          git submodule update --init
           ./build_android.sh
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
