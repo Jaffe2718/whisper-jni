@@ -24,7 +24,7 @@ compile_native_libraries() {
 
     # Configure CMake parameters
     CMAKE_TOOLCHAIN="${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake"
-    CMAKE_ARGS="-DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-24 -DANDROID_STL=c++_shared -DANDROID_TOOLCHAIN=clang -DGGML_ARCH=arm64-v8a"
+    CMAKE_ARGS="-DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-24 -DANDROID_STL=c++_shared -DANDROID_TOOLCHAIN=clang"
 
     # Clean previous build
     rm -rf build CMakeCache.txt CMakeFiles/

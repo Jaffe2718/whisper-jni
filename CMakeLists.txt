@@ -7,6 +7,11 @@ project(whisper-jni C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(ANDROID_ABI CACHE STRING "Android ABI")
+set(ANDROID_PLATFORM CACHE STRING "Android platform")
+set(ANDROID_STL CACHE STRING "Android STL")
+set(ANDROID_TOOLCHAIN CACHE STRING "Android toolchain")
+
 option(GGML_AVX                 "ggml: enable AVX"                ON )
 option(GGML_AVX2                "ggml: enable AVX2"               ON )
 option(GGML_FMA                 "ggml: enable FMA"                ON )
@@ -66,11 +71,27 @@ if(NOT DEFINED WHISPER_DIR)
   set(WHISPER_DIR "${CMAKE_CURRENT_BINARY_DIR}/w.cpp")
   set(WHISPER_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/w")
   include(ExternalProject)
+  set(CMAKE_ANDROID_ARGS)
+
+  if(ANDROID_ABI)
+    list(APPEND CMAKE_ANDROID_ARGS -DANDROID_ABI=${ANDROID_ABI})
+  endif()
+  if(ANDROID_PLATFORM)
+    list(APPEND CMAKE_ANDROID_ARGS -DANDROID_PLATFORM=${ANDROID_PLATFORM})
+  endif()
+  if(ANDROID_STL)
+    list(APPEND CMAKE_ANDROID_ARGS -DANDROID_STL=${ANDROID_STL})
+  endif()
+  if(ANDROID_TOOLCHAIN)
+    list(APPEND CMAKE_ANDROID_ARGS -DANDROID_TOOLCHAIN=${ANDROID_TOOLCHAIN})
+  endif()
+
   ExternalProject_Add(
     whisper-cpp
     PREFIX "${WHISPER_INSTALL_DIR}"
     URL "${CMAKE_CURRENT_LIST_DIR}/src/main/native/whisper"
     CMAKE_ARGS
+      ${CMAKE_ANDROID_ARGS}
       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
       -DCMAKE_INSTALL_RPATH:STRING=${CMAKE_INSTALL_RPATH}
       -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
