@@ -18,6 +18,9 @@ jobs:
           name: test-models
           path: models/*.bin
           retention-days: 2
+      - name: Setup project dir
+        run: |
+          git submodule update --init
 
   build_android:
     runs-on: ubuntu-latest

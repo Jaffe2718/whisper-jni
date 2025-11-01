@@ -81,10 +81,6 @@ build_java_jar() {
 main() {
     echo "Starting Android native library and JAR build process..."
 
-    ls -l src/main/native
-    ls -l src/main/native/whisper
-    ls -l src/main/native/whisper/examples/
-
     prepare_environment
     compile_native_libraries
     build_java_jar
