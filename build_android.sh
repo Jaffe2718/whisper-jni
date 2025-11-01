@@ -22,7 +22,7 @@ prepare_environment() {
 # Function to compile native libraries for Android
 compile_native_libraries() {
     echo "Compiling Android native libraries..."
-    
+
     # Configure CMake parameters
     CMAKE_TOOLCHAIN="${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake"
     CMAKE_ARGS="-DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-26 -DANDROID_TOOLCHAIN=clang -DGGML_ARCH=arm64-v8a"
@@ -30,7 +30,7 @@ compile_native_libraries() {
     CMAKE_CXXFLAGS="-march=armv8.7a"
 
     # Clean previous build
-    rm -rf build
+    rm -rf build CMakeCache.txt CMakeFiles/
     
     # Configure CMake
     cmake -B build -S . \
@@ -68,7 +68,6 @@ build_java_jar() {
     # Copy compiled native libraries to resources directory
     ANDROID_RESOURCES_DIR="${RESOURCES_DIR}/android-arm64"
     # clean resources directory
-    rm -rf "$RESOURCES_DIR/*"
     mkdir -p "$ANDROID_RESOURCES_DIR"
     cp -f "${BUILD_DIR}/arm64-v8a"/*.so "$ANDROID_RESOURCES_DIR/"
     cp models/ggml-silero-v5.1.2.bin "$ANDROID_RESOURCES_DIR/"
@@ -79,13 +78,6 @@ build_java_jar() {
     echo "Java JAR file build completed, output location: $JAR_OUTPUT_DIR"
 }
 
-# Function to clean up temporary files
-clean_up() {
-    echo "Cleaning up temporary files..."
-    rm -rf build
-    echo "Cleanup completed"
-}
-
 # Main function
 main() {
     echo "Starting Android native library and JAR build process..."
@@ -93,7 +85,6 @@ main() {
     prepare_environment
     compile_native_libraries
     build_java_jar
-    clean_up
     
     echo "Build process completed successfully!"
     echo "Android native libraries located at: $BUILD_DIR"
