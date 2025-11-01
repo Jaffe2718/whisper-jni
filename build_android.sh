@@ -27,7 +27,7 @@ compile_native_libraries() {
     CMAKE_TOOLCHAIN="${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake"
     CMAKE_ARGS="-DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-26 -DANDROID_TOOLCHAIN=clang -DGGML_ARCH=arm64-v8a"
     CMAKE_CFLAGS="-march=armv8.7a"
-    CMAKE_CXXFLAGS="-march=armv8.7a -std=c++20"
+    CMAKE_CXXFLAGS="-march=armv8.7a"
 
     # Clean previous build
     rm -rf build-android
