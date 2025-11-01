@@ -80,7 +80,10 @@ build_java_jar() {
 # Main function
 main() {
     echo "Starting Android native library and JAR build process..."
-    if test -e "src/main/native/whisper/examples/grammar-parser.cpp"; then echo "grammar-parser.cpp found"; else echo "grammar-parser.cpp not found"; fi
+
+    ls -l src/main/native
+    ls -l src/main/native/whisper
+    ls -l src/main/native/whisper/examples/
 
     prepare_environment
     compile_native_libraries
