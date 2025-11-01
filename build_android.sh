@@ -64,7 +64,7 @@ build_java_jar() {
     ANDROID_RESOURCES_DIR="${RESOURCES_DIR}/android-arm64"
     # clean resources directory
     mkdir -p "$ANDROID_RESOURCES_DIR"
-    cp -f "${BUILD_DIR}/arm64-v8a"/*.so "$ANDROID_RESOURCES_DIR/"
+    cp -f "${BUILD_DIR}/arm64-v8a"/* "$ANDROID_RESOURCES_DIR/"
     cp models/ggml-silero-v5.1.2.bin "$ANDROID_RESOURCES_DIR/"
     # Build JAR using Gradle
     chmod +x gradlew
