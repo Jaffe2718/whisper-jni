@@ -616,7 +616,7 @@ static void whisper_log_proxy(enum ggml_log_level level, const char *text, void 
     return;
 
   JNIEnv *env;
-  if (jvm->AttachCurrentThread((void **)&env, NULL) != JNI_OK)
+  if (jvm->AttachCurrentThread((JNIEnv **)&env, NULL) != JNI_OK)
   {
     return;
   }
