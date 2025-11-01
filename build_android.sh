@@ -30,28 +30,27 @@ compile_native_libraries() {
     CMAKE_CXXFLAGS="-march=armv8.7a"
 
     # Clean previous build
-    rm -rf build-android
+    rm -rf build
     
     # Configure CMake
-    cmake -B build-android -S . \
+    cmake -B build -S . \
         -DCMAKE_TOOLCHAIN_FILE="${CMAKE_TOOLCHAIN}" \
         ${CMAKE_ARGS} \
         -DCMAKE_C_FLAGS=${CMAKE_CFLAGS} \
         -DCMAKE_CXX_FLAGS=${CMAKE_CXXFLAGS} \
         -DCMAKE_BUILD_TYPE=Release \
         -DGGML_VULKAN=OFF \
-        -DWISPER_BUILD_EXAMPLES=OFF \
         -DBUILD_SHARED_LIBS=ON
     
     # Build project
-    cmake --build build-android --config Release -j$(nproc)
+    cmake --build build --config Release -j$(nproc)
     
     # Create architecture-specific output directory
     ANDROID_ARCH_DIR="${BUILD_DIR}/arm64-v8a"
     mkdir -p "$ANDROID_ARCH_DIR"
     
     # Copy built libraries to target directory
-    find build-android -name "*.so" -type f -exec cp {} "$ANDROID_ARCH_DIR" ;
+    find build -name "*.so" -type f -exec cp {} "$ANDROID_ARCH_DIR" ;
     
     # Verify .so files were generated
     if [ -z "$(ls -A "$ANDROID_ARCH_DIR"/*.so 2> /dev/null)" ]; then
@@ -83,7 +82,7 @@ build_java_jar() {
 # Function to clean up temporary files
 clean_up() {
     echo "Cleaning up temporary files..."
-    rm -rf build-android
+    rm -rf build
     echo "Cleanup completed"
 }
 
