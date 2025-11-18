@@ -15,7 +15,6 @@ jobs:
           # Move models together for simpler download
           mkdir models
           mv ggml-tiny.bin models/
-          mv ggml-silero-v5.1.2.bin models/
       - uses: actions/upload-artifact@v4
         with:
           name: test-models
@@ -49,6 +48,7 @@ jobs:
       - name: Setup project dir
         run: |
           git submodule update --init
+          curl -o ./ggml-silero-v5.1.2.bin https://huggingface.co/snakers4/silero-vad/resolve/main/ggml-silero-v5.1.2.bin
           mv ./ggml-silero-v5.1.2.bin ./src/main/resources
       - uses: Jimver/cuda-toolkit@v0.2.29
         id: cuda-toolkit
