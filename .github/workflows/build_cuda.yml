@@ -2,28 +2,9 @@ name: Build CUDA
 on:
   workflow_dispatch:
 jobs:
-
-  download-models:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Download tiny ggml model
-        run: |
-          git submodule update --init
-          ./download-test-model.sh
-          ./download-vad-model.sh
-          # Move models together for simpler download
-          mkdir models
-          mv ggml-tiny.bin models/
-      - uses: actions/upload-artifact@v4
-        with:
-          name: test-models
-          path: models/*.bin
-          retention-days: 2
-
   build-cuda:
-    needs: [download-models]
     strategy:
+      fail-fast: false
       matrix:
         include:
           - platform: ubuntu-22.04
@@ -50,6 +31,7 @@ jobs:
           git submodule update --init
           curl -o ./ggml-silero-v5.1.2.bin https://huggingface.co/snakers4/silero-vad/resolve/main/ggml-silero-v5.1.2.bin
           mv ./ggml-silero-v5.1.2.bin ./src/main/resources
+          curl -o ./ggml-tiny.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
       - uses: Jimver/cuda-toolkit@v0.2.29
         id: cuda-toolkit
         with:
