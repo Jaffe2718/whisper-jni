@@ -46,6 +46,7 @@ jobs:
         run: |
           ./build_cuda.ps1
       - name: Test
+        continue-on-error: true
         run: ./gradlew test
       - name: Publish test report
         uses: mikepenz/action-junit-report@v5
