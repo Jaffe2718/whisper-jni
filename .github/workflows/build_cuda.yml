@@ -1,0 +1,77 @@
+name: Build CUDA
+on:
+  workflow_dispatch:
+jobs:
+
+  download-models:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download tiny ggml model
+        run: |
+          git submodule update --init
+          ./download-test-model.sh
+          ./download-vad-model.sh
+          # Move models together for simpler download
+          mkdir models
+          mv ggml-tiny.bin models/
+          mv ggml-silero-v5.1.2.bin models/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-models
+          path: models/*.bin
+          retention-days: 2
+
+  build-cuda:
+    needs: [download-models]
+    strategy:
+      matrix:
+        include:
+          - platform: ubuntu-22.04
+            prefix: linux
+            cuda: '11.8.0'
+          - platform: ubuntu-22.04
+            prefix: linux
+            cuda: '12.4.0'
+          - platform: windows-latest
+            prefix: windows
+            cuda: '11.8.0'
+          - platform: windows-latest
+            prefix: windows
+            cuda: '12.4.0'
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: 'temurin'
+      - name: Setup project dir
+        run: |
+          git submodule update --init
+          mv ./ggml-silero-v5.1.2.bin ./src/main/resources
+      - uses: Jimver/cuda-toolkit@v0.2.29
+        id: cuda-toolkit
+        with:
+          cuda: ${{ matrix.cuda }}
+      - name: Build Linux CUDA
+        if: matrix.prefix == 'linux'
+        run: |
+          ./build_cuda.sh
+      - name: Build Windows CUDA
+        if: matrix.prefix == 'windows'
+        shell: powershell
+        run: |
+          ./build_cuda.ps1
+      - name: Test
+        run: ./gradlew test
+      - name: Publish test report
+        uses: mikepenz/action-junit-report@v5
+        if: success() || failure()
+        with:
+          report_paths: '**/build/test-results/**/*.xml'
+      - name: Upload natives
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.prefix }}-x64-cuda-${{ matrix.cuda }}-natives
+          path: whisperjni-build/*
