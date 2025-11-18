@@ -2,6 +2,7 @@ package io.github.freshsupasulley.whisperjni;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,6 +23,8 @@ import org.slf4j.LoggerFactory;
 public class WhisperJNI {
 	
 	private native int init(String model, WhisperContextParams params);
+
+    private native int initFromInputStream(InputStream inputStream, WhisperContextParams params);
 	
 	private native int initNoState(String model, WhisperContextParams params);
 	
@@ -136,6 +139,18 @@ public class WhisperJNI {
 	{
 		return init(model, null);
 	}
+
+    /**
+     * Creates a new whisper context from an {@link InputStream}.
+     *
+     * @param inputStream {@link InputStream} to the whisper ggml model file.
+     * @return A new {@link WhisperContext}.
+     * @throws IOException if model file is missing.
+     */
+    public WhisperContext init(InputStream inputStream) throws IOException
+	{
+		return init(inputStream, null);
+	}
 	
 	/**
 	 * Creates a new whisper context.
@@ -153,6 +168,28 @@ public class WhisperJNI {
 			params = new WhisperContextParams();
 		}
 		int ref = init(model.toAbsolutePath().toString(), params);
+		if(ref == -1)
+		{
+			return null;
+		}
+		return new WhisperContext(this, ref);
+	}
+
+    /**
+     * Creates a new whisper context from an {@link InputStream}.
+     *
+     * @param inputStream {@link InputStream} to the whisper ggml model file.
+     * @param params      {@link WhisperContextParams} params for context initialization.
+     * @return A new {@link WhisperContext}.
+     * @throws IOException if model file is missing.
+     */
+    public WhisperContext init(InputStream inputStream, WhisperContextParams params) throws IOException
+	{
+		if(params == null)
+		{
+			params = new WhisperContextParams();
+		}
+		int ref = initFromInputStream(inputStream, params);
 		if(ref == -1)
 		{
 			return null;

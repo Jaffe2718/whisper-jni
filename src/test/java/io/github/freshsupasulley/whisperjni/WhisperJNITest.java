@@ -96,6 +96,14 @@ public class WhisperJNITest {
 		assertNotNull(ctx);
 		ctx.close();
 	}
+
+    @Test
+	public void testInitFromInputStream() throws IOException
+	{
+		var ctx = whisper.init(Files.newInputStream(testModelPath));
+		assertNotNull(ctx);
+		ctx.close();
+	}
 	
 	@Test
 	public void testInitNoState() throws IOException

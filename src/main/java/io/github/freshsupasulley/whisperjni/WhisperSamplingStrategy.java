@@ -5,14 +5,14 @@ package io.github.freshsupasulley.whisperjni;
  *
  * @author Miguel Alvarez Díez - Initial contribution
  */
-public enum WhisperSamplingStrategy
+public interface WhisperSamplingStrategy
 {
 	/**
 	 * Similar to OpenAI's GreedyDecoder
 	 */
-	GREEDY,
+	int GREEDY = 0;
 	/**
 	 * Similar to OpenAI's BeamSearchDecoder
 	 */
-	BEAM_SEARCH;
+	int BEAM_SEARCH = 1;
 }

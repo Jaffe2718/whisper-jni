@@ -181,6 +181,63 @@ JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_init
   return insertModel(context);
 }
 
+JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_initFromInputStream(JNIEnv *env, jobject thiz, jobject jInputStream, jobject jParams)
+{
+    // Get InputStream class and read method
+    jclass inputStreamClass = env->FindClass("java/io/InputStream");
+    jmethodID readMethod = env->GetMethodID(inputStreamClass, "read", "([B)I");
+    jbyteArray buffer = env->NewByteArray(8192);
+
+    // Read all data from input stream into buffer
+    std::queue<uint8_t> model_data;
+    jint bytesRead;
+    // Read all data from FileInputStream into model_data
+    do {
+        bytesRead = env->CallIntMethod(jInputStream, readMethod, buffer);
+        if (bytesRead > 0) {
+            jbyte *bytes = env->GetByteArrayElements(buffer, nullptr);
+            // Append read bytes to model data vector
+            for (int i = 0; i < bytesRead; i++) {
+                model_data.push(reinterpret_cast<uint8_t *>(bytes)[i]);
+            }
+            env->ReleaseByteArrayElements(buffer, bytes, JNI_ABORT); // No need to copy back
+        }
+    } while (bytesRead != -1); // -1 indicates end of stream
+
+    // Clean up local references
+    env->DeleteLocalRef(buffer);
+    env->DeleteLocalRef(inputStreamClass);
+
+    // Check for empty model data
+    if (model_data.empty()) return -1;
+
+    whisper_model_loader loader = {};
+    loader.context = &model_data;
+    loader.read = [](void *ctx, void *output, size_t read_size) -> size_t {
+        std::queue<uint8_t> *ctx_queue = (std::queue<uint8_t> *) ctx;
+        size_t toRead = std::min(read_size, ctx_queue->size());
+        if (toRead > 0) {
+            for (size_t i = 0; i < toRead; i++) {
+                ((uint8_t *) output)[i] = ctx_queue->front();
+                ctx_queue->pop();
+            }
+        }
+        return toRead;
+    };
+    loader.eof = [](void *ctx) {
+        std::queue<uint8_t> *ctx_queue = (std::queue<uint8_t> *) ctx;
+        return ctx_queue->empty();
+    };
+    loader.close = [](void *ctx) {
+        std::queue<uint8_t> *ctx_queue = (std::queue<uint8_t> *) ctx;
+        while (!ctx_queue->empty()) {
+            ctx_queue->pop();
+        }
+    };
+    struct whisper_context *context = whisper_init_with_params(&loader, newWhisperContextParams(env, jParams));
+    return context ? insertModel(context) : -1;
+}
+
 JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_initNoState(JNIEnv *env, jobject thisObject, jstring modelPath, jobject jParams)
 {
   const char *path = env->GetStringUTFChars(modelPath, NULL);
@@ -574,7 +631,7 @@ JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_load
   catch (const std::exception &e)
   {
     env->ReleaseStringUTFChars(grammarText, grammarChars);
-    jclass exClass = env->FindClass("java/lang/IOException");
+    jclass exClass = env->FindClass("java/io/IOException");
     env->ThrowNew(exClass, e.what());
     return -1;
   }

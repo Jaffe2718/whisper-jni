@@ -10,7 +10,7 @@ public class WhisperFullParams {
 	/**
 	 * Whisper search strategy.
 	 */
-	private final int strategy;
+	private int strategy;
 	
 	/**
 	 * Number of thread, 0 for max cores
@@ -144,11 +144,11 @@ public class WhisperFullParams {
 	/**
 	 * Creates a new {@link WhisperFullParams} instance using the provided {@link WhisperSamplingStrategy}
 	 *
-	 * @param strategy the required {@link WhisperSamplingStrategy}
+	 * @param wStrategy the required {@link WhisperSamplingStrategy}
 	 */
-	public WhisperFullParams(WhisperSamplingStrategy strategy)
+	public WhisperFullParams(int wStrategy)
 	{
-		this.strategy = strategy.ordinal();
+		this.strategy = wStrategy;
 	}
 	
 	/**

@@ -17,6 +17,14 @@ JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_init
 
 /*
  * Class:     io_github_freshsupasulley_whisperjni_WhisperJNI
+ * Method:    initFromInputStream
+ * Signature: (Ljava/io/InputStream;Lio/github/freshsupasulley/whisperjni/WhisperContextParams;)I
+ */
+JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_initFromInputStream
+  (JNIEnv *, jobject, jobject, jobject);
+
+/*
+ * Class:     io_github_freshsupasulley_whisperjni_WhisperJNI
  * Method:    initNoState
  * Signature: (Ljava/lang/String;Lio/github/freshsupasulley/whisperjni/WhisperContextParams;)I
  */
