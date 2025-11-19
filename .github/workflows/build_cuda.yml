@@ -7,12 +7,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: ubuntu-22.04
-            prefix: linux
-            cuda: '11.8.0'
-          - platform: ubuntu-22.04
-            prefix: linux
-            cuda: '12.4.0'
+#          - platform: ubuntu-22.04
+#            prefix: linux
+#            cuda: '11.8.0'
+#          - platform: ubuntu-22.04
+#            prefix: linux
+#            cuda: '12.4.0'
           - platform: windows-latest
             prefix: windows
             cuda: '11.8.0'
