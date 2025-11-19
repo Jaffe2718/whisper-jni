@@ -36,6 +36,7 @@ jobs:
         id: cuda-toolkit
         with:
           cuda: ${{ matrix.cuda }}
+          linux-local-args: '["--toolkit"]'
       - name: Build Linux CUDA
         if: matrix.prefix == 'linux'
         run: |

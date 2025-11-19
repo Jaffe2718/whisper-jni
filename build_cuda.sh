@@ -6,7 +6,7 @@ build_lib() {
 
   mkdir -p $TMP_DIR $TARGET_DIR
 
-  cmake -B build $CMAKE_ARGS -DCMAKE_C_FLAGS="$CMAKE_CFLAGS" -DCMAKE_CXX_FLAGS="-std=c++20" -DCMAKE_INSTALL_PREFIX=$TMP_DIR -DGGML_CUDA=ON
+  cmake -B build $CMAKE_ARGS -DCMAKE_C_FLAGS="$CMAKE_CFLAGS" -DCMAKE_CXX_FLAGS="-std=c++20" -DCMAKE_INSTALL_PREFIX=$TMP_DIR -DGGML_CUDA=ON -DBUILD_SHARED_LIBS=ON -DGGML_BACKEND_DL=ON
   cmake --build build --config Release
   cmake --install build
   mkdir -p "$TARGET_DIR"
