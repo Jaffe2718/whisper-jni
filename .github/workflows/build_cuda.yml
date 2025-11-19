@@ -7,8 +7,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-#          - platform: ubuntu-22.04
-#            prefix: linux
+          - platform: ubuntu-22.04
+            prefix: linux
           - platform: windows-latest
             prefix: windows
     runs-on: ${{ matrix.platform }}
@@ -37,17 +37,29 @@ jobs:
         if: matrix.prefix == 'windows'
         shell: powershell
         run: |
+          & "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
           ./build_cuda.ps1
-      - name: Test
+      - name: Upload natives
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.prefix }}-x64-cuda-natives
+          path: whisperjni-build/*
+      - name: Analyze DLL dependencies
         continue-on-error: true
+        if: matrix.prefix == 'windows'
+        run: |
+          cd whisperjni-build
+          & "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+          Get-ChildItem -Recurse -Filter "*.dll" | ForEach-Object {
+            Write-Host "dll: $($_.Name)"
+            dumpbin /dependents "$($_.FullName)"
+            Write-Host "----------------------------------------------------"
+          }
+        shell: powershell
+      - name: Test
         run: ./gradlew test
       - name: Publish test report
         uses: mikepenz/action-junit-report@v5
         if: success() || failure()
         with:
           report_paths: '**/build/test-results/**/*.xml'
-      - name: Upload natives
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.prefix }}-x64-cuda-natives
-          path: whisperjni-build/*
