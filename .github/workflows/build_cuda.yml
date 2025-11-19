@@ -9,16 +9,8 @@ jobs:
         include:
 #          - platform: ubuntu-22.04
 #            prefix: linux
-#            cuda: '11.8.0'
-#          - platform: ubuntu-22.04
-#            prefix: linux
-#            cuda: '12.4.0'
           - platform: windows-latest
             prefix: windows
-            cuda: '11.8.0'
-          - platform: windows-latest
-            prefix: windows
-            cuda: '12.4.0'
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
@@ -35,7 +27,7 @@ jobs:
       - uses: Jimver/cuda-toolkit@v0.2.29
         id: cuda-toolkit
         with:
-          cuda: ${{ matrix.cuda }}
+          cuda: 12.4.0
           linux-local-args: '["--toolkit"]'
       - name: Build Linux CUDA
         if: matrix.prefix == 'linux'
@@ -57,5 +49,5 @@ jobs:
       - name: Upload natives
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.prefix }}-x64-cuda-${{ matrix.cuda }}-natives
+          name: ${{ matrix.prefix }}-x64-cuda-natives
           path: whisperjni-build/*
