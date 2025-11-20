@@ -24,6 +24,15 @@ jobs:
           curl -o ./ggml-silero-v5.1.2.bin https://huggingface.co/snakers4/silero-vad/resolve/main/ggml-silero-v5.1.2.bin
           mv ./ggml-silero-v5.1.2.bin ./src/main/resources
           curl -o ./ggml-tiny.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
+      - uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
       - uses: Jimver/cuda-toolkit@v0.2.29
         id: cuda-toolkit
         with:
@@ -48,12 +57,31 @@ jobs:
         continue-on-error: true
         if: matrix.prefix == 'windows'
         run: |
-          cd whisperjni-build
-          & "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-          Get-ChildItem -Recurse -Filter "*.dll" | ForEach-Object {
-            Write-Host "dll: $($_.Name)"
-            dumpbin /dependents "$($_.FullName)"
-            Write-Host "----------------------------------------------------"
+          ls whisperjni-build
+          # Find Visual Studio installation path using vswhere
+          $vsInstallPath = & "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe" -latest -property installationPath
+          
+          # Construct the path to dumpbin.exe directly
+          $dumpbinPath = Join-Path -Path $vsInstallPath -ChildPath "VC/Tools/MSVC/*/bin/Hostx64/x64/dumpbin.exe"
+          $resolvedDumpbin = Resolve-Path -Path $dumpbinPath | Select-Object -First 1
+          
+          if ($resolvedDumpbin) {
+            Write-Host "Found dumpbin at: $resolvedDumpbin"
+            cd whisperjni-build
+            
+            Get-ChildItem -Recurse -Filter "*.dll" | ForEach-Object {
+              Write-Host "dll: $($_.Name)"
+              & "$resolvedDumpbin" /dependents "$($_.FullName)"
+              Write-Host "----------------------------------------------------"
+            }
+          } else {
+            Write-Host "Warning: dumpbin.exe not found!"
+            # Fallback to listing files without analysis
+            cd whisperjni-build
+            Get-ChildItem -Recurse -Filter "*.dll" | ForEach-Object {
+              Write-Host "dll: $($_.Name) - Path: $($_.FullName)"
+              Write-Host "----------------------------------------------------"
+            }
           }
         shell: powershell
       - name: Test

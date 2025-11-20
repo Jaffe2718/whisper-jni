@@ -394,7 +394,14 @@ public class LibraryUtils {
 			try
 			{
 				System.load(path);
-			} catch(Exception e)
+			}
+            catch (UnsatisfiedLinkError ue)
+            {
+                ue.printStackTrace();
+                logger.error("Failed to load {}", path, ue);
+                throw new IOException(ue);
+            }
+            catch(Exception e)
 			{
 				// Pass into parent
 				logger.error("Failed to load {}. Is the loading order incorrect?", path, e);
