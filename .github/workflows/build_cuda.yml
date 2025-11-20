@@ -39,14 +39,14 @@ jobs:
         with:
           cuda: 12.4.0
           method: 'network'
-          sub-packages: '["nvcc", "visual_studio_integration"]'
+          sub-packages: '["nvcc"]'
           linux-local-args: '["--toolkit"]'
       - uses: Jimver/cuda-toolkit@v0.2.29
         if: matrix.prefix == 'windows'
         id: cuda-toolkit-windows
         with:
           cuda: 12.4.0
-      - run: nvcc -v
+      - run: nvcc --version
       - name: Build Linux CUDA
         if: matrix.prefix == 'linux'
         run: |
