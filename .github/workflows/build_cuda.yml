@@ -46,9 +46,14 @@ jobs:
         id: cuda-toolkit-windows
         with:
           cuda: 12.4.0
+      - name: Add msbuild to PATH
+        if: matrix.prefix == 'windows'
+        uses: microsoft/setup-msbuild@v2
       - run: nvcc --version
       - name: Build Linux CUDA
         if: matrix.prefix == 'linux'
+        env:
+          CUDACXX: '/usr/local/cuda/bin/nvcc'
         run: |
           chmod +x ./build_cuda.sh
           sudo ./build_cuda.sh
@@ -58,7 +63,7 @@ jobs:
         run: |
           & "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
           ./build_cuda.ps1
-      - name: Copy CUDA DLLS to build directory
+      - name: Copy CUDA DLL to build directory
         if: matrix.prefix == 'windows'
         # copy cudart64_12.dll cublas64_12.dll cublasLt64_12.dll
         run: |
