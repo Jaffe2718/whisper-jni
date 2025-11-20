@@ -25,12 +25,12 @@ jobs:
           mv ./ggml-silero-v5.1.2.bin ./src/main/resources
           curl -o ./ggml-tiny.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
       - uses: jlumbroso/free-disk-space@main
+        if: matrix.prefix == 'linux'
         with:
           tool-cache: false
           android: true
           dotnet: true
           haskell: true
-          large-packages: true
           docker-images: true
           swap-storage: true
       - uses: Jimver/cuda-toolkit@v0.2.29
