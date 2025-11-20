@@ -37,6 +37,7 @@ jobs:
         id: cuda-toolkit
         with:
           cuda: 12.4.0
+          sub-packages: '["nvcc", "nvrtc"]'
           linux-local-args: '["--toolkit"]'
       - name: Build Linux CUDA
         if: matrix.prefix == 'linux'
@@ -51,9 +52,11 @@ jobs:
           ./build_cuda.ps1
       - name: Copy CUDA DLLS to build directory
         if: matrix.prefix == 'windows'
+        # copy cudart64_12.dll cublas64_12.dll cublasLt64_12.dll
         run: |
-          Get-ChildItem "$env:CUDA_PATH\bin\" -Filter "*.dll" |
-          Copy-Item -Destination "whisperjni-build/"
+          Copy-Item -Path "$env:CUDA_PATH\bin\cudart64_12.dll" -Destination "whisperjni-build/"
+          Copy-Item -Path "$env:CUDA_PATH\bin\cublas64_12.dll" -Destination "whisperjni-build/"
+          Copy-Item -Path "$env:CUDA_PATH\bin\cublasLt64_12.dll" -Destination "whisperjni-build/"
       - name: Upload natives
         uses: actions/upload-artifact@v4
         with:

@@ -36,7 +36,7 @@ public class LibraryUtils {
 	 * still works
 	 * </p>
 	 */
-	private static final List<String> loadOrder = Arrays.asList("ggml-base", "ggml-cpu", "ggml-metal", "ggml-vulkan", "ggml", "whisper", "whisper-jni");
+	private static final List<String> loadOrder = Arrays.asList("ggml-base", "ggml-cpu", "cudart64_12.dll", "cublasLt64_12.dll", "cublas64_12.dll", "ggml-cuda", "ggml-metal", "ggml-vulkan", "ggml", "whisper", "whisper-jni");
 	private static final String[] LIB_NAMES = {".so", ".dylib", ".dll"};
 	
 	private LibraryUtils()
