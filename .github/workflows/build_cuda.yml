@@ -41,13 +41,19 @@ jobs:
       - name: Build Linux CUDA
         if: matrix.prefix == 'linux'
         run: |
-          ./build_cuda.sh
+          chmod +x ./build_cuda.sh
+          sudo ./build_cuda.sh
       - name: Build Windows CUDA
         if: matrix.prefix == 'windows'
         shell: powershell
         run: |
           & "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
           ./build_cuda.ps1
+      - name: Copy CUDA DLLS to build directory
+        if: matrix.prefix == 'windows'
+        run: |
+          Get-ChildItem "$env:CUDA_PATH\bin\" -Filter "*.dll" |
+          Copy-Item -Destination "whisperjni-build/"
       - name: Upload natives
         uses: actions/upload-artifact@v4
         with:
