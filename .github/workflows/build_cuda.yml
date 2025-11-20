@@ -34,11 +34,19 @@ jobs:
           docker-images: true
           swap-storage: true
       - uses: Jimver/cuda-toolkit@v0.2.29
+        if: matrix.prefix == 'linux'
         id: cuda-toolkit
         with:
           cuda: 12.4.0
+          method: 'network'
           sub-packages: '["nvcc", "nvrtc"]'
           linux-local-args: '["--toolkit"]'
+      - uses: Jimver/cuda-toolkit@v0.2.29
+        if: matrix.prefix == 'windows'
+        id: cuda-toolkit-windows
+        with:
+          cuda: 12.4.0
+          windows-local-args: '["--toolkit"]'
       - name: Build Linux CUDA
         if: matrix.prefix == 'linux'
         run: |
