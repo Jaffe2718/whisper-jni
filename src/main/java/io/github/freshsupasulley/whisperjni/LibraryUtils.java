@@ -20,7 +20,7 @@ import org.slf4j.Logger;
  * href="https://github.com/henkelmax/rnnoise4j/blob/master/src/main/java/de/maxhenkel/rnnoise4j/LibraryLoader.java">RNNoise4J</a>.
  * </p>
  */
-public class LibraryUtils {
+public abstract class LibraryUtils {
 	
 	/** OS name */
 	public static final String OS_NAME = System.getProperty("os.name").toLowerCase();
@@ -36,12 +36,8 @@ public class LibraryUtils {
 	 * still works
 	 * </p>
 	 */
-	private static final List<String> loadOrder = Arrays.asList("ggml-base", "ggml-cpu", "cudart64_12.dll", "cublasLt64_12.dll", "cublas64_12.dll", "ggml-cuda", "ggml-metal", "ggml-vulkan", "ggml", "whisper", "whisper-jni");
-	private static final String[] LIB_NAMES = {".so", ".dylib", ".dll"};
-	
-	private LibraryUtils()
-	{
-	}
+	private static final List<String> loadOrder = Arrays.asList("ggml-base", "ggml-cpu", "cudart64_12", "cublasLt64_12", "cublas64_12", "ggml-cuda", "ggml-metal", "ggml-vulkan", "ggml", "whisper", "whisper-jni");
+	private static final String[] LIB_EXTENSIONS = {".so", ".dylib", ".dll"};
 	
 	/**
 	 * Returns a generalized name of this machine's architecture. Can be useful for determining which natives to load.
@@ -384,7 +380,7 @@ public class LibraryUtils {
 			
 			logger.warn("File not handled in load order: {}", file);
 			return Integer.MAX_VALUE; // unknown files go last
-		})).map(file -> file.getAbsolutePath()).filter(file -> Stream.of(LIB_NAMES).anyMatch(suffix -> file.matches(".*\\" + suffix + "(\\.\\d+)*$"))).collect(Collectors.toUnmodifiableList());
+		})).map(file -> file.getAbsolutePath()).filter(file -> Stream.of(LIB_EXTENSIONS).anyMatch(suffix -> file.matches(".*\\" + suffix + "(\\.\\d+)*$"))).collect(Collectors.toUnmodifiableList());
 		
 		// ^ collecting into a list because the consumer doesn't declare IOException
 		for(String path : natives)
