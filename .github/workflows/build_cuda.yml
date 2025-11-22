@@ -53,7 +53,7 @@ jobs:
           if ($resolvedDumpbin) {
             Write-Host "Found dumpbin at: $resolvedDumpbin"
             cd whisperjni-build
-            
+          
             Get-ChildItem -Recurse -Filter "*.dll" | ForEach-Object {
               Write-Host "dll: $($_.Name)"
               & "$resolvedDumpbin" /dependents "$($_.FullName)"
