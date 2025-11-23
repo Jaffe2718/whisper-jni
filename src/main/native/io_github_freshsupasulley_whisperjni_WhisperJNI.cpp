@@ -179,7 +179,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     }
 
     ggml_backend_load_all();
-    std::cout << "Loaded all ggml backends" << std::endl;
+    std::cout << "WhisperJNI.JNI_OnLoad: Loaded all ggml backends" << std::endl;
     result = JNI_VERSION_1_4;
     return result;
 }
@@ -703,6 +703,7 @@ static void whisper_log_proxy(enum ggml_log_level level, const char *text, void 
   jstring jMessage = env->NewStringUTF(text);
   if (!jMessage)
   {
+    env->DeleteLocalRef(loggerClass);
     jvm->DetachCurrentThread();
     return;
   }
