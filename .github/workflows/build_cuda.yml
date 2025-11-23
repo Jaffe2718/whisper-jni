@@ -37,7 +37,7 @@ jobs:
       - name: Upload natives
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.prefix }}-x64-cuda-natives
+          name: windows-x64-cuda-natives
           path: whisperjni-build/*
       - name: Analyze DLL dependencies
         continue-on-error: true
