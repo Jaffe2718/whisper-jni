@@ -34,6 +34,11 @@ jobs:
           Copy-Item -Path "$env:CUDA_PATH\bin\cudart64_12.dll" -Destination "whisperjni-build/"
           Copy-Item -Path "$env:CUDA_PATH\bin\cublas64_12.dll" -Destination "whisperjni-build/"
           Copy-Item -Path "$env:CUDA_PATH\bin\cublasLt64_12.dll" -Destination "whisperjni-build/"
+      - name: Upload build directory (Debug Only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-cuda-debug-build
+          path: build
       - name: Upload natives
         uses: actions/upload-artifact@v4
         with:
