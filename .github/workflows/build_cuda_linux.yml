@@ -29,7 +29,7 @@ jobs:
         with:
           cuda: 12.4.0
           method: network
-          sub-packages: '["nvcc"]'
+          sub-packages: '["nvcc", "cudart", "thrust"]'
           non-cuda-sub-packages: '["libcublas"]'
       - name: Set CUDACXX
         run: echo "CUDACXX=${{ env.CUDA_PATH }}/bin/nvcc" >> $GITHUB_ENV
