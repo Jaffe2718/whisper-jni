@@ -36,4 +36,5 @@ jobs:
       - name: Build Linux CUDA
         shell: bash
         run: |
+          chmod +x ./build_cuda.sh
           ./build_cuda.sh
