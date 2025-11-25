@@ -1,0 +1,39 @@
+name: Build CUDA on Linux
+on:
+  workflow_dispatch:
+jobs:
+
+  linux-cuda:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: 'temurin'
+      - uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          docker-images: true
+      - name: Setup project dir
+        run: |
+          git submodule update --init
+          curl -o ./ggml-silero-v5.1.2.bin https://huggingface.co/snakers4/silero-vad/resolve/main/ggml-silero-v5.1.2.bin
+          mv ./ggml-silero-v5.1.2.bin ./src/main/resources
+          curl -o ./ggml-tiny.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
+      - uses: Jimver/cuda-toolkit@v0.2.29
+        id: cuda-toolkit-linux
+        with:
+          cuda: 12.4.0
+          method: network
+          sub-packages: '["nvcc"]'
+          non-cuda-sub-packages: '["libcublas"]'
+      - name: Set CUDACXX
+        run: echo "CUDACXX=${{ env.CUDA_PATH }}/bin/nvcc" >> $GITHUB_ENV
+      - name: Build Linux CUDA
+        shell: bash
+        run: |
+          ./build_cuda.sh

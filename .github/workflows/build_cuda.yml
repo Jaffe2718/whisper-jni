@@ -1,4 +1,4 @@
-name: Build CUDA
+name: Build CUDA on Windows
 on:
   workflow_dispatch:
 jobs:
@@ -29,9 +29,8 @@ jobs:
           & "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
           ./build_cuda.ps1
       - name: Copy CUDA DLL to build directory
-        # copy cudart64_12.dll cublas64_12.dll cublasLt64_12.dll
+        # copy cublas64_12.dll cublasLt64_12.dll
         run: |
-          Copy-Item -Path "$env:CUDA_PATH\bin\cudart64_12.dll" -Destination "whisperjni-build/"
           Copy-Item -Path "$env:CUDA_PATH\bin\cublas64_12.dll" -Destination "whisperjni-build/"
           Copy-Item -Path "$env:CUDA_PATH\bin\cublasLt64_12.dll" -Destination "whisperjni-build/"
 #      - name: Upload build directory (Debug Only)
@@ -74,6 +73,7 @@ jobs:
             }
           }
         shell: powershell
+#      TODO: no nvcuda.dll in this runner
 #      - name: Test
 #        run: ./gradlew test
 #      - name: Publish test report
@@ -81,3 +81,36 @@ jobs:
 #        if: success() || failure()
 #        with:
 #          report_paths: '**/build/test-results/**/*.xml'
+
+  linux-cuda:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: 'temurin'
+      - uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          docker-images: true
+      - name: Setup project dir
+        run: |
+          git submodule update --init
+          curl -o ./ggml-silero-v5.1.2.bin https://huggingface.co/snakers4/silero-vad/resolve/main/ggml-silero-v5.1.2.bin
+          mv ./ggml-silero-v5.1.2.bin ./src/main/resources
+          curl -o ./ggml-tiny.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
+      - uses: Jimver/cuda-toolkit@v0.2.29
+        id: cuda-toolkit-linux
+        with:
+          cuda: 12.4.0
+          method: network
+          sub-packages: '["nvcc"]'
+          non-cuda-sub-packages: '["libcublas"]'
+      - name: Build Linux CUDA
+        shell: bash
+        run: |
+          ./build_cuda.sh
