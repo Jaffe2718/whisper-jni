@@ -7,6 +7,11 @@
 #include "whisper.h"
 #include "grammar-parser.h"
 
+// TODO test only
+#ifdef GGML_USE_CUDA
+#include "ggml-cuda.h"
+#endif
+
 std::map<int, whisper_context *> contextMap;
 std::map<int, whisper_state *> stateMap;
 std::map<int, grammar_parser::parse_state *> grammarMap;
@@ -171,17 +176,25 @@ struct whisper_full_params newWhisperFullParams(JNIEnv *env, jobject jParams)
 }
 
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
-    JNIEnv *env = NULL;
-    jint result = -1;
+  JNIEnv *env = NULL;
+  jint result = -1;
 
-    if (vm->GetEnv((void **) &env, JNI_VERSION_1_4) != JNI_OK) {
-        return result;
-    }
-
-    ggml_backend_load_all();
-    std::cout << "WhisperJNI.JNI_OnLoad: Loaded all ggml backends" << std::endl;
-    result = JNI_VERSION_1_4;
+  if (vm->GetEnv((void **) &env, JNI_VERSION_1_4) != JNI_OK) {
     return result;
+  }
+
+  ggml_backend_load_all();
+
+// TODO test only
+#ifdef GGML_USE_CUDA
+  std::cout << "test CUDA backend" << std::endl;
+  ggml_backend_reg_t cuda_reg = ggml_backend_cuda_reg();
+  std::cout << "cuda addr: " << cuda_reg << std::endl;
+  std::cout << "cuda_reg_name: " << ggml_backend_reg_name(cuda_reg) << std::endl;
+  std::cout << "cuda_reg_device_count: " << ggml_backend_reg_dev_count(cuda_reg) << std::endl;
+#endif
+  result = JNI_VERSION_1_4;
+  return result;
 }
 
 JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_init(JNIEnv *env, jobject thisObject, jstring modelPath, jobject jParams)
@@ -355,7 +368,7 @@ JNIEXPORT jstring JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_v
   // Don't confuse the compilier (didn't work on my machine but worked fine in gh actions)
   int numSamples = static_cast<int>(jNumSamples);
   whisper_vad_segments *segments = whisper_vad_segments_from_samples(vadCtx, params.vad_params, nativeSamples, numSamples);
-  
+
   if(!segments)
   {
     env->ReleaseFloatArrayElements(samples, nativeSamples, 0);
@@ -375,7 +388,7 @@ JNIEXPORT jstring JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_v
     //return env->NewStringUTF("[no speech detected]");
     return NULL;
   }
-  
+
   // Calculate total samples for filtered audio
   int silence_samples = static_cast<int>(0.1f * WHISPER_SAMPLE_RATE);
   int total_samples = 0;
@@ -449,7 +462,7 @@ JNIEXPORT jstring JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_v
     jclass exceptionClass = env->FindClass("java/lang/RuntimeException");
     env->ThrowNew(exceptionClass, "Transcription failed");
   }
-  
+
   // Cleanup
   env->ReleaseFloatArrayElements(samples, nativeSamples, 0);
   whisper_vad_free_segments(segments);
