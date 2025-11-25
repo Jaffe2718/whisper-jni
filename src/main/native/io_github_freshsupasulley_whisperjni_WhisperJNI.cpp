@@ -7,10 +7,6 @@
 #include "whisper.h"
 #include "grammar-parser.h"
 
-// TODO test only
-#ifdef GGML_USE_CUDA
-#include "ggml-cuda.h"
-#endif
 
 std::map<int, whisper_context *> contextMap;
 std::map<int, whisper_state *> stateMap;
@@ -184,15 +180,6 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
   }
 
   ggml_backend_load_all();
-
-// TODO test only
-#ifdef GGML_USE_CUDA
-  std::cout << "test CUDA backend" << std::endl;
-  ggml_backend_reg_t cuda_reg = ggml_backend_cuda_reg();
-  std::cout << "cuda addr: " << cuda_reg << std::endl;
-  std::cout << "cuda_reg_name: " << ggml_backend_reg_name(cuda_reg) << std::endl;
-  std::cout << "cuda_reg_device_count: " << ggml_backend_reg_dev_count(cuda_reg) << std::endl;
-#endif
   result = JNI_VERSION_1_4;
   return result;
 }
