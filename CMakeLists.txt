@@ -14,6 +14,7 @@ option(GGML_F16C                "ggml: enable F16c"               ON )
 option(GGML_STATIC              "ggml: static link libraries"     OFF)
 option(GGML_NATIVE              "ggml: enable -march=native flag" OFF)
 option(BUILD_SHARED_LIBS        "whisper: build shared libs"      ON )
+option(GGML_CUDA                "ggml: enable CUDA backend"       OFF)
 option(GGML_VULKAN              "ggml: enable Vulkan backend"     OFF)
 option(GGML_BLAS                "ggml: BLAS CPU support"          OFF)
 
@@ -78,6 +79,7 @@ if(NOT DEFINED WHISPER_DIR)
       -DCMAKE_C_FLAGS=${EXTERNAL_C_FLAGS}
       -DCMAKE_CXX_FLAGS=${EXTERNAL_CXX_FLAGS}
       -DGGML_VULKAN=${GGML_VULKAN}
+      -DGGML_CUDA=${GGML_CUDA}
       -DGGML_BLAS=${GGML_BLAS}
       -DGGML_STATIC=${GGML_STATIC}
       -DGGML_NATIVE=${GGML_NATIVE}
@@ -120,6 +122,9 @@ if(GGML_VULKAN)
   else()
     message(FATAL_ERROR "Vulkan SDK not found. Please ensure it is installed correctly.")
   endif()
+elseif(GGML_CUDA)
+    target_compile_definitions(whisper-jni PUBLIC GGML_USE_CUDA)
+    target_link_libraries(whisper-jni PRIVATE whisper ggml ggml-base ggml-cpu ggml-cuda)
 else()
 	target_link_libraries(whisper-jni whisper ggml ggml-base ggml-cpu)
 endif()
