@@ -37,3 +37,8 @@ jobs:
         run: |
           chmod +x ./build_cuda.sh
           ./build_cuda.sh
+      - name: Upload native library
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-linux-cuda
+          path: whisperjni-build/*
