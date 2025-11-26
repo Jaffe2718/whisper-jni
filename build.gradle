@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'io.github.freshsupasulley'
-version = '0.5.5'
+version = '0.5.6'
 description = 'Java port of whisper.cpp, forked from whisper-jni by GiviMAD'
 
 repositories {
