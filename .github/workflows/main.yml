@@ -231,10 +231,118 @@ jobs:
           name: mac-${{ matrix.arch }}-${{ matrix.vulkan }}-natives
           path: whisperjni-build/*.dylib
 
+  windows-cuda:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: 'temurin'
+      - name: Setup project dir
+        run: |
+          git submodule update --init
+          curl -o ./ggml-silero-v5.1.2.bin https://huggingface.co/snakers4/silero-vad/resolve/main/ggml-silero-v5.1.2.bin
+          mv ./ggml-silero-v5.1.2.bin ./src/main/resources
+          curl -o ./ggml-tiny.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
+      - uses: Jimver/cuda-toolkit@v0.2.29
+        id: cuda-toolkit-windows
+        with:
+          cuda: 12.4.0
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+      - run: nvcc --version
+      - name: Build Windows CUDA
+        shell: powershell
+        run: |
+          & "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+          ./build_cuda.ps1
+      - name: Copy CUDA DLL to build directory
+        # copy cublas64_12.dll cublasLt64_12.dll
+        run: |
+          Copy-Item -Path "$env:CUDA_PATH\bin\cublas64_12.dll" -Destination "whisperjni-build/"
+          Copy-Item -Path "$env:CUDA_PATH\bin\cublasLt64_12.dll" -Destination "whisperjni-build/"
+      - name: Upload natives
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64-cuda-natives
+          path: whisperjni-build/*
+      - name: Analyze DLL dependencies
+        continue-on-error: true
+        run: |
+          ls whisperjni-build
+          # Find Visual Studio installation path using vswhere
+          $vsInstallPath = & "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe" -latest -property installationPath
+          
+          # Construct the path to dumpbin.exe directly
+          $dumpbinPath = Join-Path -Path $vsInstallPath -ChildPath "VC/Tools/MSVC/*/bin/Hostx64/x64/dumpbin.exe"
+          $resolvedDumpbin = Resolve-Path -Path $dumpbinPath | Select-Object -First 1
+          
+          if ($resolvedDumpbin) {
+            Write-Host "Found dumpbin at: $resolvedDumpbin"
+            cd whisperjni-build
+          
+            Get-ChildItem -Recurse -Filter "*.dll" | ForEach-Object {
+              Write-Host "dll: $($_.Name)"
+              & "$resolvedDumpbin" /dependents "$($_.FullName)"
+              Write-Host "----------------------------------------------------"
+            }
+          } else {
+            Write-Host "Warning: dumpbin.exe not found!"
+            # Fallback to listing files without analysis
+            cd whisperjni-build
+            Get-ChildItem -Recurse -Filter "*.dll" | ForEach-Object {
+              Write-Host "dll: $($_.Name) - Path: $($_.FullName)"
+              Write-Host "----------------------------------------------------"
+            }
+          }
+        shell: powershell
+      # cannot test because there is no CUDA device on GitHub Actions
+
+  linux-cuda:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: 'temurin'
+      - uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          docker-images: true
+      - name: Setup project dir
+        run: |
+          git submodule update --init
+          curl -o ./ggml-silero-v5.1.2.bin https://huggingface.co/snakers4/silero-vad/resolve/main/ggml-silero-v5.1.2.bin
+          mv ./ggml-silero-v5.1.2.bin ./src/main/resources
+          curl -o ./ggml-tiny.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
+      - name: Install CUDA
+        run: |
+          wget https://developer.download.nvidia.com/compute/cuda/12.4.0/local_installers/cuda_12.4.0_550.54.14_linux.run
+          sudo sh cuda_12.4.0_550.54.14_linux.run --silent --toolkit --override
+          echo "CUDA_PATH=/usr/local/cuda-12.4" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=/usr/local/cuda-12.4/lib64" >> $GITHUB_ENV
+          echo "PATH=$PATH:/usr/local/cuda-12.4/bin" >> $GITHUB_ENV
+          echo "CUDACXX=/usr/local/cuda-12.4/bin/nvcc" >> $GITHUB_ENV
+      - name: Build Linux CUDA
+        shell: bash
+        run: |
+          chmod +x ./build_cuda.sh
+          ./build_cuda.sh
+      - name: Upload native library
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-x64-cuda-natives
+          path: whisperjni-build/*
+      # cannot test because there is no CUDA device on GitHub Actions
 
   publish:
     runs-on: ubuntu-latest
-    needs: [download-models, build-linux, build-windows, build-mac]
+    needs: [download-models, build-linux, build-windows, build-mac, windows-cuda, linux-cuda]
     steps:
     - uses: actions/checkout@v4
     - uses: actions/download-artifact@v4
@@ -313,6 +421,7 @@ jobs:
         JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.JRELEASER_GPG_PUBLIC_KEY }}
         JRELEASER_GPG_SECRET_KEY: ${{ secrets.JRELEASER_GPG_SECRET_KEY }}
     - name: Create release
+      if: github.repository == 'FreshSupaSulley/whisper-jni'
       run: |
         cd natives
         # Zip everything in the same dir
@@ -326,5 +435,6 @@ jobs:
         generate_release_notes: true
         files: |
           natives/*.zip
+          build/libs/*.jar
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

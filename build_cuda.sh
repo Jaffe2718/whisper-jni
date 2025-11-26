@@ -1,5 +1,9 @@
 #!/bin/bash
 set -xe
+
+# User env required:
+# - CUDA Toolkit installed
+
 build_lib() {
   TMP_DIR=tmp-build
   TARGET_DIR=whisperjni-build
