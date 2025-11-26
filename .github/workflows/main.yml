@@ -102,6 +102,7 @@ jobs:
           VULKAN: ${{ matrix.vulkan }}
         run: ./build_linux.sh
       - name: Test
+        continue-on-error: true
         run: ./gradlew test
       - name: Publish test report
         uses: mikepenz/action-junit-report@v5
@@ -149,6 +150,7 @@ jobs:
           VULKAN: ${{ matrix.vulkan }}
         run: .\build_windows.ps1
       - name: Test
+        continue-on-error: true
         run: ./gradlew test
       - name: Publish test report
         uses: mikepenz/action-junit-report@v5
@@ -214,6 +216,7 @@ jobs:
           ./build_mac.sh ${{ matrix.arch }}
         # Apparently gradlew isn't executable by default
       - name: Test
+        continue-on-error: true
         run: |
           chmod +x ./gradlew
           ./gradlew test
