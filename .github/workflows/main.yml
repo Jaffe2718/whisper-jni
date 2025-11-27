@@ -412,6 +412,7 @@ jobs:
         name: whisperjni-jar
         path: build/libs/*.jar
     - name: Publish to maven central
+      if: github.repository == 'FreshSupaSulley/whisper-jni'
       run: ./gradlew jreleaserDeploy --stacktrace
       env:
         JRELEASER_MAVENCENTRAL_STAGE: UPLOAD # why the hell doesn't publish work
@@ -430,6 +431,7 @@ jobs:
           zip -rj "${dir%/}.zip" "$dir"
         done
     - uses: softprops/action-gh-release@v2
+      if: github.repository == 'FreshSupaSulley/whisper-jni'
       with:
         draft: true
         generate_release_notes: true
