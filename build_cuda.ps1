@@ -3,7 +3,7 @@ $TMP_DIR="tmp-build"
 $TARGET_DIR="whisperjni-build"
 
 New-Item -Path $TARGET_DIR -ItemType Directory -Force
-cmake -B build -DCMAKE_BUILD_TYPE=Release "-DCMAKE_INSTALL_PREFIX=$TMP_DIR" -DGGML_CUDA=ON -DGGML_BACKEND_DL=ON
+cmake -B build -DCMAKE_BUILD_TYPE=Release "-DCMAKE_INSTALL_PREFIX=$TMP_DIR" -DGGML_CUDA=ON -DGGML_STATIC=ON
 cmake --build build --config Release -j 4
 cmake --install build --config Release
 
