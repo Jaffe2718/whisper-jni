@@ -17,6 +17,7 @@ option(BUILD_SHARED_LIBS        "whisper: build shared libs"      ON )
 option(GGML_CUDA                "ggml: enable CUDA backend"       OFF)
 option(GGML_VULKAN              "ggml: enable Vulkan backend"     OFF)
 option(GGML_BLAS                "ggml: BLAS CPU support"          OFF)
+option(GGML_BACKEND_DL     "ggml: enable dynamic backend loading" OFF)
 
 set(JAVA_AWT_LIBRARY NotNeeded)
 set(JAVA_JVM_LIBRARY NotNeeded)
@@ -81,6 +82,7 @@ if(NOT DEFINED WHISPER_DIR)
       -DGGML_VULKAN=${GGML_VULKAN}
       -DGGML_CUDA=${GGML_CUDA}
       -DGGML_BLAS=${GGML_BLAS}
+      -DGGML_BACKEND_DL=${GGML_BACKEND_DL}
       -DGGML_STATIC=${GGML_STATIC}
       -DGGML_NATIVE=${GGML_NATIVE}
       -DGGML_AVX=${GGML_AVX}
