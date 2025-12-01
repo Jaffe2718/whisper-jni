@@ -196,7 +196,7 @@ JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_init
   return insertModel(context);
 }
 
-JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_initFromInputStream(JNIEnv *env, jobject thiz, jobject jInputStream, jobject jParams)
+JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_initFromInputStream(JNIEnv *env, jobject thiz, jobject jInputStream, jobject jParams, jboolean initState)
 {
     // Get InputStream class and read method
     jclass inputStreamClass = env->FindClass("java/io/InputStream");
@@ -249,7 +249,7 @@ JNIEXPORT jint JNICALL Java_io_github_freshsupasulley_whisperjni_WhisperJNI_init
             ctx_queue->pop();
         }
     };
-    struct whisper_context *context = whisper_init_with_params(&loader, newWhisperContextParams(env, jParams));
+    struct whisper_context *context = initState ? whisper_init_with_params(&loader, newWhisperContextParams(env, jParams)) : whisper_init_with_params_no_state(&loader, newWhisperContextParams(env, jParams));
     return context ? insertModel(context) : -1;
 }
 

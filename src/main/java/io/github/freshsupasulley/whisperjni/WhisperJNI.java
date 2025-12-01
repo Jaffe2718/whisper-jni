@@ -24,7 +24,7 @@ public class WhisperJNI {
 	
 	private native int init(String model, WhisperContextParams params);
 
-    private native int initFromInputStream(InputStream inputStream, WhisperContextParams params);
+    private native int initFromInputStream(InputStream inputStream, WhisperContextParams params, boolean initState);
 	
 	private native int initNoState(String model, WhisperContextParams params);
 	
@@ -149,7 +149,7 @@ public class WhisperJNI {
      */
     public WhisperContext init(InputStream inputStream) throws IOException
 	{
-		return init(inputStream, null);
+		return init(inputStream, null, true);
 	}
 	
 	/**
@@ -180,16 +180,17 @@ public class WhisperJNI {
      *
      * @param inputStream {@link InputStream} to the whisper ggml model file.
      * @param params      {@link WhisperContextParams} params for context initialization.
+     * @param initState   whether to initialize the context with a state.
      * @return A new {@link WhisperContext}.
      * @throws IOException if model file is missing.
      */
-    public WhisperContext init(InputStream inputStream, WhisperContextParams params) throws IOException
+    public WhisperContext init(InputStream inputStream, WhisperContextParams params, boolean initState) throws IOException
 	{
 		if(params == null)
 		{
 			params = new WhisperContextParams();
 		}
-		int ref = initFromInputStream(inputStream, params);
+		int ref = initFromInputStream(inputStream, params, initState);
 		if(ref == -1)
 		{
 			return null;
