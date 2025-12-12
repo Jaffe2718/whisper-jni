@@ -169,10 +169,10 @@ jobs:
       matrix:
         include:
         - arch: x64
-          version: macos-13
+          version: macos-15-intel
           vulkan: ON
         - arch: x64
-          version: macos-13
+          version: macos-15-intel
           vulkan: OFF
         - arch: arm64
           version: macos-14
