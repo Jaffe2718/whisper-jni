@@ -1,442 +1,425 @@
 name: Build and publish
 on:
-  workflow_dispatch:
+    workflow_dispatch:
 jobs:
-  download-models:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Download tiny ggml model
-      run: |
-        git submodule update --init
-        ./download-test-model.sh
-        ./download-vad-model.sh
-        # Move models together for simpler download
-        mkdir models
-        mv ggml-tiny.bin models/
-        mv ggml-silero-v5.1.2.bin models/
-    - uses: actions/upload-artifact@v4
-      with:
-        name: test-models
-        path: models/*.bin
-        retention-days: 2
+    download-models:
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v4
+            -   name: Download tiny ggml model
+                run: |
+                    git submodule update --init
+                    ./download-test-model.sh
+                    ./download-vad-model.sh
+                    # Move models together for simpler download
+                    mkdir models
+                    mv ggml-tiny.bin models/
+                    mv ggml-silero-v6.2.0.bin models/
+            -   uses: actions/upload-artifact@v4
+                with:
+                    name: test-models
+                    path: models/*.bin
+                    retention-days: 2
 
-  build-linux:
-    needs: [download-models]
-    strategy:
-      matrix:
-        # arch is used the artifact name
-        include:
-          - platform: ubuntu-22.04-arm
-            arch: arm64
-            vulkan: ON
-          - platform: ubuntu-22.04-arm
-            arch: arm64
-            vulkan: OFF
-          - platform: ubuntu-22.04
-            arch: x64
-            vulkan: ON
-          - platform: ubuntu-22.04
-            arch: x64
-            vulkan: OFF
-    runs-on: ${{ matrix.platform }}
-    steps:
-      # Checkout HAS to come before downloading artifacts, learned that the hard way
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: test-models
-      - uses: actions/setup-java@v4
-        with:
-          java-version: 21
-          distribution: 'temurin'
-      # Install Glslang because Vulkan doesn't bundle it for Ubuntu
-      - name: Install Vulkan Tools
-        if: matrix.vulkan == 'ON'
-        run: |
-          sudo apt update
-          sudo apt install -y vulkan-tools glslang-tools
-          sudo apt-get install -y libvulkan1 mesa-vulkan-drivers
-          sudo vulkaninfo
-      - name: Build shaderc
-        if: matrix.vulkan == 'ON'
-        run: |
-          # Set up shaderc source directory and build directory
-          SOURCE_DIR=$PWD/shaderc
-          BUILD_DIR=$PWD/shaderc_build
+    build-linux:
+        needs: [ download-models ]
+        strategy:
+            matrix:
+                # arch is used the artifact name
+                include:
+                    -   platform: ubuntu-22.04-arm
+                        arch: arm64
+                        vulkan: ON
+                    -   platform: ubuntu-22.04-arm
+                        arch: arm64
+                        vulkan: OFF
+                    -   platform: ubuntu-22.04
+                        arch: x64
+                        vulkan: ON
+                    -   platform: ubuntu-22.04
+                        arch: x64
+                        vulkan: OFF
+        runs-on: ${{ matrix.platform }}
+        steps:
+            # Checkout HAS to come before downloading artifacts, learned that the hard way
+            -   uses: actions/checkout@v4
+            -   uses: actions/download-artifact@v4
+                with:
+                    name: test-models
+            -   uses: actions/setup-java@v4
+                with:
+                    java-version: 25
+                    distribution: 'temurin'
+            # Install Glslang because Vulkan doesn't bundle it for Ubuntu
+            -   name: Install Vulkan Tools
+                if: matrix.vulkan == 'ON'
+                run: |
+                    sudo apt update
+                    sudo apt install -y vulkan-tools glslang-tools
+                    sudo apt-get install -y libvulkan1 mesa-vulkan-drivers
+                    sudo vulkaninfo
+            -   name: Build shaderc
+                if: matrix.vulkan == 'ON'
+                run: |
+                    # Set up shaderc source directory and build directory
+                    SOURCE_DIR=$PWD/shaderc
+                    BUILD_DIR=$PWD/shaderc_build
+                    
+                    # Clone shaderc repository
+                    git clone https://github.com/google/shaderc $SOURCE_DIR
+                    cd $SOURCE_DIR
+                    ./utils/git-sync-deps  # This fetches the dependencies
+                    
+                    # Create a separate build directory
+                    mkdir $BUILD_DIR
+                    cd $BUILD_DIR
+                    
+                    # Build shaderc using CMake and Ninja
+                    cmake -GNinja -DCMAKE_BUILD_TYPE=Release $SOURCE_DIR
+                    ninja
+                    
+                    # Optionally run tests
+                    # ctest
+                    
+                    # Move glslc to a directory in PATH
+                    sudo mv glslc/glslc /usr/local/bin/
+            # Differs from the other Vulkan action (jakoch/install-vulkan-sdk-action@v1) because this lets us install Glslang too
+            # I have no idea why this is the case but atp I am embodying the "if it ain't broke don't fix it" mentality
+            # ^ was I wrong? Can we go back to the OG?
+            -   name: Prepare Vulkan SDK
+                uses: humbletim/setup-vulkan-sdk@v1.2.1
+                if: matrix.vulkan == 'ON'
+                with:
+                    vulkan-query-version: 1.4.304.1
+                    vulkan-components: Vulkan-Headers, Vulkan-Loader
+                    vulkan-use-cache: true
+            -   name: Setup project dir
+                run: |
+                    git submodule update --init
+                    mv ./ggml-silero-v6.2.0.bin ./src/main/resources
+            -   name: Build
+                env:
+                    VULKAN: ${{ matrix.vulkan }}
+                run: ./build_linux.sh
+            -   name: Test
+                continue-on-error: true
+                run: ./gradlew test
+            -   name: Publish test report
+                uses: mikepenz/action-junit-report@v5
+                if: success() || failure()
+                with:
+                    report_paths: '**/test-results/**/*.xml'
+            -   name: Upload natives
+                uses: actions/upload-artifact@v4
+                with:
+                    name: linux-${{ matrix.arch }}-${{ matrix.vulkan }}-natives
+                    path: whisperjni-build/*
 
-          # Clone shaderc repository
-          git clone https://github.com/google/shaderc $SOURCE_DIR
-          cd $SOURCE_DIR
-          ./utils/git-sync-deps  # This fetches the dependencies
+    build-windows:
+        needs: [ download-models ]
+        runs-on: windows-latest
+        strategy:
+            matrix:
+                vulkan: [ OFF, ON ]
+        steps:
+            -   uses: actions/checkout@v4
+            -   uses: actions/download-artifact@v4
+                with:
+                    name: test-models
+            -   uses: actions/setup-java@v4
+                with:
+                    java-version: 25
+                    distribution: 'temurin'
+            # Also install Vulkan if we're building for it
+            -   name: Install Vulkan SDK
+                uses: jakoch/install-vulkan-sdk-action@v1
+                if: matrix.vulkan == 'ON'
+                with:
+                    vulkan_version: 1.4.304.1
+                    install_runtime: true
+                    # Does using cache fuck up installing the runtime??
+                    # ^ yes, it seems so
+                    # cache: true
+            -   name: Setup project dir
+                run: |
+                    git submodule update --init
+                    mv ./ggml-silero-v6.2.0.bin ./src/main/resources
+            -   name: Build
+                shell: powershell
+                env:
+                    VULKAN: ${{ matrix.vulkan }}
+                run: .\build_windows.ps1
+            -   name: Test
+                continue-on-error: true
+                run: ./gradlew test
+            -   name: Publish test report
+                uses: mikepenz/action-junit-report@v5
+                if: success() || failure()
+                with:
+                    report_paths: '**/build/test-results/**/*.xml'
+            -   name: Upload natives
+                uses: actions/upload-artifact@v4
+                with:
+                    name: windows-x64-${{ matrix.vulkan }}-natives
+                    path: whisperjni-build/*.dll
 
-          # Create a separate build directory
-          mkdir $BUILD_DIR
-          cd $BUILD_DIR
+    build-mac:
+        needs: [ download-models ]
+        strategy:
+            matrix:
+                include:
+                    -   arch: x64
+                        version: macos-15-intel
+                        vulkan: ON
+                    -   arch: x64
+                        version: macos-15-intel
+                        vulkan: OFF
+                    -   arch: arm64
+                        version: macos-14
+                        vulkan: ON
+                    -   arch: arm64
+                        version: macos-14
+                        vulkan: OFF
+        # Can't we just build on macos-14 for both?? Need to test
+        runs-on: ${{ matrix.version }}
+        steps:
+            -   uses: actions/checkout@v4
+            -   uses: actions/download-artifact@v4
+                with:
+                    name: test-models
+            -   uses: actions/setup-java@v4
+                with:
+                    java-version: 25
+                    distribution: 'temurin'
+            -   name: Install Vulkan SDK
+                uses: humbletim/setup-vulkan-sdk@v1.2.1
+                if: matrix.vulkan == 'ON'
+                with:
+                    vulkan-query-version: latest
+                    vulkan-components: Vulkan-Headers, Vulkan-Loader
+                    vulkan-use-cache: true
+            -   name: Install shaderc
+                if: matrix.vulkan == 'ON'
+                # This envelops glslc
+                run: brew install shaderc
+            -   name: Setup project dir
+                run: |
+                    git submodule update --init
+                    mv ./ggml-silero-v6.2.0.bin ./src/main/resources
+            -   name: Build
+                env:
+                    VULKAN: ${{ matrix.vulkan }}
+                run: |
+                    export DYLD_LIBRARY_PATH=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/
+                    # Just in case
+                    chmod +x ./build_mac.sh
+                    ./build_mac.sh ${{ matrix.arch }}
+                # Apparently gradlew isn't executable by default
+            -   name: Test
+                continue-on-error: true
+                run: |
+                    chmod +x ./gradlew
+                    ./gradlew test
+            -   name: Publish test report
+                uses: mikepenz/action-junit-report@v5
+                if: success() || failure()
+                with:
+                    report_paths: '**/build/test-results/**/*.xml'
+            -   name: Artifact macos x64
+                uses: actions/upload-artifact@v4
+                with:
+                    name: mac-${{ matrix.arch }}-${{ matrix.vulkan }}-natives
+                    path: whisperjni-build/*.dylib
 
-          # Build shaderc using CMake and Ninja
-          cmake -GNinja -DCMAKE_BUILD_TYPE=Release $SOURCE_DIR
-          ninja
+    win-cublas-blas:
+        needs: [build-windows]
+        runs-on: windows-latest
+        steps:
+            -   uses: actions/checkout@v4
+            -   uses: actions/download-artifact@v4
+                with:
+                    name: windows-x64-OFF-natives
+            -   name: download whisper.cpp libs
+                shell: powershell
+                run: |
+                    Expand-Archive -Path "windows-x64-OFF-natives.zip" -DestinationPath "./windows-x64-base"
+                    Invoke-WebRequest -Uri "https://github.com/ggml-org/whisper.cpp/releases/download/v1.8.3/whisper-cublas-12.4.0-bin-x64.zip" -OutFile "whisper-cublas-12.4.0-bin-x64.zip"
+                    Expand-Archive -Path "whisper-cublas-12.4.0-bin-x64.zip" -DestinationPath "./whisper-cublas-12.4.0-bin-x64"
+                    Invoke-WebRequest -Uri "https://github.com/ggml-org/whisper.cpp/releases/download/v1.8.3/whisper-blas-bin-x64.zip" -OutFile "whisper-blas-bin-x64.zip"
+                    Expand-Archive -Path "whisper-blas-bin-x64.zip" -DestinationPath "./whisper-blas-bin-x64"
+            -   name: copy win cublas
+                shell: powershell
+                run: |
+                    New-Item -ItemType Directory -Path "windows-x64-cublas-12.4.0-natives"
+                    Copy-Item -Path "windows-x64-base\whisper-jni.dll" -Destination "windows-x64-cublas-12.4.0-natives\whisper-jni.dll"
+                    Copy-Item -Path "whisper-cublas-12.4.0-bin-x64\Release\whisper.dll" -Destination "windows-x64-cublas-12.4.0-natives\whisper.dll"
+                    Copy-Item -Path "whisper-cublas-12.4.0-bin-x64\Release\ggml.dll" -Destination "windows-x64-cublas-12.4.0-natives\ggml.dll"
+                    Copy-Item -Path "whisper-cublas-12.4.0-bin-x64\Release\ggml-base.dll" -Destination "windows-x64-cublas-12.4.0-natives\ggml-base.dll"
+                    Copy-Item -Path "whisper-cublas-12.4.0-bin-x64\Release\ggml-cpu.dll" -Destination "windows-x64-cublas-12.4.0-natives\ggml-cpu.dll"
+                    Copy-Item -Path "whisper-cublas-12.4.0-bin-x64\Release\ggml-cuda.dll" -Destination "windows-x64-cublas-12.4.0-natives\ggml-cuda.dll"
+                    Copy-Item -Path "whisper-cublas-12.4.0-bin-x64\Release\cudart64_12.dll" -Destination "windows-x64-cublas-12.4.0-natives\cudart64_12.dll"
+                    Copy-Item -Path "whisper-cublas-12.4.0-bin-x64\Release\cublas64_12.dll" -Destination "windows-x64-cublas-12.4.0-natives\cublas64_12.dll"
+                    Copy-Item -Path "whisper-cublas-12.4.0-bin-x64\Release\cublasLt64_12.dll" -Destination "windows-x64-cublas-12.4.0-natives\cublasLt64_12.dll"
+            -   name: copy win blas
+                shell: powershell
+                run: |
+                    New-Item -ItemType Directory -Path "windows-x64-blas-natives"
+                    Copy-Item -Path "windows-x64-base\whisper-jni.dll" -Destination "windows-x64-blas-natives\whisper-jni.dll"
+                    Copy-Item -Path "whisper-blas-bin-x64\Release\whisper.dll" -Destination "windows-x64-blas-natives\whisper.dll"
+                    Copy-Item -Path "whisper-blas-bin-x64\Release\ggml.dll" -Destination "windows-x64-blas-natives\ggml.dll"
+                    Copy-Item -Path "whisper-blas-bin-x64\Release\ggml-base.dll" -Destination "windows-x64-blas-natives\ggml-base.dll"
+                    Copy-Item -Path "whisper-blas-bin-x64\Release\ggml-cpu.dll" -Destination "windows-x64-blas-natives\ggml-cpu.dll"
+                    Copy-Item -Path "whisper-blas-bin-x64\Release\ggml-blas.dll" -Destination "windows-x64-blas-natives\ggml-blas.dll"
+                    Copy-Item -Path "whisper-blas-bin-x64\Release\libopenblas.dll" -Destination "windows-x64-blas-natives\libopenblas.dll"
+            -   name: Upload win cublas
+                uses: actions/upload-artifact@v4
+                with:
+                    name: windows-x64-cublas-12.4.0-natives
+                    path: windows-x64-cublas-12.4.0-natives/*
+            -   name: Upload win blas
+                uses: actions/upload-artifact@v4
+                with:
+                    name: windows-x64-blas-natives
+                    path: windows-x64-blas-natives/*
 
-          # Optionally run tests
-          # ctest
+    linux-cuda:
+        runs-on: ubuntu-22.04
+        steps:
+            -   uses: actions/checkout@v4
+            -   uses: actions/setup-java@v4
+                with:
+                    java-version: 25
+                    distribution: 'temurin'
+            -   uses: jlumbroso/free-disk-space@main
+                with:
+                    tool-cache: false
+                    android: true
+                    dotnet: true
+                    haskell: true
+                    docker-images: true
+            -   name: Setup project dir
+                run: |
+                    git submodule update --init
+                    curl -o ./ggml-silero-v6.2.0.bin https://huggingface.co/snakers4/silero-vad/resolve/main/ggml-silero-v6.2.0.bin
+                    mv ./ggml-silero-v6.2.0.bin ./src/main/resources
+                    curl -o ./ggml-tiny.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
+            -   name: Install CUDA
+                run: |
+                    wget https://developer.download.nvidia.com/compute/cuda/12.4.0/local_installers/cuda_12.4.0_550.54.14_linux.run
+                    sudo sh cuda_12.4.0_550.54.14_linux.run --silent --toolkit --override
+                    echo "CUDA_PATH=/usr/local/cuda-12.4" >> $GITHUB_ENV
+                    echo "LD_LIBRARY_PATH=/usr/local/cuda-12.4/lib64" >> $GITHUB_ENV
+                    echo "PATH=$PATH:/usr/local/cuda-12.4/bin" >> $GITHUB_ENV
+                    echo "CUDACXX=/usr/local/cuda-12.4/bin/nvcc" >> $GITHUB_ENV
+            -   name: Build Linux CUDA
+                shell: bash
+                run: |
+                    chmod +x ./build_cuda.sh
+                    ./build_cuda.sh
+            -   name: Upload native library
+                uses: actions/upload-artifact@v4
+                with:
+                    name: linux-x64-cuda-natives
+                    path: whisperjni-build/*
+            # cannot test because there is no CUDA device on GitHub Actions
 
-          # Move glslc to a directory in PATH
-          sudo mv glslc/glslc /usr/local/bin/
-      # Differs from the other Vulkan action (jakoch/install-vulkan-sdk-action@v1) because this lets us install Glslang too
-      # I have no idea why this is the case but atp I am embodying the "if it ain't broke don't fix it" mentality
-      # ^ was I wrong? Can we go back to the OG?
-      - name: Prepare Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.2.1
-        if: matrix.vulkan == 'ON'
-        with:
-          vulkan-query-version: 1.4.304.1
-          vulkan-components: Vulkan-Headers, Vulkan-Loader
-          vulkan-use-cache: true
-      - name: Setup project dir
-        run: |
-          git submodule update --init
-          mv ./ggml-silero-v5.1.2.bin ./src/main/resources
-      - name: Build
-        env:
-          VULKAN: ${{ matrix.vulkan }}
-        run: ./build_linux.sh
-      - name: Test
-        continue-on-error: true
-        run: ./gradlew test
-      - name: Publish test report
-        uses: mikepenz/action-junit-report@v5
-        if: success() || failure()
-        with:
-          report_paths: '**/test-results/**/*.xml'
-      - name: Upload natives
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-${{ matrix.arch }}-${{ matrix.vulkan }}-natives
-          path: whisperjni-build/*
-
-  build-windows:
-    needs: [download-models]
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        vulkan: [OFF, ON]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: test-models
-      - uses: actions/setup-java@v4
-        with:
-          java-version: 21
-          distribution: 'temurin'
-      # Also install Vulkan if we're building for it
-      - name: Install Vulkan SDK
-        uses: jakoch/install-vulkan-sdk-action@v1
-        if: matrix.vulkan == 'ON'
-        with:
-          vulkan_version: 1.4.304.1
-          install_runtime: true
-          # Does using cache fuck up installing the runtime??
-          # ^ yes, it seems so
-          # cache: true
-      - name: Setup project dir
-        run: |
-          git submodule update --init
-          mv ./ggml-silero-v5.1.2.bin ./src/main/resources
-      - name: Build
-        shell: powershell
-        env:
-          VULKAN: ${{ matrix.vulkan }}
-        run: .\build_windows.ps1
-      - name: Test
-        continue-on-error: true
-        run: ./gradlew test
-      - name: Publish test report
-        uses: mikepenz/action-junit-report@v5
-        if: success() || failure()
-        with:
-          report_paths: '**/build/test-results/**/*.xml'
-      - name: Upload natives
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-x64-${{ matrix.vulkan }}-natives
-          path: whisperjni-build/*.dll
-
-  build-mac:
-    needs: [download-models]
-    strategy:
-      matrix:
-        include:
-        - arch: x64
-          version: macos-15-intel
-          vulkan: ON
-        - arch: x64
-          version: macos-15-intel
-          vulkan: OFF
-        - arch: arm64
-          version: macos-14
-          vulkan: ON
-        - arch: arm64
-          version: macos-14
-          vulkan: OFF
-    # Can't we just build on macos-14 for both?? Need to test
-    runs-on: ${{ matrix.version }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: test-models
-      - uses: actions/setup-java@v4
-        with:
-          java-version: 21
-          distribution: 'temurin'
-      - name: Install Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.2.1
-        if: matrix.vulkan == 'ON'
-        with:
-          vulkan-query-version: latest
-          vulkan-components: Vulkan-Headers, Vulkan-Loader
-          vulkan-use-cache: true
-      - name: Install shaderc
-        if: matrix.vulkan == 'ON'
-        # This envelops glslc
-        run: brew install shaderc
-      - name: Setup project dir
-        run: |
-          git submodule update --init
-          mv ./ggml-silero-v5.1.2.bin ./src/main/resources
-      - name: Build
-        env:
-          VULKAN: ${{ matrix.vulkan }}
-        run: |
-          export DYLD_LIBRARY_PATH=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/
-          # Just in case
-          chmod +x ./build_mac.sh
-          ./build_mac.sh ${{ matrix.arch }}
-        # Apparently gradlew isn't executable by default
-      - name: Test
-        continue-on-error: true
-        run: |
-          chmod +x ./gradlew
-          ./gradlew test
-      - name: Publish test report
-        uses: mikepenz/action-junit-report@v5
-        if: success() || failure()
-        with:
-          report_paths: '**/build/test-results/**/*.xml'
-      - name: Artifact macos x64
-        uses: actions/upload-artifact@v4
-        with:
-          name: mac-${{ matrix.arch }}-${{ matrix.vulkan }}-natives
-          path: whisperjni-build/*.dylib
-
-  windows-cuda:
-    runs-on: windows-2022
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          java-version: 21
-          distribution: 'temurin'
-      - name: Setup project dir
-        run: |
-          git submodule update --init
-          curl -o ./ggml-silero-v5.1.2.bin https://huggingface.co/snakers4/silero-vad/resolve/main/ggml-silero-v5.1.2.bin
-          mv ./ggml-silero-v5.1.2.bin ./src/main/resources
-          curl -o ./ggml-tiny.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
-      - uses: Jimver/cuda-toolkit@v0.2.29
-        id: cuda-toolkit-windows
-        with:
-          cuda: 12.4.0
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v2
-      - run: nvcc --version
-      - name: Build Windows CUDA
-        shell: powershell
-        run: |
-          & "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-          ./build_cuda.ps1
-      - name: Copy CUDA DLL to build directory
-        # copy cublas64_12.dll cublasLt64_12.dll
-        run: |
-          Copy-Item -Path "$env:CUDA_PATH\bin\cublas64_12.dll" -Destination "whisperjni-build/"
-          Copy-Item -Path "$env:CUDA_PATH\bin\cublasLt64_12.dll" -Destination "whisperjni-build/"
-      - name: Upload natives
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-x64-cuda-natives
-          path: whisperjni-build/*
-      - name: Analyze DLL dependencies
-        continue-on-error: true
-        run: |
-          ls whisperjni-build
-          # Find Visual Studio installation path using vswhere
-          $vsInstallPath = & "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe" -latest -property installationPath
-          
-          # Construct the path to dumpbin.exe directly
-          $dumpbinPath = Join-Path -Path $vsInstallPath -ChildPath "VC/Tools/MSVC/*/bin/Hostx64/x64/dumpbin.exe"
-          $resolvedDumpbin = Resolve-Path -Path $dumpbinPath | Select-Object -First 1
-          
-          if ($resolvedDumpbin) {
-            Write-Host "Found dumpbin at: $resolvedDumpbin"
-            cd whisperjni-build
-          
-            Get-ChildItem -Recurse -Filter "*.dll" | ForEach-Object {
-              Write-Host "dll: $($_.Name)"
-              & "$resolvedDumpbin" /dependents "$($_.FullName)"
-              Write-Host "----------------------------------------------------"
-            }
-          } else {
-            Write-Host "Warning: dumpbin.exe not found!"
-            # Fallback to listing files without analysis
-            cd whisperjni-build
-            Get-ChildItem -Recurse -Filter "*.dll" | ForEach-Object {
-              Write-Host "dll: $($_.Name) - Path: $($_.FullName)"
-              Write-Host "----------------------------------------------------"
-            }
-          }
-        shell: powershell
-      # cannot test because there is no CUDA device on GitHub Actions
-
-  linux-cuda:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          java-version: 21
-          distribution: 'temurin'
-      - uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: false
-          android: true
-          dotnet: true
-          haskell: true
-          docker-images: true
-      - name: Setup project dir
-        run: |
-          git submodule update --init
-          curl -o ./ggml-silero-v5.1.2.bin https://huggingface.co/snakers4/silero-vad/resolve/main/ggml-silero-v5.1.2.bin
-          mv ./ggml-silero-v5.1.2.bin ./src/main/resources
-          curl -o ./ggml-tiny.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
-      - name: Install CUDA
-        run: |
-          wget https://developer.download.nvidia.com/compute/cuda/12.4.0/local_installers/cuda_12.4.0_550.54.14_linux.run
-          sudo sh cuda_12.4.0_550.54.14_linux.run --silent --toolkit --override
-          echo "CUDA_PATH=/usr/local/cuda-12.4" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=/usr/local/cuda-12.4/lib64" >> $GITHUB_ENV
-          echo "PATH=$PATH:/usr/local/cuda-12.4/bin" >> $GITHUB_ENV
-          echo "CUDACXX=/usr/local/cuda-12.4/bin/nvcc" >> $GITHUB_ENV
-      - name: Build Linux CUDA
-        shell: bash
-        run: |
-          chmod +x ./build_cuda.sh
-          ./build_cuda.sh
-      - name: Upload native library
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-x64-cuda-natives
-          path: whisperjni-build/*
-      # cannot test because there is no CUDA device on GitHub Actions
-
-  publish:
-    runs-on: ubuntu-latest
-    needs: [download-models, build-linux, build-windows, build-mac, windows-cuda, linux-cuda]
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/download-artifact@v4
-      with:
-        # Put everything into /natives
-        path: natives
-        pattern: "*-natives"
-    # We still need the silero model
-    - uses: actions/download-artifact@v4
-      with:
-        name: test-models
-    - uses: actions/setup-java@v4
-      with:
-        java-version: 21
-        distribution: 'temurin'
-    - name: Check tree
-      run: ls -R
-    - name: Prepare artifacts
-      run: |
-        echo "Moving VAD model"
-        mv ./ggml-silero-v5.1.2.bin ./src/main/resources
-        # Now prepare the natives
-        echo "Renaming native folders to prod names"
-        for native_folder in natives/*/; do
-            # Get the base name of the native folder
-            original_name=$(basename "$native_folder")
-            native_folder_name="$original_name"
-
-            # Rename the native folder based on the suffix
-            if [[ "$native_folder_name" == *"-ON-natives" ]]; then
-                native_folder_name="${native_folder_name/-ON-natives/-vulkan-natives}"
-            elif [[ "$native_folder_name" == *"-OFF-natives" ]]; then
-                native_folder_name="${native_folder_name/-OFF-natives/-natives}"
-            else
-                echo "Not renaming $original_name"
-                continue
-            fi
-
-            mv "natives/${original_name}" "natives/${native_folder_name}"
-        done
-
-        echo "Flooding resources with default CPU natives"
-        for resource_folder in src/main/resources/*/; do
-            # Get the base folder name (instead of full path)
-            folder_name=$(basename "$resource_folder")
-
-            # Find the matching built natives folder
-            for native_folder in natives/*/; do
-                # Only copy if this native folder EXACTLY matches (excluding -natives)
-                # This is to make sure only the CPU natives are bundled, not Vulkan
-                native_basename=$(basename "$native_folder")
-                if [[ "${native_basename%-natives}" == "$folder_name" ]]; then
-                    echo "Copying from $native_folder to $resource_folder"
-                    # Copy contents from the renamed native folder into the resource folder
-                    cp -r "$native_folder"/* "$resource_folder"/
-                    # Remove .gitkeep (and other hidden files but there shouldn't be anymore)
-                    find "$resource_folder" -type f -name '.*' -exec rm -f {} \;
-                fi
-            done
-        done
-    - name: Build
-      # We already built and tested for this platform so we're not testing again
-      run: ./gradlew clean build publish --stacktrace -x test
-    - name: Upload JAR as artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: whisperjni-jar
-        path: build/libs/*.jar
-    - name: Publish to maven central
-      if: github.repository == 'FreshSupaSulley/whisper-jni'
-      run: ./gradlew jreleaserDeploy --stacktrace
-      env:
-        JRELEASER_MAVENCENTRAL_STAGE: UPLOAD # why the hell doesn't publish work
-        JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.JRELEASER_MAVENCENTRAL_USERNAME }}
-        JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.JRELEASER_MAVENCENTRAL_PASSWORD }}
-        JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
-        JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.JRELEASER_GPG_PUBLIC_KEY }}
-        JRELEASER_GPG_SECRET_KEY: ${{ secrets.JRELEASER_GPG_SECRET_KEY }}
-    - name: Create release
-      if: github.repository == 'FreshSupaSulley/whisper-jni'
-      run: |
-        cd natives
-        # Zip everything in the same dir
-        for dir in */; do
-          echo "Zipping $dir"
-          zip -rj "${dir%/}.zip" "$dir"
-        done
-    - uses: softprops/action-gh-release@v2
-      if: github.repository == 'FreshSupaSulley/whisper-jni'
-      with:
-        draft: true
-        generate_release_notes: true
-        files: |
-          natives/*.zip
-          build/libs/*.jar
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    publish:
+        runs-on: ubuntu-latest
+        needs: [ download-models, build-linux, build-windows, build-mac, linux-cuda, win-cublas-blas ]
+        steps:
+            -   uses: actions/checkout@v4
+            -   uses: actions/download-artifact@v4
+                with:
+                    # Put everything into /natives
+                    path: natives
+                    pattern: "*-natives"
+            # We still need the silero model
+            -   uses: actions/download-artifact@v4
+                with:
+                    name: test-models
+            -   uses: actions/setup-java@v4
+                with:
+                    java-version: 25
+                    distribution: 'temurin'
+            -   name: Check tree
+                run: ls -R
+            -   name: Prepare artifacts
+                run: |
+                    echo "Moving VAD model"
+                    mv ./ggml-silero-v6.2.0.bin ./src/main/resources
+                    # Now prepare the natives
+                    echo "Renaming native folders to prod names"
+                    for native_folder in natives/*/; do
+                        # Get the base name of the native folder
+                        original_name=$(basename "$native_folder")
+                        native_folder_name="$original_name"
+                    
+                        # Rename the native folder based on the suffix
+                        if [[ "$native_folder_name" == *"-ON-natives" ]]; then
+                            native_folder_name="${native_folder_name/-ON-natives/-vulkan-natives}"
+                        elif [[ "$native_folder_name" == *"-OFF-natives" ]]; then
+                            native_folder_name="${native_folder_name/-OFF-natives/-natives}"
+                        else
+                            echo "Not renaming $original_name"
+                            continue
+                        fi
+                    
+                        mv "natives/${original_name}" "natives/${native_folder_name}"
+                    done
+                    
+                    echo "Flooding resources with default CPU natives"
+                    for resource_folder in src/main/resources/*/; do
+                        # Get the base folder name (instead of full path)
+                        folder_name=$(basename "$resource_folder")
+                    
+                        # Find the matching built natives folder
+                        for native_folder in natives/*/; do
+                            # Only copy if this native folder EXACTLY matches (excluding -natives)
+                            # This is to make sure only the CPU natives are bundled, not Vulkan
+                            native_basename=$(basename "$native_folder")
+                            if [[ "${native_basename%-natives}" == "$folder_name" ]]; then
+                                echo "Copying from $native_folder to $resource_folder"
+                                # Copy contents from the renamed native folder into the resource folder
+                                cp -r "$native_folder"/* "$resource_folder"/
+                                # Remove .gitkeep (and other hidden files but there shouldn't be anymore)
+                                find "$resource_folder" -type f -name '.*' -exec rm -f {} \;
+                            fi
+                        done
+                    done
+            -   name: Build
+                # We already built and tested for this platform so we're not testing again
+                run: ./gradlew clean build publish --stacktrace -x test
+            -   name: Upload JAR as artifact
+                uses: actions/upload-artifact@v4
+                with:
+                    name: whisperjni-jar
+                    path: build/libs/*.jar
+            -   name: Publish to maven central
+                if: github.repository == 'FreshSupaSulley/whisper-jni'
+                run: ./gradlew jreleaserDeploy --stacktrace
+                env:
+                    JRELEASER_MAVENCENTRAL_STAGE: UPLOAD # why the hell doesn't publish work
+                    JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.JRELEASER_MAVENCENTRAL_USERNAME }}
+                    JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.JRELEASER_MAVENCENTRAL_PASSWORD }}
+                    JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
+                    JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.JRELEASER_GPG_PUBLIC_KEY }}
+                    JRELEASER_GPG_SECRET_KEY: ${{ secrets.JRELEASER_GPG_SECRET_KEY }}
+            -   name: Create release
+                if: github.repository == 'Jaffe2718/whisper-jni'
+                run: |
+                    cd natives
+                    # Zip everything in the same dir
+                    for dir in */; do
+                      echo "Zipping $dir"
+                      zip -rj "${dir%/}.zip" "$dir"
+                    done
+            -   uses: softprops/action-gh-release@v2
+                if: github.repository == 'Jaffe2718/whisper-jni'
+                with:
+                    draft: true
+                    generate_release_notes: true
+                    files: |
+                        natives/*.zip
+                        build/libs/*.jar
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

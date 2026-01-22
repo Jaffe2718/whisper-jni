@@ -7,7 +7,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -36,7 +35,7 @@ public abstract class LibraryUtils {
 	 * still works
 	 * </p>
 	 */
-	private static final List<String> loadOrder = Arrays.asList("cudart64_12", "cublasLt64_12", "cublas64_12", "ggml-base", "ggml-cpu", "ggml-cuda", "ggml-metal", "ggml-vulkan", "ggml", "whisper", "whisper-jni");
+	private static final List<String> loadOrder = Arrays.asList("cudart64_12", "cublasLt64_12", "cublas64_12", "libopenblas", "ggml-base", "ggml-cpu", "ggml-cuda", "ggml-blas", "ggml-metal", "ggml-vulkan", "ggml", "whisper", "whisper-jni");
 	private static final String[] LIB_EXTENSIONS = {".so", ".dylib", ".dll"};
 	
 	/**
@@ -126,7 +125,7 @@ public abstract class LibraryUtils {
 	}
 	
 	/**
-	 * Extracts the bundled <code>ggml-silero-v5.1.2</code> model to a directory on your machine.
+	 * Extracts the bundled <code>ggml-silero-v6.2.0</code> model to a directory on your machine.
 	 *
 	 * <p>
 	 * Example usage:
@@ -152,7 +151,7 @@ public abstract class LibraryUtils {
 		try
 		{
 			// Note to self: getClassLoader() is the preferred way to get resources, as class.getResource will use the package name as the root
-			extractResource(logger, LibraryUtils.class.getClassLoader().getResource("ggml-silero-v5.1.2.bin").toURI(), destination);
+			extractResource(logger, LibraryUtils.class.getClassLoader().getResource("ggml-silero-v6.2.0.bin").toURI(), destination);
 			logger.info("Extracted to {}", destination);
 		} catch(URISyntaxException e)
 		{
@@ -173,7 +172,7 @@ public abstract class LibraryUtils {
 	public static Path findVulkanRuntime()
 	{
 		// Simplifications can be made if we only consider x64 systems
-		List<Path> possiblePaths = new ArrayList<Path>();
+		List<Path> possiblePaths = new ArrayList<>();
 		
 		if(isWindows())
 		{
@@ -380,7 +379,7 @@ public abstract class LibraryUtils {
 			
 			logger.warn("File not handled in load order: {}", file);
 			return Integer.MAX_VALUE; // unknown files go last
-		})).map(file -> file.getAbsolutePath()).filter(file -> Stream.of(LIB_EXTENSIONS).anyMatch(suffix -> file.matches(".*\\" + suffix + "(\\.\\d+)*$"))).collect(Collectors.toUnmodifiableList());
+		})).map(File::getAbsolutePath).filter(file -> Stream.of(LIB_EXTENSIONS).anyMatch(suffix -> file.matches(String.format(".*\\%s(\\.\\d+)*$", suffix)))).toList();
 		
 		// ^ collecting into a list because the consumer doesn't declare IOException
 		for(String path : natives)
@@ -393,7 +392,6 @@ public abstract class LibraryUtils {
 			}
             catch (UnsatisfiedLinkError ue)
             {
-                ue.printStackTrace();
                 logger.error("Failed to load {}", path, ue);
                 throw new IOException(ue);
             }

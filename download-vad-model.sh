@@ -14,7 +14,7 @@ default_download_path=./
 models_path="${2:-$default_download_path}"
 
 # Whisper VAD models
-model="silero-v5.1.2"
+model="silero-v6.2.0"
 
 # download ggml model
 printf "Downloading ggml model %s from '%s' ...\n" "$model" "$src"

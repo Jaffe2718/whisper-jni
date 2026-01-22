@@ -90,7 +90,7 @@ try (WhisperGrammar grammar = whisper.parseGrammar(Paths.of("/my_grammar.gbnf"))
 ## Building / Testing
 
 1. Submodule whisper.cpp by running `git submodule update --init`.
-2. Download the test models using the scripts `download-test-model` and `download-vad-model`. Then move `silero-v5.1.2.bin` to `src/main/resources`!
+2. Download the test models using the scripts `download-test-model` and `download-vad-model`. Then move `silero-v6.2.0.bin` to `src/main/resources`!
 3. Run the appropriate build script for your platform (`build_linux.sh`, `build_mac.sh` or `build_windows.ps1`). It will build the library to `/whisperjni-build`, which the JUnit test file will load from.
 > Although this shouldn't cause any problems, if your machine can use Vulkan, the test script will consider the natives in `/whisperjni-build` to be Vulkan natives for CI/CD reasons.
 > You can alternatively move the natives from `/whisperjni-build` to its respective subfolder in `src/main/resources` and delete the build directory.
