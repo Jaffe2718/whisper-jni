@@ -9,9 +9,8 @@ build_lib() {
     TARGET_DIR=whisperjni-build
     mkdir -p $TMP_DIR $TARGET_DIR
     cmake -B build $CMAKE_ARGS \
-        -DCMAKE_C_COMPILER=musl-gcc \
-        -DCMAKE_CXX_COMPILER=musl-g++ \
-        -DCMAKE_CXX_FLAGS="-std=c++20" \
+        -DCMAKE_C_FLAGS="-sysroot /usr/bionic -static -fPIC" \
+        -DCMAKE_CXX_FLAGS="-sysroot /usr/bionic -static -fPIC -std=c++20" \
         -DCMAKE_SHARED_LINKER_FLAGS="-static-libgcc -static-libstdc++" \
         -DCMAKE_INSTALL_PREFIX=$TMP_DIR \
         -DGGML_CUDA=ON

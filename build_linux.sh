@@ -10,10 +10,8 @@ build_lib() {
     VULKAN_ARG=${VULKAN:-OFF} # set through CI/CD
 
     cmake -B build $CMAKE_ARGS \
-        -DCMAKE_C_COMPILER=musl-gcc \
-        -DCMAKE_CXX_COMPILER=musl-g++ \
-        -DCMAKE_C_FLAGS="$CMAKE_CFLAGS" \
-        -DCMAKE_CXX_FLAGS="-std=c++20" \
+        -DCMAKE_C_FLAGS="-sysroot /usr/bionic -static -fPIC $CMAKE_CFLAGS" \
+        -DCMAKE_CXX_FLAGS="-sysroot /usr/bionic -static -fPIC -std=c++20" \
         -DCMAKE_SHARED_LINKER_FLAGS="-static-libgcc -static-libstdc++" \
         -DCMAKE_INSTALL_PREFIX=$TMP_DIR \
         -DGGML_VULKAN=${VULKAN_ARG}
