@@ -50,10 +50,21 @@ jobs:
                 with:
                     java-version: 24
                     distribution: 'temurin'
-            -   name: Install Bionic libc
+            -   name: Install musl libc toolchain (x64/ARM64 compatible)
                 run: |
                     sudo apt update -y
-                    sudo apt install -y libbionic-dev
+                    sudo apt install -y musl-tools musl-dev
+                    sudo ln -s /usr/bin/musl-gcc /usr/bin/musl-g++
+                    if [ "${{ matrix.arch }}" = "arm64" ]; then
+                        sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu musl-cross-make
+                        sudo ln -sf /usr/bin/aarch64-linux-gnu-gcc /usr/bin/musl-gcc
+                        sudo ln -sf /usr/bin/aarch64-linux-gnu-g++ /usr/bin/musl-g++
+                    fi
+                    echo "=== Check musl compiler path ==="
+                    which musl-gcc musl-g++
+                    echo -e "\n=== Check musl compiler version ==="
+                    musl-gcc --version
+                    musl-g++ --version
             # Install Glslang because Vulkan doesn't bundle it for Ubuntu
             -   name: Install Vulkan Tools
                 if: matrix.vulkan == 'ON'
@@ -297,10 +308,16 @@ jobs:
                     dotnet: true
                     haskell: true
                     docker-images: true
-            -   name: Install Bionic libc
+            -   name: Install musl libc toolchain
                 run: |
                     sudo apt update -y
-                    sudo apt install -y libbionic-dev
+                    sudo apt install -y musl-tools musl-dev
+                    sudo ln -s /usr/bin/musl-gcc /usr/bin/musl-g++
+                    echo "=== Check musl compiler path ==="
+                    which musl-gcc musl-g++
+                    echo -e "\n=== Check musl compiler version ==="
+                    musl-gcc --version
+                    musl-g++ --version
             -   uses: actions/setup-java@v4
                 with:
                     java-version: 24

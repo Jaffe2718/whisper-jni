@@ -27,6 +27,18 @@ if (JNI_FOUND)
 endif()
 
 # Base C and CXX flags, start from current variables
+
+# Force musl toolchain for Linux
+if(UNIX AND NOT APPLE)
+    set(CMAKE_C_COMPILER "musl-gcc")
+    set(CMAKE_CXX_COMPILER "musl-g++")
+
+    set(CMAKE_C_FLAGS "-static -fPIC ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-static -fPIC ${CMAKE_CXX_FLAGS}")
+
+    set(CMAKE_SHARED_LINKER_FLAGS "-static-libgcc -static-libstdc++ ${CMAKE_SHARED_LINKER_FLAGS}")
+endif()
+
 set(EXTERNAL_C_FLAGS ${CMAKE_C_FLAGS})
 set(EXTERNAL_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 
