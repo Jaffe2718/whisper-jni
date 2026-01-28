@@ -54,7 +54,9 @@ jobs:
                 run: |
                     sudo apt update
                     sudo apt install -y musl-tools musl-dev
-                    if [ "${{ matrix.arch }}" = "arm64" ]; then
+                    if [ "${{ matrix.arch }}" = "x64" ]; then
+                       sudo ln -s /usr/bin/musl-gcc /usr/bin/musl-g++
+                    elif [ "${{ matrix.arch }}" = "arm64" ]; then
                        sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu musl-cross-make
                        sudo ln -s /usr/bin/aarch64-linux-gnu-gcc /usr/bin/musl-gcc
                        sudo ln -s /usr/bin/aarch64-linux-gnu-g++ /usr/bin/musl-g++
@@ -309,6 +311,7 @@ jobs:
                 run: |
                     sudo apt update
                     sudo apt install -y musl-tools musl-dev
+                    sudo ln -s /usr/bin/musl-gcc /usr/bin/musl-g++
                     which musl-gcc musl-g++
                     musl-gcc --version
                     musl-g++ --version
