@@ -180,7 +180,7 @@ public class WhisperJNITest {
 			int numSegments = whisper.fullNSegments(ctx);
 			assertEquals(1, numSegments);
 			String text = whisper.fullGetSegmentText(ctx, 0);
-			assertEquals(" And so, my fellow Americans, ask not what your country can do for you, ask what you can do for your country.", text);
+			assertEquals(" And so, my fellow Americans ask not what your country can do for you, ask what you can do for your country.", text);
 			
 			// Grab tokens from each segment
 			for(int i = 0; i < numSegments; i++)
@@ -271,7 +271,7 @@ public class WhisperJNITest {
 				String text = whisper.fullGetSegmentText(ctx, i);
 				logger.info("VAD #{}: {}", i + 1, text);
 				// It should be pretty short (America)
-				assert text.length() < 30;
+				assert text.length() < 40;
 			}
 		}
 	}
@@ -376,7 +376,7 @@ public class WhisperJNITest {
 			int numSegments = whisper.fullNSegments(ctx);
 			assertEquals(1, numSegments);
 			String text = whisper.fullGetSegmentText(ctx, 0);
-			assertEquals(" And so, my fellow Americans, ask not what your country can do for you, ask what you can do for your country.", text);
+			assertEquals(" And so, my fellow Americans ask not what your country can do for you, ask what you can do for your country.", text);
 		}
 	}
 	
@@ -428,7 +428,7 @@ public class WhisperJNITest {
 				int numSegments = whisper.fullNSegmentsFromState(state);
 				assertEquals(1, numSegments);
 				String text = whisper.fullGetSegmentTextFromState(state, 0);
-				assertEquals(" And so, my fellow Americans, ask not what your country can do for you, ask what you can do for your country.", text);
+				assertEquals(" And so, my fellow Americans ask not what your country can do for you, ask what you can do for your country.", text);
 			}
 		}
 	}

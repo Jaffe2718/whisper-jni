@@ -35,7 +35,7 @@ public abstract class LibraryUtils {
 	 * still works
 	 * </p>
 	 */
-	private static final List<String> loadOrder = Arrays.asList("cudart64_12", "cublasLt64_12", "cublas64_12", "libopenblas", "ggml-base", "ggml-cpu", "ggml-cuda", "ggml-blas", "ggml-metal", "ggml-vulkan", "ggml", "whisper", "whisper-jni");
+	private static final List<String> loadOrder = Arrays.asList("cudart64_12", "cublasLt64_12", "cublas64_12", "openblas", "ggml-base", "ggml-cpu", "ggml-cuda", "ggml-blas", "ggml-metal", "ggml-vulkan", "ggml", "whisper", "whisper-jni");
 	private static final String[] LIB_EXTENSIONS = {".so", ".dylib", ".dll"};
 	
 	/**
@@ -357,7 +357,7 @@ public abstract class LibraryUtils {
 	public static void loadLibrary(Logger logger, Path nativesDir) throws IOException
 	{
 		logger.info("Loading library from {}", nativesDir);
-		File[] files = nativesDir.toFile().listFiles();
+		File[] files = nativesDir.toFile().listFiles(f -> f.isFile() && Arrays.stream(LIB_EXTENSIONS).anyMatch(f.getName()::endsWith));
 		
 		if(files == null)
 			throw new IOException("Provided path does not does not denote a directory");

@@ -50,6 +50,17 @@ jobs:
                 with:
                     java-version: 24
                     distribution: 'temurin'
+            -   name: Install musl tools (cross-arch compatible)
+                run: |
+                    sudo apt update
+                    sudo apt install -y musl-tools musl-dev
+                    if [ "${{ matrix.arch }}" = "x64" ]; then
+                       sudo apt install -y gcc-musl g++-musl
+                    elif [ "${{ matrix.arch }}" = "arm64" ]; then
+                       sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu musl-cross-make
+                       sudo ln -s /usr/bin/aarch64-linux-gnu-gcc /usr/bin/musl-gcc
+                       sudo ln -s /usr/bin/aarch64-linux-gnu-g++ /usr/bin/musl-g++
+                    fi
             # Install Glslang because Vulkan doesn't bundle it for Ubuntu
             -   name: Install Vulkan Tools
                 if: matrix.vulkan == 'ON'
@@ -286,10 +297,6 @@ jobs:
         runs-on: ubuntu-22.04
         steps:
             -   uses: actions/checkout@v4
-            -   uses: actions/setup-java@v4
-                with:
-                    java-version: 24
-                    distribution: 'temurin'
             -   uses: jlumbroso/free-disk-space@main
                 with:
                     tool-cache: false
@@ -297,6 +304,14 @@ jobs:
                     dotnet: true
                     haskell: true
                     docker-images: true
+            -   name: Install musl
+                run: |
+                    sudo apt update
+                    sudo apt install -y musl-tools musl-dev gcc-musl g++-musl
+            -   uses: actions/setup-java@v4
+                with:
+                    java-version: 24
+                    distribution: 'temurin'
             -   name: Setup project dir
                 run: |
                     git submodule update --init
