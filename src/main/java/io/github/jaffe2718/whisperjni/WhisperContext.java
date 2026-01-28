@@ -1,9 +1,9 @@
-package io.github.freshsupasulley.whisperjni;
+package io.github.jaffe2718.whisperjni;
 
 /**
  * The {@link WhisperContext} class represents a native whisper.cpp context.
  *
- * You need to dispose the native memory for its instances by calling {@link #close} or {@link WhisperJNI#free(io.github.freshsupasulley.whisperjni.WhisperJNI.WhisperJNIPointer)}
+ * You need to dispose the native memory for its instances by calling {@link #close} or {@link WhisperJNI#free(WhisperJNI.WhisperJNIPointer)}
  *
  * @author Miguel Alvarez Díez - Initial contribution
  */

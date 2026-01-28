@@ -11,7 +11,7 @@ Default CPU binaries for those platforms are included in the distributed jar. Yo
 
 ## Installation
 
-The package is distributed through [Maven Central](https://central.sonatype.com/artifact/io.github.freshsupasulley/whisper-jni):
+The package is distributed through [Maven Central](https://central.sonatype.com/artifact/io.github.jaffe2718/whisper-jni):
 
 ### Gradle
 
@@ -21,7 +21,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'io.github.freshsupasulley:whisper-jni:+' // gets the latest version
+    implementation 'io.github.jaffe2718:whisper-jni:+' // gets the latest version
 }
 ```
 
@@ -29,7 +29,7 @@ dependencies {
 
 ```xml
 <dependency>
-    <groupId>io.github.freshsupasulley</groupId>
+    <groupId>io.github.jaffe2718</groupId>
     <artifactId>whisper-jni</artifactId>
     <version>$version</version> <!-- replace with a specific version -->
 </dependency>
@@ -56,7 +56,7 @@ ctx.close(); // free native memory, should be called when we don't need the cont
 
 ### Using the Vulkan Natives
 
-You can find the Vulkan natives in [releases](https://github.com/FreshSupaSulley/whisper-jni/releases). You'll need to download and load them using `LibraryUtils`:
+You can find the Vulkan natives in [releases](https://github.com/jaffe2718/whisper-jni/releases). You'll need to download and load them using `LibraryUtils`:
 
 ```java
 Path vulkanNatives = Path.of("path", "to", "whisperjni-vulkan-natives");
@@ -101,6 +101,6 @@ try (WhisperGrammar grammar = whisper.parseGrammar(Paths.of("/my_grammar.gbnf"))
 If you want to add any missing whisper.cpp functionality, you need to:
 
 - Add the native method description in `WhisperJNI.java`.
-- Run the `generateHeaders` gradle task to regenerate the `src/main/native/io_github_freshsupasulley_whisperjni_WhisperJNI.h` header file.
-- Add the native method implementation in `src/main/native/io_github_freshsupasulley_whisperjni_WhisperJNI.cpp`.
+- Run the `generateHeaders` gradle task to regenerate the `src/main/native/io_github_jaffe2718_whisperjni_WhisperJNI.h` header file.
+- Add the native method implementation in `src/main/native/io_github_jaffe2718_whisperjni_WhisperJNI.cpp`.
 - Add a new test for it in `WhisperJNITest.java`.

@@ -55,7 +55,7 @@ endif()
 # ---- Declare libraries ----
 
 add_library(whisper-jni SHARED
-  src/main/native/io_github_freshsupasulley_whisperjni_WhisperJNI.cpp
+  src/main/native/io_github_jaffe2718_whisperjni_WhisperJNI.cpp
   # Needed
   src/main/native/whisper/examples/grammar-parser.cpp
 )

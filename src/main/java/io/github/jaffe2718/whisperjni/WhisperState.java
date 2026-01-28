@@ -1,4 +1,4 @@
-package io.github.freshsupasulley.whisperjni;
+package io.github.jaffe2718.whisperjni;
 
 /**
  * The {@link WhisperState} represents a whisper_state, useful for thread safe context sharing.

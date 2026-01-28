@@ -1,4 +1,4 @@
-package io.github.freshsupasulley.whisperjni;
+package io.github.jaffe2718.whisperjni;
 
 /**
  * The {@link WhisperFullParams} instances needed to configure full whisper execution
