@@ -63,7 +63,7 @@ jobs:
                   fi
                   
                   # 3. Install musl cross compiler
-                  WGET_URL="https://github.com/musl-cc/musl-cc.github.io/releases/download/latest/${MUSL_ARCH}-linux-musl-native.tgz"
+                  WGET_URL="https://github.com/musl-cc/musl.cc/releases/download/v0.0.1/${MUSL_ARCH}-linux-musl-native.tgz"
                   wget $WGET_URL -O /tmp/musl-cross.tgz
                   sudo tar -zxf /tmp/musl-cross.tgz -C /opt/musl --strip-components=1
                   
@@ -329,7 +329,7 @@ jobs:
                     sudo rm -rf /opt/musl && sudo mkdir -p /opt/musl
                     
                     # 2. Install musl cross compiler
-                    WGET_URL="https://github.com/musl-cc/musl-cc.github.io/releases/download/latest/x86_64-linux-musl-native.tgz"
+                    WGET_URL="https://github.com/musl-cc/musl.cc/releases/download/v0.0.1/x86_64-linux-musl-native.tgz"
                     wget $WGET_URL -O /tmp/musl-cross.tgz
                     sudo tar -zxf /tmp/musl-cross.tgz -C /opt/musl --strip-components=1
                     
