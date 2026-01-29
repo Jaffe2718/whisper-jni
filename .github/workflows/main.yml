@@ -61,9 +61,11 @@ jobs:
                     wget https://musl.cc/${MUSL_ARCH}-linux-musl-cross.tgz -O /tmp/musl-cross.tgz
                     sudo tar -zxf /tmp/musl-cross.tgz -C /opt/musl --strip-components=1
                     rm -f /tmp/musl-cross.tgz
+                    
                     echo "CC=/opt/musl/bin/${MUSL_ARCH}-linux-musl-gcc" >> $GITHUB_ENV
                     echo "CXX=/opt/musl/bin/${MUSL_ARCH}-linux-musl-g++" >> $GITHUB_ENV
                     echo "PATH=/opt/musl/bin:$PATH" >> $GITHUB_ENV
+                    echo "MUSL_ARCH=${MUSL_ARCH}" >> $GITHUB_ENV
                     /opt/musl/bin/${MUSL_ARCH}-linux-musl-gcc --version
                     /opt/musl/bin/${MUSL_ARCH}-linux-musl-g++ --version
             # Install Glslang because Vulkan doesn't bundle it for Ubuntu
@@ -311,14 +313,15 @@ jobs:
                     docker-images: true
             -   name: Install musl libc toolchain
                 run: |
-                    sudo apt update -y
-                    sudo apt install -y musl-tools musl-dev
-                    sudo ln -s /usr/bin/musl-gcc /usr/bin/musl-g++
-                    echo "=== Check musl compiler path ==="
-                    which musl-gcc musl-g++
-                    echo -e "\n=== Check musl compiler version ==="
-                    musl-gcc --version
-                    musl-g++ --version
+                    sudo rm -rf /opt/musl && sudo mkdir -p /opt/musl
+                    wget https://musl.cc/x86_64-linux-musl-cross.tgz -O /tmp/musl-cross.tgz
+                    sudo tar -zxf /tmp/musl-cross.tgz -C /opt/musl --strip-components=1
+                    rm -f /tmp/musl-cross.tgz
+                    echo "CC=/opt/musl/bin/x86_64-linux-musl-gcc" >> $GITHUB_ENV
+                    echo "CXX=/opt/musl/bin/x86_64-linux-musl-g++" >> $GITHUB_ENV
+                    echo "PATH=/opt/musl/bin:$PATH" >> $GITHUB_ENV
+                    /opt/musl/bin/x86_64-linux-musl-gcc --version
+                    /opt/musl/bin/x86_64-linux-musl-g++ --version
             -   uses: actions/setup-java@v4
                 with:
                     java-version: 24

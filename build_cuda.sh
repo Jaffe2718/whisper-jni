@@ -8,7 +8,20 @@ build_lib() {
     TMP_DIR=tmp-build
     TARGET_DIR=whisperjni-build
     mkdir -p $TMP_DIR $TARGET_DIR
+
+    # Set up MUSL environment variables
+    MUSL_CFLAGS="-static-libgcc -static-libstdc++ -fPIC"
+    MUSL_LDFLAGS="-L/opt/musl/x86_64-linux-musl/lib -lc -lm -static-libgcc -static-libstdc++"
+
     cmake -B build $CMAKE_ARGS \
+        -DCMAKE_C_COMPILER=${CC:-musl-gcc} \
+        -DCMAKE_CXX_COMPILER=${CXX:-musl-g++} \
+        -DCMAKE_C_FLAGS=\"${MUSL_CFLAGS}\" \
+        -DCMAKE_CXX_FLAGS=\"${MUSL_CFLAGS}\" \
+        -DCMAKE_SHARED_LINKER_FLAGS=\"${MUSL_LDFLAGS}\" \
+        -DCMAKE_FIND_ROOT_PATH=/opt/musl/x86_64-linux-musl \
+        -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
+        -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
         -DCMAKE_INSTALL_PREFIX=$TMP_DIR \
         -DGGML_CUDA=ON
     cmake --build build --config Release
