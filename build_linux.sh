@@ -33,7 +33,6 @@ build_lib() {
     SO_FILES=($(find "$TMP_DIR" -name "*.so*" -type f))
     for so_file in "${SO_FILES[@]}"; do
         cp -f "$so_file" "$TARGET_DIR"/
-        echo "Copied $so_file to $TARGET_DIR"
     done
 
     # Rename the optimized variant to libggml.so (overwriting default if needed)
@@ -64,5 +63,4 @@ case $AARCH in
 esac
 
 # analyze the resulting library
-ldd "$TARGET_DIR"/libwhisper-jni.so
 readelf -d "$TARGET_DIR"/libwhisper-jni.so | grep NEEDED
