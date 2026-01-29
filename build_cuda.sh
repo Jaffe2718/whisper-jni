@@ -4,9 +4,11 @@ set -xe
 # User env required:
 # - CUDA Toolkit installed
 
+TMP_DIR=tmp-build
+TARGET_DIR=whisperjni-build
+
 build_lib() {
-    TMP_DIR=tmp-build
-    TARGET_DIR=whisperjni-build
+
     mkdir -p $TMP_DIR $TARGET_DIR
 
     # Set up MUSL environment variables
@@ -43,3 +45,7 @@ build_lib() {
 
 LIB_VARIANT="+mf16c+mfma+mavx+mavx2" CMAKE_ARGS="-DGGML_AVX=ON -DGGML_AVX2=ON -DGGML_FMA=ON -DGGML_F16C=ON" build_lib
 CMAKE_ARGS="-DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_F16C=OFF" build_lib
+
+# analyze the resulting library
+ldd "$TARGET_DIR"/libwhisper-jni.so
+readelf -d "$TARGET_DIR"/libwhisper-jni.so | grep NEEDED

@@ -1,8 +1,11 @@
 #!/bin/bash
 set -xe
+
+TMP_DIR=tmp-build
+TARGET_DIR=whisperjni-build
+
+
 build_lib() {
-    TMP_DIR=tmp-build
-    TARGET_DIR=whisperjni-build
 
     mkdir -p $TMP_DIR $TARGET_DIR
 
@@ -59,3 +62,7 @@ case $AARCH in
         ADD_WRAPPER=true CMAKE_CFLAGS="-mfpu=neon -mfp16-format=ieee -mno-unaligned-access" build_lib
         ;;
 esac
+
+# analyze the resulting library
+ldd "$TARGET_DIR"/libwhisper-jni.so
+readelf -d "$TARGET_DIR"/libwhisper-jni.so | grep NEEDED
