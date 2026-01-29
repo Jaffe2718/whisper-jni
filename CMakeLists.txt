@@ -4,7 +4,7 @@ project(whisper-jni C CXX)
 
 # ---- Set options ----
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(GGML_AVX                 "ggml: enable AVX"                ON )
@@ -26,21 +26,7 @@ if (JNI_FOUND)
     message (STATUS "JNI_INCLUDE_DIRS=${JNI_INCLUDE_DIRS}")
 endif()
 
-# Install to the same directory, without creating a lib/ or bin/ folder
-
-if(UNIX)
-    # macOS (UNIX AND APPLE) + Linux (UNIX AND NOT APPLE)
-    set(CMAKE_INSTALL_RPATH "." CACHE PATH "Runtime path" FORCE)
-    set(CMAKE_INSTALL_LIBDIR "." CACHE PATH "Library install directory" FORCE)
-elseif(WIN32)
-    # Windows
-    set(CMAKE_INSTALL_RUNTIMEDIR "." CACHE PATH "Windows DLL install directory" FORCE)
-endif()
-
-mark_as_advanced(CLEAR CMAKE_INSTALL_LIBDIR CMAKE_INSTALL_RUNTIMEDIR CMAKE_INSTALL_ARCHIVEDIR)
-
 # Base C and CXX flags, start from current variables
-
 # Force musl toolchain for Linux
 if(UNIX AND NOT APPLE)
     set(CMAKE_C_COMPILER "/usr/bin/musl-gcc" CACHE PATH "musl C compiler" FORCE)

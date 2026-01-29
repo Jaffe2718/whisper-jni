@@ -14,4 +14,10 @@ cmake --build build --config Release
 cmake --install build
 
 # Move all DLLs from build dir to prod dir
-Move-Item -Path "$TMP_DIR\*.dll" -Destination $TARGET_DIR -Force
+Write-Host "[INFO] Recursively copying all DLLs from $TMP_DIR to $TARGET_DIR" -ForegroundColor Cyan
+Get-ChildItem -Path $TMP_DIR -Filter "*.dll" -Recurse -File | ForEach-Object {
+	Copy-Item -Path $_.FullName -Destination $TARGET_DIR -Force
+	Write-Host "Copied: $($_.FullName) to $TARGET_DIR"
+}
+
+Write-Host "`n[SUCCESS] All DLLs copied to $TARGET_DIR successfully!`n" -ForegroundColor Green

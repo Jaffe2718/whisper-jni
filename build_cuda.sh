@@ -15,7 +15,7 @@ build_lib() {
     cmake --install build
     mkdir -p "$TARGET_DIR"
     # copy all .so, .so.1, .so.2 that were installed
-    cp "$TMP_DIR"/*.so*    "$TARGET_DIR"/
+    find "$TMP_DIR" -name "*.so*" -type f -exec cp -f {} "$TARGET_DIR"/ \;
     # Rename the optimized variant to libggml.so (overwriting default if needed)
     if [[ -n "$LIB_VARIANT" && -f "$TARGET_DIR/libggml.so" ]]; then
             echo "Overwriting libggml.so with optimized variant: $LIB_VARIANT"

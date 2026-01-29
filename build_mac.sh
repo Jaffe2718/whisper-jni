@@ -37,9 +37,6 @@ rm -rf build
 # Clear target dir of old libs
 rm -f $TARGET_DIR/*.dylib
 
-cp $TMP_DIR/*.dylib $TARGET_DIR
-#cp $TMP_DIR/libwhisper.1.dylib $TARGET_DIR
-#cp $TMP_DIR/libwhisper-jni.dylib $TARGET_DIR
-
-# I want to keep it to make rebuilding faster
-#rm -rf $TMP_DIR
+# Copy all libs to target dir
+cp -f "$TMP_DIR"/*.dylib "$TARGET_DIR"/
+cp -Rf "$TMP_DIR"/**/*.dylib "$TARGET_DIR"/
