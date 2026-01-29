@@ -27,11 +27,10 @@ build_lib() {
     cmake --build build --config Release
     cmake --install build
     mkdir -p "$TARGET_DIR"
-    # recurse copy all .so, .so.1, .so.2 that were installed in $TMP_DIR
-    SO_FILES=($(find "$TMP_DIR" -name "*.so*" -type f))
-    for so_file in "${SO_FILES[@]}"; do
-        cp -f "$so_file" "$TARGET_DIR"/
-    done
+    # copy all .so, .so.1, .so.2 that were installed in $TMP_DIR
+    cp -f "$TMP_DIR"/*.so* "$TARGET_DIR"/
+    cp -f "$TMP_DIR"/lib/* "$TARGET_DIR"/
+    ls "$TARGET_DIR"
 
     # Rename the optimized variant to libggml.so (overwriting default if needed)
     if [[ -n "$LIB_VARIANT" && -f "$TARGET_DIR/libggml.so" ]]; then
