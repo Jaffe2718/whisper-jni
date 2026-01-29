@@ -31,7 +31,7 @@ build_lib() {
 
     # copy all .so, .so.1, .so.2 that were installed in $TMP_DIR
     cp -f "$TMP_DIR"/*.so* "$TARGET_DIR"/
-    cp -f "$TMP_DIR"/lib/* "$TARGET_DIR"/
+    cp -f "$TMP_DIR"/lib/*.so* "$TARGET_DIR"/
     ls "$TARGET_DIR"
 
     # Rename the optimized variant to libggml.so (overwriting default if needed)
