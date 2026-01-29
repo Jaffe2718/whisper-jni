@@ -14,6 +14,7 @@ build_lib() {
     MUSL_LDFLAGS="-L/opt/musl/x86_64-linux-musl/lib -lc -lm -static-libgcc -static-libstdc++"
 
     cmake -B build $CMAKE_ARGS \
+        -D_GLIBCXX_USE_CXX11_ABI=0 \
         -DCMAKE_C_COMPILER=${CC:-musl-gcc} \
         -DCMAKE_CXX_COMPILER=${CXX:-musl-g++} \
         -DCMAKE_C_FLAGS="${MUSL_CFLAGS}" \
@@ -24,8 +25,8 @@ build_lib() {
     cmake --build build --config Release
     cmake --install build
     mkdir -p "$TARGET_DIR"
-    # copy all .so, .so.1, .so.2 that were installed
-    find "$TMP_DIR" -name "*.so*" -type f -exec cp -f {} "$TARGET_DIR"/ \;
+    # recurse copy all .so, .so.1, .so.2 that were installed in $TMP_DIR
+    find "$TMP_DIR" -name "*.so*" -type f -exec cp -rf {} "$TARGET_DIR"/ \;
     # Rename the optimized variant to libggml.so (overwriting default if needed)
     if [[ -n "$LIB_VARIANT" && -f "$TARGET_DIR/libggml.so" ]]; then
             echo "Overwriting libggml.so with optimized variant: $LIB_VARIANT"
