@@ -64,11 +64,11 @@ jobs:
                   
                   # 3. Install musl cross compiler
                   WGET_URL="https://github.com/musl-cc/musl.cc/releases/download/v0.0.1/${MUSL_ARCH}-linux-musl-native.tgz"
-                  wget $WGET_URL -O /tmp/musl-cross.tgz
-                  sudo tar -zxf /tmp/musl-cross.tgz -C /opt/musl --strip-components=1
+                  wget $WGET_URL -O /tmp/musl-native.tgz
+                  sudo tar -zxf /tmp/musl-native.tgz -C /opt/musl --strip-components=1
                   
                   # 4. Clean up temporary downloaded archive file
-                  rm -f /tmp/musl-cross.tgz
+                  rm -f /tmp/musl-native.tgz
                   
                   # 5. Configure environment variables for musl cross compiler
                   echo "CC=/opt/musl/bin/${MUSL_ARCH}-linux-musl-gcc" >> $GITHUB_ENV
@@ -323,18 +323,18 @@ jobs:
                     dotnet: true
                     haskell: true
                     docker-images: true
-            -   name: Install musl-cross-make (x64)
+            -   name: Install musl-native-make (x64)
                 run: |
                     # 1. Clean up existing musl directory and create fresh installation directory
                     sudo rm -rf /opt/musl && sudo mkdir -p /opt/musl
                     
                     # 2. Install musl cross compiler
                     WGET_URL="https://github.com/musl-cc/musl.cc/releases/download/v0.0.1/x86_64-linux-musl-native.tgz"
-                    wget $WGET_URL -O /tmp/musl-cross.tgz
-                    sudo tar -zxf /tmp/musl-cross.tgz -C /opt/musl --strip-components=1
+                    wget $WGET_URL -O /tmp/musl-native.tgz
+                    sudo tar -zxf /tmp/musl-native.tgz -C /opt/musl --strip-components=1
                     
                     # 4. Clean up temporary downloaded archive file
-                    rm -f /tmp/musl-cross.tgz
+                    rm -f /tmp/musl-native.tgz
                     
                     # 5. Configure environment variables for musl cross compiler
                     echo "CC=/opt/musl/bin/x86_64-linux-musl-gcc" >> $GITHUB_ENV
