@@ -42,18 +42,12 @@ build_lib() {
         patchelf --set-soname libc-musl.so "${TARGET_DIR}/libc-musl.so"
 
         for SO_FILE in "${TARGET_DIR}"/*.so*; do
-            if [[ -f "$SO_FILE" && -x "$SO_FILE" ]]; then
-                NEEDED_LIBS=$( readelf -d "$SO_FILE" | grep "NEEDED" | grep -i "libc\.so" || true )
-                if [[ -n "$NEEDED_LIBS" ]]; then
-                    echo "Found libc dependency in $SO_FILE: $NEEDED_LIBS"
-                    patchelf --replace-needed libc.so libc-musl.so "$SO_FILE"
-                    patchelf --replace-needed libc.so.6 libc-musl.so "$SO_FILE"
-                    patchelf --set-rpath "\$ORIGIN" "$SO_FILE"
-                    patchelf --force-rpath "$SO_FILE"
-                    echo "Patched $SO_FILE: replaced libc.so* with libc-musl.so and set rpath"
-                else
-                    echo "No libc dependency found in $SO_FILE, skip patching"
-                fi
+            if [[ "$(basename "$SO_FILE")" != "libc-musl.so" && -f "$SO_FILE" && -x "$SO_FILE" ]]; then
+                echo "🔧 Forcing libc.so → libc-musl.so replacement for: $SO_FILE"
+                patchelf --replace-needed libc.so libc-musl.so "$SO_FILE"
+                patchelf --set-rpath '$ORIGIN' "$SO_FILE"
+                patchelf --force-rpath "$SO_FILE"
+                echo "✅ Successfully patched $SO_FILE"
             fi
         done
     fi
