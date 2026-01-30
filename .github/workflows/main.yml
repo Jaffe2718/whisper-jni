@@ -325,8 +325,6 @@ jobs:
 
     linux-cuda:
         runs-on: ubuntu-22.04
-        container:
-            image: docker.io/nvidia/cuda:12.4.0-devel-ubuntu22.04
         steps:
             -   uses: actions/checkout@v4
             -   uses: jlumbroso/free-disk-space@main
@@ -349,14 +347,14 @@ jobs:
                     mv ./ggml-silero-v6.2.0.bin ./src/main/resources
                     curl -o ./ggml-tiny.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
 
-#            -   name: Install CUDA
-#                run: |
-#                    wget https://developer.download.nvidia.com/compute/cuda/12.4.0/local_installers/cuda_12.4.0_550.54.14_linux.run
-#                    sudo sh cuda_12.4.0_550.54.14_linux.run --silent --toolkit --override
-#                    echo "CUDA_PATH=/usr/local/cuda-12.4" >> $GITHUB_ENV
-#                    echo "LD_LIBRARY_PATH=/usr/local/cuda-12.4/lib64" >> $GITHUB_ENV
-#                    echo "PATH=$PATH:/usr/local/cuda-12.4/bin" >> $GITHUB_ENV
-#                    echo "CUDACXX=/usr/local/cuda-12.4/bin/nvcc" >> $GITHUB_ENV
+            -   name: Install CUDA
+                run: |
+                    wget https://developer.download.nvidia.com/compute/cuda/12.4.0/local_installers/cuda_12.4.0_550.54.14_linux.run
+                    sudo sh cuda_12.4.0_550.54.14_linux.run --silent --toolkit --override
+                    echo "CUDA_PATH=/usr/local/cuda-12.4" >> $GITHUB_ENV
+                    echo "LD_LIBRARY_PATH=/usr/local/cuda-12.4/lib64" >> $GITHUB_ENV
+                    echo "PATH=$PATH:/usr/local/cuda-12.4/bin" >> $GITHUB_ENV
+                    echo "CUDACXX=/usr/local/cuda-12.4/bin/nvcc" >> $GITHUB_ENV
 
             -   name: Build Linux CUDA
                 shell: bash
