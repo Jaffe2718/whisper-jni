@@ -20,8 +20,8 @@ build_lib() {
 
     cmake -B build $CMAKE_ARGS \
         -D_GLIBCXX_USE_CXX11_ABI=0 \
-        -DCMAKE_C_COMPILER=${CC} \
-        -DCMAKE_CXX_COMPILER=${CXX} \
+        -DCMAKE_C_COMPILER=${CC:-gcc} \
+        -DCMAKE_CXX_COMPILER=${CXX:-g++} \
         -DCMAKE_C_FLAGS="${CMAKE_CFLAGS} ${MUSL_CFLAGS}" \
         -DCMAKE_CXX_FLAGS="${MUSL_CFLAGS}" \
         -DCMAKE_SHARED_LINKER_FLAGS="${MUSL_LDFLAGS}" \
