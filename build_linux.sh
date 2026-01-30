@@ -44,7 +44,7 @@ build_lib() {
         patchelf --set-soname libgomp-musl.so "${TARGET_DIR}/libgomp-musl.so"
 
         for SO_FILE in "${TARGET_DIR}"/*.so*; do
-            if [[ "$(basename "$SO_FILE")" != "libc-musl.so" && "$(basename "$SO_FILE")" != "libgomp-musl.so" ]]; then
+            if [[ "$(basename "$SO_FILE")" != "libc-musl.so" ]]; then
                 echo "🔧 Patching libc.so dependency for: $SO_FILE"
                 patchelf --replace-needed libc.so    libc-musl.so    "$SO_FILE"
                 patchelf --replace-needed libgomp.so libgomp-musl.so "$SO_FILE"
