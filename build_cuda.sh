@@ -4,10 +4,6 @@ set -xe
 # User env required:
 # - CUDA Toolkit installed
 
-export CFLAGS="${CFLAGS} -D__THROW= -D__attribute_malloc__= -D__wur= -D__nonnull\(\)= "
-export CXXFLAGS="${CXXFLAGS} -D__THROW= -D__attribute_malloc__= -D__wur= -D__nonnull\(\)= "
-export CUDAFLAGS="${CUDAFLAGS} -D__THROW= -D__attribute_malloc__= -D__wur= -D__nonnull\(\)= "
-
 TMP_DIR=tmp-build
 TARGET_DIR=whisperjni-build
 
@@ -15,21 +11,9 @@ build_lib() {
 
     mkdir -p $TMP_DIR $TARGET_DIR
 
-    # Set up MUSL environment variables
-    if [[ -n "$CC" && "$CC" =~ musl ]] || [[ -n "$CXX" && "$CXX" =~ musl ]]; then
-        MUSL_CFLAGS="-I${MUSL_ROOT}/include -static-libgcc -static-libstdc++ -fPIC"
-        MUSL_CXXFLAGS="-I${MUSL_ROOT}/include/c++/11.2.1 ${MUSL_CFLAGS}"
-        MUSL_LDFLAGS="-L${MUSL_ROOT}/lib -lc -lm -static-libgcc -static-libstdc++ -Wl,--no-as-needed"
-    fi
 
     cmake -B build $CMAKE_ARGS \
-        -D_GLIBCXX_USE_CXX11_ABI=0 \
-        -DCMAKE_C_COMPILER=${CC:-gcc} \
-        -DCMAKE_CXX_COMPILER=${CXX:-g++} \
-        -DCMAKE_C_FLAGS="${MUSL_CFLAGS}" \
-        -DCMAKE_CXX_FLAGS="${MUSL_CXXFLAGS}" \
-        -DCMAKE_CUDA_FLAGS="-Xcompiler ${MUSL_CXXFLAGS} -Xcompiler -fPIC -DCUDA_DISABLE_MATH_FUNCTIONS=ON" \
-        -DCMAKE_SHARED_LINKER_FLAGS="${MUSL_LDFLAGS}" \
+        -DCMAKE_CXX_FLAGS="-std=c++20" \
         -DCMAKE_INSTALL_PREFIX=$TMP_DIR \
         -DGGML_CUDA=ON
     cmake --build build --config Release
@@ -40,23 +24,6 @@ build_lib() {
     cp -f "$TMP_DIR"/*.so* "$TARGET_DIR"/
     cp -f "$TMP_DIR"/lib/*.so* "$TARGET_DIR"/
     ls "$TARGET_DIR"
-
-    # copy libc.so from musl into $TMP_DIR && rename it as `libc-musl.so` && patchelf
-    if [[ -n "$MUSL_LDFLAGS" ]]; then
-        MUSL_LIBC_PATH="${MUSL_ROOT}/lib/libc.so"
-        cp -f "${MUSL_LIBC_PATH}" "${TARGET_DIR}/libc-musl.so"
-        patchelf --set-soname libc-musl.so "${TARGET_DIR}/libc-musl.so"
-
-        for SO_FILE in "${TARGET_DIR}"/*.so*; do
-            if [[ "$(basename "$SO_FILE")" != "libc-musl.so" ]]; then
-                echo "🔧 Patching libc.so dependency for: $SO_FILE"
-                patchelf --replace-needed libc.so libc-musl.so "$SO_FILE"
-                patchelf --set-rpath '$ORIGIN' "$SO_FILE"
-                patchelf --force-rpath "$SO_FILE"
-                echo "✅ Patched successfully: $SO_FILE"
-            fi
-        done
-    fi
 
     # Rename the optimized variant to libggml.so (overwriting default if needed)
     if [[ -n "$LIB_VARIANT" && -f "$TARGET_DIR/libggml.so" ]]; then

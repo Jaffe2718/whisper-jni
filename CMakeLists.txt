@@ -26,6 +26,11 @@ if (JNI_FOUND)
     message(STATUS "JNI_INCLUDE_DIRS=${JNI_INCLUDE_DIRS}")
 endif ()
 
+if (GGML_VULKAN)
+    # Find the Vulkan package
+    find_package(Vulkan REQUIRED)
+endif ()
+
 # Base C and CXX flags, start from current variables
 
 set(EXTERNAL_C_FLAGS ${CMAKE_C_FLAGS})
@@ -75,9 +80,6 @@ endif ()
 if (GGML_VULKAN)
     message(STATUS "GGML_VULKAN is enabled")
     message(STATUS "Vulkan SDK path: $ENV{VULKAN_SDK}")
-
-    # Find the Vulkan package
-    find_package(Vulkan REQUIRED)
 
     # Check that Vulkan was found
     if (Vulkan_FOUND)

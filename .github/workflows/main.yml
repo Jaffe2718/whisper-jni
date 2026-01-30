@@ -50,7 +50,8 @@ jobs:
                 with:
                     java-version: 24
                     distribution: 'temurin'
-            -   name: Install musl libc toolchain (x64/ARM64 compatible, musl-cc GitHub mirror)
+            -   name: Install musl libc toolchain (x64/ARM64)
+                if: matrix.vulkan == 'OFF'
                 run: |
                     # 1. Clean up existing musl directory and create fresh installation directory
                     sudo rm -rf /opt/musl && sudo mkdir -p /opt/musl
@@ -83,6 +84,7 @@ jobs:
                     ls -l /opt/musl/lib/libc.so
 
             -   name: Install patchelf
+                if: matrix.vulkan == 'OFF'
                 run: |
                     sudo apt update -y && sudo apt install -y patchelf
                     patchelf --version
@@ -95,6 +97,7 @@ jobs:
                     sudo apt install -y vulkan-tools glslang-tools
                     sudo apt-get install -y libvulkan1 mesa-vulkan-drivers
                     sudo vulkaninfo
+
             -   name: Build shaderc
                 if: matrix.vulkan == 'ON'
                 run: |
@@ -120,9 +123,7 @@ jobs:
                     
                     # Move glslc to a directory in PATH
                     sudo mv glslc/glslc /usr/local/bin/
-            # Differs from the other Vulkan action (jakoch/install-vulkan-sdk-action@v1) because this lets us install Glslang too
-            # I have no idea why this is the case but atp I am embodying the "if it ain't broke don't fix it" mentality
-            # ^ was I wrong? Can we go back to the OG?
+
             -   name: Prepare Vulkan SDK
                 uses: humbletim/setup-vulkan-sdk@v1.2.1
                 if: matrix.vulkan == 'ON'
@@ -130,6 +131,7 @@ jobs:
                     vulkan-query-version: 1.4.304.1
                     vulkan-components: Vulkan-Headers, Vulkan-Loader
                     vulkan-use-cache: true
+
             -   name: Setup project dir
                 run: |
                     git submodule update --init
@@ -138,6 +140,7 @@ jobs:
                 env:
                     VULKAN: ${{ matrix.vulkan }}
                 run: ./build_linux.sh
+
             -   name: Test
                 continue-on-error: true
                 run: ./gradlew test
@@ -146,6 +149,7 @@ jobs:
                 if: success() || failure()
                 with:
                     report_paths: '**/test-results/**/*.xml'
+
             -   name: Upload natives
                 uses: actions/upload-artifact@v4
                 with:
@@ -321,6 +325,8 @@ jobs:
 
     linux-cuda:
         runs-on: ubuntu-22.04
+        container:
+            image: docker.io/nvidia/cuda:12.4.0-devel-ubuntu22.04
         steps:
             -   uses: actions/checkout@v4
             -   uses: jlumbroso/free-disk-space@main
@@ -330,35 +336,6 @@ jobs:
                     dotnet: true
                     haskell: true
                     docker-images: true
-
-            -   name: Install musl-native-make (x64)
-                run: |
-                    # 1. Clean up existing musl directory and create fresh installation directory
-                    sudo rm -rf /opt/musl && sudo mkdir -p /opt/musl
-                    
-                    # 2. Install musl cross compiler
-                    WGET_URL="https://github.com/musl-cc/musl.cc/releases/download/v0.0.1/x86_64-linux-musl-native.tgz"
-                    wget $WGET_URL -O /tmp/musl-native.tgz
-                    sudo tar -zxf /tmp/musl-native.tgz -C /opt/musl --strip-components=1
-                    
-                    # 4. Clean up temporary downloaded archive file
-                    rm -f /tmp/musl-native.tgz
-                    
-                    # 5. Configure environment variables for musl cross compiler
-                    echo "MUSL_ROOT=/opt/musl"                     >> $GITHUB_ENV
-                    echo "CC=/opt/musl/bin/x86_64-linux-musl-gcc"  >> $GITHUB_ENV
-                    echo "CXX=/opt/musl/bin/x86_64-linux-musl-g++" >> $GITHUB_ENV
-                    echo "PATH=/opt/musl/bin:$PATH"                >> $GITHUB_ENV
-                    
-                    # 6. Verify musl cross compiler installation by checking version
-                    /opt/musl/bin/x86_64-linux-musl-gcc --version
-                    /opt/musl/bin/x86_64-linux-musl-g++ --version
-                    ls -l /opt/musl/lib/libc.so
-
-            -   name: Install patchelf
-                run: |
-                    sudo apt update -y && sudo apt install -y patchelf
-                    patchelf --version
 
             -   uses: actions/setup-java@v4
                 with:
@@ -372,14 +349,14 @@ jobs:
                     mv ./ggml-silero-v6.2.0.bin ./src/main/resources
                     curl -o ./ggml-tiny.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
 
-            -   name: Install CUDA
-                run: |
-                    wget https://developer.download.nvidia.com/compute/cuda/12.4.0/local_installers/cuda_12.4.0_550.54.14_linux.run
-                    sudo sh cuda_12.4.0_550.54.14_linux.run --silent --toolkit --override
-                    echo "CUDA_PATH=/usr/local/cuda-12.4" >> $GITHUB_ENV
-                    echo "LD_LIBRARY_PATH=/usr/local/cuda-12.4/lib64" >> $GITHUB_ENV
-                    echo "PATH=$PATH:/usr/local/cuda-12.4/bin" >> $GITHUB_ENV
-                    echo "CUDACXX=/usr/local/cuda-12.4/bin/nvcc" >> $GITHUB_ENV
+#            -   name: Install CUDA
+#                run: |
+#                    wget https://developer.download.nvidia.com/compute/cuda/12.4.0/local_installers/cuda_12.4.0_550.54.14_linux.run
+#                    sudo sh cuda_12.4.0_550.54.14_linux.run --silent --toolkit --override
+#                    echo "CUDA_PATH=/usr/local/cuda-12.4" >> $GITHUB_ENV
+#                    echo "LD_LIBRARY_PATH=/usr/local/cuda-12.4/lib64" >> $GITHUB_ENV
+#                    echo "PATH=$PATH:/usr/local/cuda-12.4/bin" >> $GITHUB_ENV
+#                    echo "CUDACXX=/usr/local/cuda-12.4/bin/nvcc" >> $GITHUB_ENV
 
             -   name: Build Linux CUDA
                 shell: bash
