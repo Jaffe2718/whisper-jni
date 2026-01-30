@@ -50,35 +50,41 @@ jobs:
                 with:
                     java-version: 24
                     distribution: 'temurin'
-            - name: Install musl libc toolchain (x64/ARM64 compatible, musl-cc GitHub mirror)
-              run: |
-                  # 1. Clean up existing musl directory and create fresh installation directory
-                  sudo rm -rf /opt/musl && sudo mkdir -p /opt/musl
-                  
-                  # 2. Determine target architecture (map matrix arch to musl arch naming)
-                  if [ "${{ matrix.arch }}" = "arm64" ]; then
+            -   name: Install musl libc toolchain (x64/ARM64 compatible, musl-cc GitHub mirror)
+                run: |
+                    # 1. Clean up existing musl directory and create fresh installation directory
+                    sudo rm -rf /opt/musl && sudo mkdir -p /opt/musl
+                    
+                    # 2. Determine target architecture (map matrix arch to musl arch naming)
+                    if [ "${{ matrix.arch }}" = "arm64" ]; then
                       MUSL_ARCH="aarch64"
-                  else
+                    else
                       MUSL_ARCH="x86_64"
-                  fi
-                  
-                  # 3. Install musl cross compiler
-                  WGET_URL="https://github.com/musl-cc/musl.cc/releases/download/v0.0.1/${MUSL_ARCH}-linux-musl-native.tgz"
-                  wget $WGET_URL -O /tmp/musl-native.tgz
-                  sudo tar -zxf /tmp/musl-native.tgz -C /opt/musl --strip-components=1
-                  
-                  # 4. Clean up temporary downloaded archive file
-                  rm -f /tmp/musl-native.tgz
-                  
-                  # 5. Configure environment variables for musl cross compiler
-                  echo "CC=/opt/musl/bin/${MUSL_ARCH}-linux-musl-gcc" >> $GITHUB_ENV
-                  echo "CXX=/opt/musl/bin/${MUSL_ARCH}-linux-musl-g++" >> $GITHUB_ENV
-                  echo "PATH=/opt/musl/bin:$PATH" >> $GITHUB_ENV
-                  echo "MUSL_ARCH=${MUSL_ARCH}" >> $GITHUB_ENV
-                  
-                  # 6. Verify musl cross compiler installation by checking version
-                  /opt/musl/bin/${MUSL_ARCH}-linux-musl-gcc --version
-                  /opt/musl/bin/${MUSL_ARCH}-linux-musl-g++ --version
+                    fi
+                    
+                    # 3. Install musl cross compiler
+                    WGET_URL="https://github.com/musl-cc/musl.cc/releases/download/v0.0.1/${MUSL_ARCH}-linux-musl-native.tgz"
+                    wget $WGET_URL -O /tmp/musl-native.tgz
+                    sudo tar -zxf /tmp/musl-native.tgz -C /opt/musl --strip-components=1
+                    
+                    # 4. Clean up temporary downloaded archive file
+                    rm -f /tmp/musl-native.tgz
+                    
+                    # 5. Configure environment variables for musl cross compiler
+                    echo "MUSL_ROOT=/opt/musl/${MUSL_ARCH}-linux-musl"   >> $GITHUB_ENV
+                    echo "CC=/opt/musl/bin/${MUSL_ARCH}-linux-musl-gcc"  >> $GITHUB_ENV
+                    echo "CXX=/opt/musl/bin/${MUSL_ARCH}-linux-musl-g++" >> $GITHUB_ENV
+                    echo "PATH=/opt/musl/bin:$PATH"                      >> $GITHUB_ENV
+                    echo "MUSL_ARCH=${MUSL_ARCH}"                        >> $GITHUB_ENV
+                    
+                    # 6. Verify musl cross compiler installation by checking version
+                    /opt/musl/bin/${MUSL_ARCH}-linux-musl-gcc --version
+                    /opt/musl/bin/${MUSL_ARCH}-linux-musl-g++ --version
+
+            -   name: Install patchelf
+                run: |
+                    sudo apt update -y && sudo apt install -y patchelf
+                    patchelf --version
 
             -   name: Install Vulkan Tools
                 # Install Glslang because Vulkan doesn't bundle it for Ubuntu
@@ -323,6 +329,7 @@ jobs:
                     dotnet: true
                     haskell: true
                     docker-images: true
+
             -   name: Install musl-native-make (x64)
                 run: |
                     # 1. Clean up existing musl directory and create fresh installation directory
@@ -337,24 +344,32 @@ jobs:
                     rm -f /tmp/musl-native.tgz
                     
                     # 5. Configure environment variables for musl cross compiler
-                    echo "CC=/opt/musl/bin/x86_64-linux-musl-gcc" >> $GITHUB_ENV
+                    echo "MUSL_ROOT=/opt/musl/x86_64-linux-musl"   >> $GITHUB_ENV
+                    echo "CC=/opt/musl/bin/x86_64-linux-musl-gcc"  >> $GITHUB_ENV
                     echo "CXX=/opt/musl/bin/x86_64-linux-musl-g++" >> $GITHUB_ENV
-                    echo "PATH=/opt/musl/bin:$PATH" >> $GITHUB_ENV
+                    echo "PATH=/opt/musl/bin:$PATH"                >> $GITHUB_ENV
                     
                     # 6. Verify musl cross compiler installation by checking version
                     /opt/musl/bin/x86_64-linux-musl-gcc --version
                     /opt/musl/bin/x86_64-linux-musl-g++ --version
 
+            -   name: Install patchelf
+                run: |
+                    sudo apt update -y && sudo apt install -y patchelf
+                    patchelf --version
+
             -   uses: actions/setup-java@v4
                 with:
                     java-version: 24
                     distribution: 'temurin'
+
             -   name: Setup project dir
                 run: |
                     git submodule update --init
                     curl -o ./ggml-silero-v6.2.0.bin https://huggingface.co/snakers4/silero-vad/resolve/main/ggml-silero-v6.2.0.bin
                     mv ./ggml-silero-v6.2.0.bin ./src/main/resources
                     curl -o ./ggml-tiny.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
+
             -   name: Install CUDA
                 run: |
                     wget https://developer.download.nvidia.com/compute/cuda/12.4.0/local_installers/cuda_12.4.0_550.54.14_linux.run
@@ -363,11 +378,13 @@ jobs:
                     echo "LD_LIBRARY_PATH=/usr/local/cuda-12.4/lib64" >> $GITHUB_ENV
                     echo "PATH=$PATH:/usr/local/cuda-12.4/bin" >> $GITHUB_ENV
                     echo "CUDACXX=/usr/local/cuda-12.4/bin/nvcc" >> $GITHUB_ENV
+
             -   name: Build Linux CUDA
                 shell: bash
                 run: |
                     chmod +x ./build_cuda.sh
                     ./build_cuda.sh
+
             -   name: Upload native library
                 uses: actions/upload-artifact@v4
                 with:
