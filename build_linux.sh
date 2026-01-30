@@ -31,21 +31,23 @@ build_lib() {
     cmake --install build
     mkdir -p "$TARGET_DIR"
 
-    # copy all .so, .so.1, .so.2 that were installed in $TMP_DIR
-    cp -f "$TMP_DIR"/*.so* "$TARGET_DIR"/
-    cp -f "$TMP_DIR"/lib/*.so* "$TARGET_DIR"/
+    # copy *.so in $TMP_DIR (auto resolve soft link)
+    cp -f "$TMP_DIR"/*.so "$TARGET_DIR"/
+    cp -f "$TMP_DIR"/lib/*.so "$TARGET_DIR"/
     ls "$TARGET_DIR"
 
     # copy libc.so from musl into $TMP_DIR && rename it as `libc-musl.so` && patchelf
     if [[ -n "$MUSL_LDFLAGS" ]]; then
-        MUSL_LIBC_PATH="${MUSL_ROOT}/lib/libc.so"
-        cp -f "${MUSL_LIBC_PATH}" "${TARGET_DIR}/libc-musl.so"
+        cp -f "${MUSL_ROOT}/lib/libc.so" "${TARGET_DIR}/libc-musl.so"
+        cp -f "${MUSL_ROOT}/lib/libgomp.so" "${TARGET_DIR}/libgomp-musl.so"
         patchelf --set-soname libc-musl.so "${TARGET_DIR}/libc-musl.so"
+        patchelf --set-soname libgomp-musl.so "${TARGET_DIR}/libgomp-musl.so"
 
         for SO_FILE in "${TARGET_DIR}"/*.so*; do
-            if [[ "$(basename "$SO_FILE")" != "libc-musl.so" ]]; then
+            if [[ "$(basename "$SO_FILE")" != "libc-musl.so" && "$(basename "$SO_FILE")" != "libgomp-musl.so" ]]; then
                 echo "🔧 Patching libc.so dependency for: $SO_FILE"
-                patchelf --replace-needed libc.so libc-musl.so "$SO_FILE"
+                patchelf --replace-needed libc.so    libc-musl.so    "$SO_FILE"
+                patchelf --replace-needed libgomp.so libgomp-musl.so "$SO_FILE"
                 patchelf --set-rpath '$ORIGIN' "$SO_FILE"
                 patchelf --force-rpath "$SO_FILE"
                 echo "✅ Patched successfully: $SO_FILE"
@@ -53,32 +55,17 @@ build_lib() {
         done
     fi
 
-    # Rename the optimized variant to libggml.so (overwriting default if needed)
-    if [[ -n "$LIB_VARIANT" && -f "$TARGET_DIR/libggml.so" ]]; then
-        echo "Overwriting libggml.so with optimized variant: $LIB_VARIANT"
-        mv "$TARGET_DIR/libggml.so" "$TARGET_DIR/libggml$LIB_VARIANT.so"
-        cp "$TARGET_DIR/libggml$LIB_VARIANT.so" "$TARGET_DIR/libggml.so"
-    fi
+    # clean
     rm -rf "$TMP_DIR"
 }
 
 # We aren't building for armv7l (at least right now) but functionality is still here
-AARCH=$(dpkg --print-architecture)
-case $AARCH in
-    amd64)
-        LIB_VARIANT="+mf16c+mfma+mavx+mavx2" CMAKE_ARGS="-DGGML_AVX=ON -DGGML_AVX2=ON -DGGML_FMA=ON -DGGML_F16C=ON" build_lib
-        ADD_WRAPPER=true CMAKE_ARGS="-DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_F16C=OFF" build_lib
-        ;;
-    arm64)
-        LIB_VARIANT="+fp16" CMAKE_CFLAGS="-march=armv8.2-a+fp16" build_lib
-        ADD_WRAPPER=true LIB_VARIANT="+crc" CMAKE_CFLAGS="-march=armv8.1-a+crc" build_lib
-        ;;
-    armhf|armv7l)
-        AARCH=armv7l
-        LIB_VARIANT="+crc" CMAKE_CFLAGS="-march=armv8-a+crc -mfpu=neon-fp-armv8 -mfp16-format=ieee -mno-unaligned-access" build_lib
-        ADD_WRAPPER=true CMAKE_CFLAGS="-mfpu=neon -mfp16-format=ieee -mno-unaligned-access" build_lib
-        ;;
-esac
+AARCH=$(uname -m)
+if [[ "$AARCH" =~ ^(arm64|aarch64)$ ]]; then
+    CMAKE_CFLAGS="-march=armv8.1-a+crc" build_lib
+elif [[ "$AARCH" =~ ^(x86_64|amd64|x64)$ ]]; then
+    CMAKE_ARGS="-DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_F16C=OFF" build_lib
+fi
 
 # analyze the resulting library
 readelf -d "$TARGET_DIR"/libwhisper-jni.so | grep NEEDED
