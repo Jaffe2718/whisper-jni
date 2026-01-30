@@ -4,6 +4,10 @@ set -xe
 # User env required:
 # - CUDA Toolkit installed
 
+export CFLAGS="${CFLAGS} -D__THROW= -D__attribute_malloc__= -D__wur= -D__nonnull\(\)= "
+export CXXFLAGS="${CXXFLAGS} -D__THROW= -D__attribute_malloc__= -D__wur= -D__nonnull\(\)= "
+export CUDAFLAGS="${CUDAFLAGS} -D__THROW= -D__attribute_malloc__= -D__wur= -D__nonnull\(\)= "
+
 TMP_DIR=tmp-build
 TARGET_DIR=whisperjni-build
 
@@ -13,8 +17,9 @@ build_lib() {
 
     # Set up MUSL environment variables
     if [[ -n "$CC" && "$CC" =~ musl ]] || [[ -n "$CXX" && "$CXX" =~ musl ]]; then
-        MUSL_CFLAGS="-static-libgcc -static-libstdc++ -fPIC"
-        MUSL_LDFLAGS="-L${MUSL_ROOT}/lib -lc -lm -static-libgcc -static-libstdc++"
+        MUSL_CFLAGS="-I${MUSL_ROOT}/include -static-libgcc -static-libstdc++ -fPIC"
+        MUSL_CXXFLAGS="-I${MUSL_ROOT}/include/c++/11.2.1 ${MUSL_CFLAGS}"
+        MUSL_LDFLAGS="-L${MUSL_ROOT}/lib -lc -lm -static-libgcc -static-libstdc++ -Wl,--no-as-needed"
     fi
 
     cmake -B build $CMAKE_ARGS \
@@ -22,7 +27,8 @@ build_lib() {
         -DCMAKE_C_COMPILER=${CC:-gcc} \
         -DCMAKE_CXX_COMPILER=${CXX:-g++} \
         -DCMAKE_C_FLAGS="${MUSL_CFLAGS}" \
-        -DCMAKE_CXX_FLAGS="${MUSL_CFLAGS}" \
+        -DCMAKE_CXX_FLAGS="${MUSL_CXXFLAGS}" \
+        -DCMAKE_CUDA_FLAGS="-Xcompiler ${MUSL_CXXFLAGS} -Xcompiler -fPIC -DCUDA_DISABLE_MATH_FUNCTIONS=ON" \
         -DCMAKE_SHARED_LINKER_FLAGS="${MUSL_LDFLAGS}" \
         -DCMAKE_INSTALL_PREFIX=$TMP_DIR \
         -DGGML_CUDA=ON
