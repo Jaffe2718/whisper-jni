@@ -71,15 +71,16 @@ jobs:
                     rm -f /tmp/musl-native.tgz
                     
                     # 5. Configure environment variables for musl cross compiler
-                    echo "MUSL_ROOT=/opt/musl/${MUSL_ARCH}-linux-musl"   >> $GITHUB_ENV
+                    echo "MUSL_ROOT=/opt/musl"                           >> $GITHUB_ENV
                     echo "CC=/opt/musl/bin/${MUSL_ARCH}-linux-musl-gcc"  >> $GITHUB_ENV
                     echo "CXX=/opt/musl/bin/${MUSL_ARCH}-linux-musl-g++" >> $GITHUB_ENV
                     echo "PATH=/opt/musl/bin:$PATH"                      >> $GITHUB_ENV
                     echo "MUSL_ARCH=${MUSL_ARCH}"                        >> $GITHUB_ENV
                     
-                    # 6. Verify musl cross compiler installation by checking version
+                    # 6. Verify musl cross compiler installation
                     /opt/musl/bin/${MUSL_ARCH}-linux-musl-gcc --version
                     /opt/musl/bin/${MUSL_ARCH}-linux-musl-g++ --version
+                    ls -l /opt/musl/lib/libc.so
 
             -   name: Install patchelf
                 run: |
@@ -344,7 +345,7 @@ jobs:
                     rm -f /tmp/musl-native.tgz
                     
                     # 5. Configure environment variables for musl cross compiler
-                    echo "MUSL_ROOT=/opt/musl/x86_64-linux-musl"   >> $GITHUB_ENV
+                    echo "MUSL_ROOT=/opt/musl"                     >> $GITHUB_ENV
                     echo "CC=/opt/musl/bin/x86_64-linux-musl-gcc"  >> $GITHUB_ENV
                     echo "CXX=/opt/musl/bin/x86_64-linux-musl-g++" >> $GITHUB_ENV
                     echo "PATH=/opt/musl/bin:$PATH"                >> $GITHUB_ENV
@@ -352,6 +353,7 @@ jobs:
                     # 6. Verify musl cross compiler installation by checking version
                     /opt/musl/bin/x86_64-linux-musl-gcc --version
                     /opt/musl/bin/x86_64-linux-musl-g++ --version
+                    ls -l /opt/musl/lib/libc.so
 
             -   name: Install patchelf
                 run: |

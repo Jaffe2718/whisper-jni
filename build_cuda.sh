@@ -37,8 +37,8 @@ build_lib() {
 
     # copy libc.so from musl into $TMP_DIR && rename it as `libc-musl.so` && patchelf
     if [[ -n "$MUSL_LDFLAGS" ]]; then
-        MUSL_LIBC_PATH=$(find "${MUSL_ROOT}/lib" -name "libc.so" -type f | head -n1)
-        cp -f "$MUSL_LIBC_PATH" "${TARGET_DIR}/libc-musl.so"
+        MUSL_LIBC_PATH="${MUSL_ROOT}/lib/libc.so"
+        cp -f "${MUSL_LIBC_PATH}" "${TARGET_DIR}/libc-musl.so"
         echo "Copied musl libc.so to ${TARGET_DIR}/libc-musl.so"
 
         for SO_FILE in "${TARGET_DIR}"/*.so*; do
