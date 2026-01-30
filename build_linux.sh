@@ -43,7 +43,7 @@ build_lib() {
         patchelf --set-soname libc-musl.so "${TARGET_DIR}/libc-musl.so"
 
         for SO_FILE in "${TARGET_DIR}"/*.so*; do
-            if [[ -f "$SO_FILE" && -x "$SO_FILE" ]]; then
+            if [[ -f "$SO_FILE" && -x "$SO_FILE" && ! "$SO_FILE" =~ libc-musl\.so$ ]]; then
                 NEEDED_LIBS=$(readelf -d "$SO_FILE" | grep "NEEDED" | grep -i "libc\.so")
                 if [[ -n "$NEEDED_LIBS" ]]; then
                     echo "Found libc dependency in $SO_FILE: $NEEDED_LIBS"
