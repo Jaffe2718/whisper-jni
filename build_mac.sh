@@ -38,5 +38,16 @@ rm -rf build
 rm -f $TARGET_DIR/*.dylib
 
 # Copy all libs to target dir
-cp -f "$TMP_DIR"/*.dylib "$TARGET_DIR"/
-cp -Rf "$TMP_DIR"/**/*.dylib "$TARGET_DIR"/
+DYLIB_DIRS=("$TMP_DIR" "$TMP_DIR"/lib)
+
+for DYLIB_DIR in "${DYLIB_DIRS[@]}"; do
+    for FILE in "$DYLIB_DIR"/*.dylib; do
+        [ -f "$FILE" ] || continue
+        F_NAME=$(basename "$FILE")
+        F_WITHOUT_EXT="${F_NAME%.dylib}"
+        if [[ ! "$F_WITHOUT_EXT" =~ \. ]]; then
+            cp -Lf "$FILE" "$TARGET_DIR"/
+        fi
+    done
+done
+
